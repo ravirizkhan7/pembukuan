@@ -59,7 +59,6 @@ export function AppLayout({
         setIsOpen={setIsSidebarOpen}
         isMobile={isMobile}
         stationInfo={stationInfo}
-        onLogout={onLogout}
       />
 
       <div className="main-wrapper">
