@@ -16,7 +16,7 @@ import {
   Receivable,
   Payable,
   ProductCategory,
-  Operator,
+  Pegawai,
   Attendance
 } from '../types';
 import { postTransaction } from '../services/postingEngine';
@@ -31,7 +31,7 @@ export interface AppContextType {
   masterCodes: MasterCode[];
   shifts: Shift[];
   activeShift: Shift | null;
-  operators: Operator[];
+  pegawaiList: Pegawai[];
   attendances: Attendance[];
   teraList: Tera[];
   transactions: Transaction[];
@@ -42,6 +42,11 @@ export interface AppContextType {
   stationInfo: StationInfo;
   authPin: string;
   reports: ReportsData;
+
+  // Master Pegawai CRUD
+  addPegawai: (pegawai: Omit<Pegawai, 'id'> & { id?: string }) => Pegawai;
+  updatePegawai: (pegawai: Pegawai) => void;
+  togglePegawaiStatus: (id: string) => void;
 
   // Attendance Actions
   addAttendance: (attendance: Omit<Attendance, 'id'> & { id?: string }) => Attendance;
@@ -104,7 +109,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [nozzles, setNozzles] = useState<Nozzle[]>(initialMock.mockNozzles);
   const [masterCodes, setMasterCodes] = useState<MasterCode[]>(initialMock.mockMasterCodes);
   const [shifts, setShifts] = useState<Shift[]>(initialMock.mockShifts);
-  const [operators] = useState<Operator[]>(initialMock.mockOperators);
+  const [pegawaiList, setPegawaiList] = useState<Pegawai[]>(initialMock.mockPegawai);
   const [attendances, setAttendances] = useState<Attendance[]>(initialMock.mockAttendances);
   const [teraList, setTeraList] = useState<Tera[]>(initialMock.mockTera);
   const [transactions, setTransactions] = useState<Transaction[]>(initialMock.mockTransactions);
@@ -408,7 +413,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!activeShift) {
       return {
         success: false,
-        error: 'Belum ada shift aktif. Buka shift terlebih dahulu di menu Monitoring → Shift Kerja.'
+        error: 'Belum ada shift aktif. Buka shift terlebih dahulu di menu Pegawai → Shift Kerja.'
       };
     }
 
@@ -471,7 +476,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   // ==========================================
-  // G. Absensi & Kehadiran Operator
+  // G. Master Pegawai CRUD
+  // ==========================================
+  const addPegawai = (pData: Omit<Pegawai, 'id'> & { id?: string }): Pegawai => {
+    const nextNum = pegawaiList.length + 1;
+    const padded = nextNum.toString().padStart(3, '0');
+    const newId = pData.id || `OPR-${padded}`;
+    const newPegawai: Pegawai = {
+      ...pData,
+      id: newId,
+      status: pData.status || 'Aktif'
+    };
+    setPegawaiList((prev) => [...prev, newPegawai]);
+    return newPegawai;
+  };
+
+  const updatePegawai = (updated: Pegawai) => {
+    setPegawaiList((prev) =>
+      prev.map((p) => (p.id === updated.id ? updated : p))
+    );
+  };
+
+  const togglePegawaiStatus = (id: string) => {
+    setPegawaiList((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, status: p.status === 'Aktif' ? 'Nonaktif' : 'Aktif' } : p))
+    );
+  };
+
+  // ==========================================
+  // H. Absensi & Kehadiran Pegawai
   // ==========================================
   const addAttendance = (attData: Omit<Attendance, 'id'> & { id?: string }): Attendance => {
     const newId = attData.id || `ATT-${Date.now().toString().slice(-6)}`;
@@ -510,7 +543,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     masterCodes,
     shifts,
     activeShift,
-    operators,
+    pegawaiList,
     attendances,
     teraList,
     transactions,
@@ -544,6 +577,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addTera,
     addTransaction,
     addBusinessPartner,
+    addPegawai,
+    updatePegawai,
+    togglePegawaiStatus,
     addAttendance,
     updateAttendance,
     deleteAttendance,

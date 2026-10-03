@@ -380,7 +380,7 @@ export function TransaksiPage({
                 Belum ada shift aktif. Buka shift terlebih dahulu.
               </div>
               <div style={{ fontSize: '12px', color: '#B91C1C', marginTop: '2px' }}>
-                Transaksi memerlukan sesi shift kerja aktif untuk mencatat relasi shiftId dan serah terima kas kasir. Silakan buka shift pada modul Monitoring → Shift Kerja.
+                Transaksi memerlukan sesi shift kerja aktif untuk mencatat relasi shiftId dan serah terima kas kasir. Silakan buka shift pada modul Pegawai → Shift Kerja.
               </div>
             </div>
           </div>

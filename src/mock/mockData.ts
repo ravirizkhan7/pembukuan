@@ -20,7 +20,7 @@ import {
   Receivable,
   Payable,
   ProductCategory,
-  Operator,
+  Pegawai,
   Attendance
 } from '../types';
 
@@ -84,18 +84,18 @@ export const mockShifts: Shift[] = [
   { id: "SFT-02", name: "Shift 2", startTime: "15:00", endTime: "23:00", operator: "Siti Rahma", status: "Menunggu", totalSales: 0, cashHandover: 0, date: "2026-09-24", initialCash: 0, discrepancy: 0 }
 ];
 
-export const mockOperators: Operator[] = [
-  { id: "OPR-01", name: "Ahmad Fauzi", role: "Operator Kasir", status: "Aktif" },
-  { id: "OPR-02", name: "Siti Rahma", role: "Operator Kasir", status: "Aktif" },
-  { id: "OPR-03", name: "Doni Pratama", role: "Operator Kasir", status: "Aktif" },
-  { id: "OPR-04", name: "Rima", role: "Operator Kasir", status: "Aktif" }
+export const mockPegawai: Pegawai[] = [
+  { id: "OPR-001", name: "Ahmad Fauzi", role: "Operator Kasir", status: "Aktif", shiftId: "SFT-01" },
+  { id: "OPR-002", name: "Siti Rahma", role: "Operator Kasir", status: "Aktif", shiftId: "SFT-02" },
+  { id: "OPR-003", name: "Doni Pratama", role: "Operator Kasir", status: "Aktif", shiftId: "SFT-01" },
+  { id: "OPR-004", name: "Rima", role: "Operator Kasir", status: "Aktif", shiftId: "SFT-01" }
 ];
 
 export const mockAttendances: Attendance[] = [
   {
     id: "ATT-20260924-001",
-    operatorId: "OPR-01",
-    operatorName: "Ahmad Fauzi",
+    employeeId: "OPR-001",
+    employeeName: "Ahmad Fauzi",
     shiftId: "SFT-01",
     shiftName: "Shift 1",
     date: "2026-09-24",
@@ -105,8 +105,8 @@ export const mockAttendances: Attendance[] = [
   },
   {
     id: "ATT-20260924-002",
-    operatorId: "OPR-04",
-    operatorName: "Rima",
+    employeeId: "OPR-004",
+    employeeName: "Rima",
     shiftId: "SFT-01",
     shiftName: "Shift 1",
     date: "2026-09-24",
@@ -116,8 +116,8 @@ export const mockAttendances: Attendance[] = [
   },
   {
     id: "ATT-20260924-003",
-    operatorId: "OPR-02",
-    operatorName: "Siti Rahma",
+    employeeId: "OPR-002",
+    employeeName: "Siti Rahma",
     shiftId: "SFT-02",
     shiftName: "Shift 2",
     date: "2026-09-24",
@@ -127,10 +127,10 @@ export const mockAttendances: Attendance[] = [
   },
   {
     id: "ATT-20260924-004",
-    operatorId: "OPR-03",
-    operatorName: "Doni Pratama",
-    shiftId: "SFT-02",
-    shiftName: "Shift 2",
+    employeeId: "OPR-003",
+    employeeName: "Doni Pratama",
+    shiftId: "SFT-01",
+    shiftName: "Shift 1",
     date: "2026-09-24",
     status: "Izin",
     notes: "Izin urusan keluarga",

@@ -172,7 +172,7 @@ export function DashboardPage({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onNavigate('monitoring', 'shift')}
+              onClick={() => onNavigate('pegawai', 'shift_kerja')}
               style={{ fontSize: '12.5px', color: 'var(--color-primary)' }}
             >
               Kelola Shift →
@@ -214,7 +214,7 @@ export function DashboardPage({
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => onNavigate('monitoring', 'shift')}
+                onClick={() => onNavigate('pegawai', 'shift_kerja')}
               >
                 Buka Shift Sekarang
               </Button>

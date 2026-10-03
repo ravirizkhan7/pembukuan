@@ -8,7 +8,7 @@ import { OperasionalPage } from './pages/Operasional';
 import { AkuntansiPage } from './pages/Akuntansi';
 import { LaporanPage } from './pages/Laporan';
 import { PengaturanPage } from './pages/Pengaturan';
-import { AbsensiPage } from './pages/Absensi';
+import { PegawaiPage } from './pages/Pegawai';
 
 import * as mockData from './mock/mockData';
 import { ToastMessage, ToastType } from './types';
@@ -95,8 +95,10 @@ function AppContent() {
           />
         )}
 
-        {activeNav === 'absensi' && (
-          <AbsensiPage
+        {activeNav === 'pegawai' && (
+          <PegawaiPage
+            activeSubTab={activeSubNav || 'daftar_pegawai'}
+            onSubTabChange={(sub) => setActiveSubNav(sub)}
             showToast={showToast}
           />
         )}

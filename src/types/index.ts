@@ -72,21 +72,24 @@ export interface Shift {
   discrepancy?: number;
 }
 
-export interface Operator {
+export interface Pegawai {
   id: string;
   name: string;
-  role?: string;
-  status?: 'Aktif' | 'Nonaktif';
+  role: string;
+  status: 'Aktif' | 'Nonaktif';
+  shiftId: string;
 }
+
+export type Operator = Pegawai;
 
 export type AttendanceStatus = 'Hadir' | 'Izin' | 'Sakit' | 'Alpa';
 
 export interface Attendance {
   id: string;
-  operatorId: string;
-  operatorName: string;
+  employeeId: string;
+  employeeName?: string;
   shiftId: string;
-  shiftName: string;
+  shiftName?: string;
   date: string;
   status: AttendanceStatus;
   notes?: string;

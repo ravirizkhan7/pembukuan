@@ -6,7 +6,7 @@ import {
   BookOpen,
   FileSpreadsheet,
   Settings,
-  UserCheck,
+  Users,
   ChevronDown,
   ChevronRight,
   X,
@@ -49,6 +49,7 @@ export function Sidebar({
   stationInfo,
 }: SidebarProps) {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+    pegawai: true,
     monitoring: true,
     akuntansi: true,
     laporan: true
@@ -72,6 +73,17 @@ export function Sidebar({
       hasSub: false
     },
     {
+      id: 'pegawai',
+      label: 'Pegawai',
+      icon: Users,
+      hasSub: true,
+      subItems: [
+        { id: 'daftar_pegawai', label: 'Daftar Pegawai' },
+        { id: 'absensi', label: 'Absensi' },
+        { id: 'shift_kerja', label: 'Shift Kerja' }
+      ]
+    },
+    {
       id: 'monitoring',
       label: 'Monitoring',
       icon: Gauge,
@@ -80,15 +92,8 @@ export function Sidebar({
         { id: 'tera', label: 'Monitoring Tera' },
         { id: 'tanki', label: 'Tanki Pendam' },
         { id: 'nozzle', label: 'Nozzle Dispenser' },
-        { id: 'shift', label: 'Shift Kerja' },
         { id: 'produk', label: 'Produk BBM' }
       ]
-    },
-    {
-      id: 'absensi',
-      label: 'Absensi',
-      icon: UserCheck,
-      hasSub: false
     },
     {
       id: 'akuntansi',
