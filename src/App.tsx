@@ -8,6 +8,7 @@ import { OperasionalPage } from './pages/Operasional';
 import { AkuntansiPage } from './pages/Akuntansi';
 import { LaporanPage } from './pages/Laporan';
 import { PengaturanPage } from './pages/Pengaturan';
+import { AbsensiPage } from './pages/Absensi';
 
 import * as mockData from './mock/mockData';
 import { ToastMessage, ToastType } from './types';
@@ -90,6 +91,12 @@ function AppContent() {
             mockData={mockData}
             activeSubTab={activeSubNav || 'tera'}
             onSubTabChange={(sub) => setActiveSubNav(sub)}
+            showToast={showToast}
+          />
+        )}
+
+        {activeNav === 'absensi' && (
+          <AbsensiPage
             showToast={showToast}
           />
         )}

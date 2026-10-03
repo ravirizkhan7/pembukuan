@@ -15,7 +15,9 @@ import {
   BusinessPartner,
   Receivable,
   Payable,
-  ProductCategory
+  ProductCategory,
+  Operator,
+  Attendance
 } from '../types';
 import { postTransaction } from '../services/postingEngine';
 
@@ -29,6 +31,8 @@ export interface AppContextType {
   masterCodes: MasterCode[];
   shifts: Shift[];
   activeShift: Shift | null;
+  operators: Operator[];
+  attendances: Attendance[];
   teraList: Tera[];
   transactions: Transaction[];
   journals: Journal[];
@@ -38,6 +42,11 @@ export interface AppContextType {
   stationInfo: StationInfo;
   authPin: string;
   reports: ReportsData;
+
+  // Attendance Actions
+  addAttendance: (attendance: Omit<Attendance, 'id'> & { id?: string }) => Attendance;
+  updateAttendance: (attendance: Attendance) => void;
+  deleteAttendance: (id: string) => void;
 
   // Product Category CRUD
   addProductCategory: (category: Omit<ProductCategory, 'id'> & { id?: string }) => ProductCategory;
@@ -95,6 +104,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [nozzles, setNozzles] = useState<Nozzle[]>(initialMock.mockNozzles);
   const [masterCodes, setMasterCodes] = useState<MasterCode[]>(initialMock.mockMasterCodes);
   const [shifts, setShifts] = useState<Shift[]>(initialMock.mockShifts);
+  const [operators] = useState<Operator[]>(initialMock.mockOperators);
+  const [attendances, setAttendances] = useState<Attendance[]>(initialMock.mockAttendances);
   const [teraList, setTeraList] = useState<Tera[]>(initialMock.mockTera);
   const [transactions, setTransactions] = useState<Transaction[]>(initialMock.mockTransactions);
   const [journals, setJournals] = useState<Journal[]>(initialMock.mockJournal);
@@ -459,6 +470,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return newPartner;
   };
 
+  // ==========================================
+  // G. Absensi & Kehadiran Operator
+  // ==========================================
+  const addAttendance = (attData: Omit<Attendance, 'id'> & { id?: string }): Attendance => {
+    const newId = attData.id || `ATT-${Date.now().toString().slice(-6)}`;
+    const newAtt: Attendance = {
+      ...attData,
+      id: newId
+    };
+    setAttendances((prev) => [newAtt, ...prev]);
+    return newAtt;
+  };
+
+  const updateAttendance = (updated: Attendance) => {
+    setAttendances((prev) =>
+      prev.map((att) => (att.id === updated.id ? updated : att))
+    );
+  };
+
+  const deleteAttendance = (id: string) => {
+    setAttendances((prev) => prev.filter((att) => att.id !== id));
+  };
+
   const updateStationInfo = (info: StationInfo) => {
     setStationInfo(info);
   };
@@ -476,6 +510,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     masterCodes,
     shifts,
     activeShift,
+    operators,
+    attendances,
     teraList,
     transactions,
     journals,
@@ -508,6 +544,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addTera,
     addTransaction,
     addBusinessPartner,
+    addAttendance,
+    updateAttendance,
+    deleteAttendance,
     updateStationInfo,
     changePin
   };

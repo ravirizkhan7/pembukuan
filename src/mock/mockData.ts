@@ -19,7 +19,9 @@ import {
   BusinessPartner,
   Receivable,
   Payable,
-  ProductCategory
+  ProductCategory,
+  Operator,
+  Attendance
 } from '../types';
 
 export const mockStationInfo: StationInfo = {
@@ -78,9 +80,62 @@ export const mockNozzles: Nozzle[] = [
 ];
 
 export const mockShifts: Shift[] = [
-  { id: "SFT-01", name: "Shift 1 (Pagi)", startTime: "06:00", endTime: "14:00", operator: "Ahmad Fauzi", status: "Aktif", totalSales: 28450000, cashHandover: 0, date: "2026-09-24", initialCash: 1000000, discrepancy: 0 },
-  { id: "SFT-02", name: "Shift 2 (Siang)", startTime: "14:00", endTime: "22:00", operator: "Siti Rahma", status: "Menunggu", totalSales: 0, cashHandover: 0, date: "2026-09-24", initialCash: 0, discrepancy: 0 },
-  { id: "SFT-03", name: "Shift 3 (Malam)", startTime: "22:00", endTime: "06:00", operator: "Doni Pratama", status: "Tutup", totalSales: 19820000, cashHandover: 20820000, date: "2026-09-23", initialCash: 1000000, discrepancy: 0 }
+  { id: "SFT-01", name: "Shift 1", startTime: "07:00", endTime: "15:00", operator: "Ahmad Fauzi", status: "Aktif", totalSales: 28450000, cashHandover: 0, date: "2026-09-24", initialCash: 1000000, discrepancy: 0 },
+  { id: "SFT-02", name: "Shift 2", startTime: "15:00", endTime: "23:00", operator: "Siti Rahma", status: "Menunggu", totalSales: 0, cashHandover: 0, date: "2026-09-24", initialCash: 0, discrepancy: 0 }
+];
+
+export const mockOperators: Operator[] = [
+  { id: "OPR-01", name: "Ahmad Fauzi", role: "Operator Kasir", status: "Aktif" },
+  { id: "OPR-02", name: "Siti Rahma", role: "Operator Kasir", status: "Aktif" },
+  { id: "OPR-03", name: "Doni Pratama", role: "Operator Kasir", status: "Aktif" },
+  { id: "OPR-04", name: "Rima", role: "Operator Kasir", status: "Aktif" }
+];
+
+export const mockAttendances: Attendance[] = [
+  {
+    id: "ATT-20260924-001",
+    operatorId: "OPR-01",
+    operatorName: "Ahmad Fauzi",
+    shiftId: "SFT-01",
+    shiftName: "Shift 1",
+    date: "2026-09-24",
+    status: "Hadir",
+    notes: "Tepat waktu",
+    checkInTime: "06:55"
+  },
+  {
+    id: "ATT-20260924-002",
+    operatorId: "OPR-04",
+    operatorName: "Rima",
+    shiftId: "SFT-01",
+    shiftName: "Shift 1",
+    date: "2026-09-24",
+    status: "Hadir",
+    notes: "Tepat waktu",
+    checkInTime: "06:58"
+  },
+  {
+    id: "ATT-20260924-003",
+    operatorId: "OPR-02",
+    operatorName: "Siti Rahma",
+    shiftId: "SFT-02",
+    shiftName: "Shift 2",
+    date: "2026-09-24",
+    status: "Hadir",
+    notes: "Shift siang standby",
+    checkInTime: "14:50"
+  },
+  {
+    id: "ATT-20260924-004",
+    operatorId: "OPR-03",
+    operatorName: "Doni Pratama",
+    shiftId: "SFT-02",
+    shiftName: "Shift 2",
+    date: "2026-09-24",
+    status: "Izin",
+    notes: "Izin urusan keluarga",
+    checkInTime: "-"
+  }
 ];
 
 /**
@@ -93,7 +148,7 @@ export const mockTera: Tera[] = [
     id: "TRA-001",
     date: "2026-09-24",
     shiftId: "SFT-01",
-    shift: "Shift 1 (Pagi)",
+    shift: "Shift 1",
     nozzleId: "NZL-01",
     nozzleCode: "NZ-01",
     productId: "PRD-01",
@@ -112,7 +167,7 @@ export const mockTera: Tera[] = [
     id: "TRA-002",
     date: "2026-09-24",
     shiftId: "SFT-01",
-    shift: "Shift 1 (Pagi)",
+    shift: "Shift 1",
     nozzleId: "NZL-02",
     nozzleCode: "NZ-02",
     productId: "PRD-02",
@@ -131,7 +186,7 @@ export const mockTera: Tera[] = [
     id: "TRA-003",
     date: "2026-09-24",
     shiftId: "SFT-01",
-    shift: "Shift 1 (Pagi)",
+    shift: "Shift 1",
     nozzleId: "NZL-03",
     nozzleCode: "NZ-03",
     productId: "PRD-04",
@@ -410,7 +465,7 @@ export const mockTransactions: Transaction[] = [
     unitPrice: 10000,
     total: 355000,
     shiftId: "SFT-01",
-    shift: "Shift 1 (Pagi)",
+    shift: "Shift 1",
     cashier: "Ahmad Fauzi",
     status: "Selesai",
     nozzleId: "NZL-01",
@@ -430,7 +485,7 @@ export const mockTransactions: Transaction[] = [
     unitPrice: 12950,
     total: 323750,
     shiftId: "SFT-01",
-    shift: "Shift 1 (Pagi)",
+    shift: "Shift 1",
     cashier: "Ahmad Fauzi",
     status: "Selesai",
     nozzleId: "NZL-02",
@@ -450,7 +505,7 @@ export const mockTransactions: Transaction[] = [
     unitPrice: 9650,
     total: 154400000,
     shiftId: "SFT-01",
-    shift: "Shift 1 (Pagi)",
+    shift: "Shift 1",
     cashier: "Ahmad Fauzi",
     status: "Selesai"
   },
@@ -465,7 +520,7 @@ export const mockTransactions: Transaction[] = [
     unitPrice: 0,
     total: 3850000,
     shiftId: "SFT-01",
-    shift: "Shift 1 (Pagi)",
+    shift: "Shift 1",
     cashier: "Ahmad Fauzi",
     status: "Selesai"
   },
@@ -481,7 +536,7 @@ export const mockTransactions: Transaction[] = [
     unitPrice: 6800,
     total: 408000,
     shiftId: "SFT-01",
-    shift: "Shift 1 (Pagi)",
+    shift: "Shift 1",
     cashier: "Ahmad Fauzi",
     status: "Selesai",
     nozzleId: "NZL-03",

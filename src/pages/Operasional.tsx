@@ -84,7 +84,7 @@ export function OperasionalPage({
       id: `TRA-${Date.now().toString().slice(-4)}`,
       date: '2026-09-24',
       shiftId: activeShift ? activeShift.id : 'SFT-01',
-      shift: activeShift ? activeShift.name : 'Shift 1 (Pagi)',
+      shift: activeShift ? activeShift.name : 'Shift 1',
       nozzleId: currentNozzle.id,
       nozzleCode: currentNozzle.code,
       productId: currentNozzle.productId || matchedProduct?.id,
@@ -115,7 +115,7 @@ export function OperasionalPage({
     shifts.find(s => s.status === 'Menunggu')?.id || shifts[0]?.id || 'SFT-01'
   );
   const [bukaDate, setBukaDate] = useState<string>('2026-09-24');
-  const [bukaStartTime, setBukaStartTime] = useState<string>('06:00');
+  const [bukaStartTime, setBukaStartTime] = useState<string>('07:00');
   const [bukaOperator, setBukaOperator] = useState<string>('Ahmad Fauzi');
   const [bukaInitialCash, setBukaInitialCash] = useState<string>('1000000');
 
@@ -136,7 +136,7 @@ export function OperasionalPage({
     const target = shiftId ? shifts.find(s => s.id === shiftId) : shifts.find(s => s.status === 'Menunggu') || shifts[0];
     if (target) {
       setSelectedShiftToOpen(target.id);
-      setBukaStartTime(target.startTime || '06:00');
+      setBukaStartTime(target.startTime || '07:00');
       setBukaOperator(target.operator || 'Operator SPBU');
       setBukaInitialCash(target.initialCash?.toString() || '1000000');
     }

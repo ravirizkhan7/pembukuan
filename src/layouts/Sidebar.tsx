@@ -6,6 +6,7 @@ import {
   BookOpen,
   FileSpreadsheet,
   Settings,
+  UserCheck,
   ChevronDown,
   ChevronRight,
   X,
@@ -82,6 +83,12 @@ export function Sidebar({
         { id: 'shift', label: 'Shift Kerja' },
         { id: 'produk', label: 'Produk BBM' }
       ]
+    },
+    {
+      id: 'absensi',
+      label: 'Absensi',
+      icon: UserCheck,
+      hasSub: false
     },
     {
       id: 'akuntansi',

@@ -72,6 +72,27 @@ export interface Shift {
   discrepancy?: number;
 }
 
+export interface Operator {
+  id: string;
+  name: string;
+  role?: string;
+  status?: 'Aktif' | 'Nonaktif';
+}
+
+export type AttendanceStatus = 'Hadir' | 'Izin' | 'Sakit' | 'Alpa';
+
+export interface Attendance {
+  id: string;
+  operatorId: string;
+  operatorName: string;
+  shiftId: string;
+  shiftName: string;
+  date: string;
+  status: AttendanceStatus;
+  notes?: string;
+  checkInTime?: string;
+}
+
 export interface Tera {
   id: string;
   date: string;
