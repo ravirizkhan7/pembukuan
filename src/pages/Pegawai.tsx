@@ -196,6 +196,11 @@ export function PegawaiPage({
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const dateStr = filterDate || '2026-09-24';
 
+    // Check if employee already attended today (informative status)
+    const alreadyAttended = attendances.some(
+      (a) => a.employeeId === emp.id && a.date === dateStr
+    );
+
     // 4. Record attendance
     addAttendance({
       employeeId: emp.id,
@@ -205,17 +210,23 @@ export function PegawaiPage({
       date: dateStr,
       status: 'Hadir',
       checkInTime: timeStr,
-      notes: 'Presensi Live Scanner QR'
+      notes: alreadyAttended ? 'Presensi Ulang (Sudah Absen)' : 'Presensi Live Scanner QR'
     });
 
-    showToast(`Presensi [${emp.name}] (${assignedShift.name}) berhasil dicatat.`, 'success');
+    showToast(
+      alreadyAttended
+        ? `[${emp.name}] sudah absen sebelumnya (absensi tercatat ulang).`
+        : `Presensi [${emp.name}] (${assignedShift.name}) berhasil dicatat.`,
+      'success'
+    );
 
     return {
       success: true,
       payload: trimmedId,
       pegawai: emp,
       shift: assignedShift,
-      time: timeStr
+      time: timeStr,
+      isAlreadyAttended: alreadyAttended
     };
   };
 

@@ -36,13 +36,23 @@ export async function generateQrDataUrl(
 }
 
 /**
- * Generate a complete Employee ID Card PNG as Data URL
- * Consists of:
- * - [ QR CODE ] (payload is strictly employee ID, e.g. "OPR-004")
- * - Nama Pegawai (e.g. "Rima")
- * - Jabatan Pegawai (e.g. "Operator Kasir")
+ * Generate a minimalist, compact Employee ID Card PNG as Data URL
  *
- * All in one single PNG image, client-side & offline via HTML5 Canvas.
+ * Structure:
+ * ┌─────────────────────────────┐
+ * │                             │
+ * │         QR CODE             │
+ * │                             │
+ * │        Nama Pegawai         │
+ * │         Jabatan             │
+ * │                             │
+ * │          OPR-001            │
+ * │                             │
+ * └─────────────────────────────┘
+ *
+ * Minimalist, compact, professional, clean whitespace.
+ * Zero unnecessary decorative borders, zero gradients, no banner text.
+ * 100% Client-side & offline via HTML5 Canvas.
  */
 export async function generateEmployeeIdCardPngDataUrl(
   payload: string,
@@ -50,9 +60,9 @@ export async function generateEmployeeIdCardPngDataUrl(
   role: string,
   options?: EmployeeIdCardOptions
 ): Promise<string> {
-  const cardWidth = options?.width || 420;
-  const cardHeight = options?.height || 540;
-  const qrSize = options?.qrSize || 280;
+  const cardWidth = options?.width || 340;
+  const cardHeight = options?.height || 380;
+  const qrSize = options?.qrSize || 190;
 
   // 1. Generate QR Code image with payload strictly containing employee ID
   const qrDataUrl = await generateQrDataUrl(payload, {
@@ -83,11 +93,11 @@ export async function generateEmployeeIdCardPngDataUrl(
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, cardWidth, cardHeight);
 
-      // Card border with smooth rounded corners
-      const borderMargin = 12;
+      // Clean single subtle card outline (1px border #E2E8F0, rounded corners 12px)
+      const borderMargin = 8;
       const borderWidth = cardWidth - borderMargin * 2;
       const borderHeight = cardHeight - borderMargin * 2;
-      const radius = 16;
+      const radius = 12;
 
       ctx.save();
       ctx.beginPath();
@@ -99,90 +109,57 @@ export async function generateEmployeeIdCardPngDataUrl(
       ctx.lineTo(borderMargin + radius, borderMargin + borderHeight);
       ctx.quadraticCurveTo(borderMargin, borderMargin + borderHeight, borderMargin, borderMargin + borderHeight - radius);
       ctx.lineTo(borderMargin, borderMargin + radius);
-      ctx.quadraticCurveTo(borderMargin, borderMargin, borderMargin + radius, borderMargin);
+      ctx.quadraticCurveTo(borderMargin, borderMargin + borderHeight - radius, borderMargin, borderMargin);
       ctx.closePath();
       ctx.strokeStyle = '#E2E8F0';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1;
       ctx.stroke();
       ctx.restore();
-
-      // Top subtle accent bar
-      ctx.fillStyle = '#1E3A8A';
-      ctx.fillRect(borderMargin + 4, borderMargin + 2, borderWidth - 8, 5);
 
       // Load QR Image
       const qrImg = new Image();
       qrImg.crossOrigin = 'anonymous';
       qrImg.onload = () => {
         try {
-          // Draw QR centered horizontally
+          // 1. Draw QR centered horizontally
           const qrX = Math.round((cardWidth - qrSize) / 2);
-          const qrY = 38;
+          const qrY = 28;
           ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
 
           const centerX = cardWidth / 2;
 
-          // Subtle divider line below QR
-          ctx.strokeStyle = '#F1F5F9';
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(36, qrY + qrSize + 16);
-          ctx.lineTo(cardWidth - 36, qrY + qrSize + 16);
-          ctx.stroke();
-
-          // Employee Name (dynamic font size if name is long)
+          // 2. Nama Pegawai (Paling Menonjol)
           ctx.fillStyle = '#0F172A';
-          let nameFontSize = 24;
+          let nameFontSize = 20;
           ctx.font = `bold ${nameFontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`;
-          while (ctx.measureText(name).width > cardWidth - 60 && nameFontSize > 16) {
-            nameFontSize -= 2;
+          while (ctx.measureText(name).width > cardWidth - 48 && nameFontSize > 15) {
+            nameFontSize -= 1;
             ctx.font = `bold ${nameFontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`;
           }
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(name, centerX, qrY + qrSize + 48);
+          ctx.fillText(name, centerX, qrY + qrSize + 36);
 
-          // Employee ID badge
-          const idText = payload;
-          ctx.font = 'bold 14px "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace';
-          const idWidth = ctx.measureText(idText).width;
-          const badgePadX = 14;
-          const badgeHeight = 26;
-          const badgeX = centerX - (idWidth + badgePadX * 2) / 2;
-          const badgeY = qrY + qrSize + 70;
-
-          // Draw badge background
-          ctx.fillStyle = '#EFF6FF';
-          ctx.beginPath();
-          if (typeof ctx.roundRect === 'function') {
-            ctx.roundRect(badgeX, badgeY, idWidth + badgePadX * 2, badgeHeight, 6);
-          } else {
-            ctx.rect(badgeX, badgeY, idWidth + badgePadX * 2, badgeHeight);
+          // 3. Jabatan Pegawai (Secondary)
+          ctx.fillStyle = '#64748B';
+          let roleFontSize = 14;
+          ctx.font = `500 ${roleFontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`;
+          while (ctx.measureText(role).width > cardWidth - 48 && roleFontSize > 12) {
+            roleFontSize -= 1;
+            ctx.font = `500 ${roleFontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`;
           }
-          ctx.fill();
-          ctx.strokeStyle = '#BFDBFE';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-
-          // Badge text
-          ctx.fillStyle = '#1D4ED8';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(idText, centerX, badgeY + badgeHeight / 2);
+          ctx.fillText(role, centerX, qrY + qrSize + 64);
 
-          // Employee Role / Jabatan
-          ctx.fillStyle = '#475569';
-          ctx.font = '500 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(role, centerX, badgeY + badgeHeight + 26);
-
-          // Bottom card identity footer
+          // 4. ID Pegawai (Identifier Kecil)
           ctx.fillStyle = '#94A3B8';
-          ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-          ctx.fillText('SPBU IDENTITY CARD', centerX, cardHeight - 26);
+          ctx.font = '600 13px "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(payload, centerX, qrY + qrSize + 90);
 
-          // Export as PNG Data URL
+          // Export as clean PNG Data URL
           const cardDataUrl = canvas.toDataURL('image/png');
           resolve(cardDataUrl);
         } catch (drawErr) {

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Camera, X, CheckCircle2, AlertCircle, RefreshCw, Volume2, VolumeX, ShieldCheck, Clock } from 'lucide-react';
+import { Camera, X, CheckCircle2, AlertCircle, RefreshCw, Volume2, VolumeX, ShieldCheck, Clock, History } from 'lucide-react';
 import jsQR from 'jsqr';
 import { Button } from './ui';
 import { Pegawai, Shift } from '../types';
@@ -11,6 +11,7 @@ export interface ScanResultDetail {
   shift?: Shift;
   time?: string;
   message?: string;
+  isAlreadyAttended?: boolean;
 }
 
 export interface CameraQrScannerModalProps {
@@ -27,6 +28,7 @@ export function CameraQrScannerModal({
   const [cameraStatus, setCameraStatus] = useState<'initializing' | 'active' | 'error'>('initializing');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lastScanResult, setLastScanResult] = useState<ScanResultDetail | null>(null);
+  const [recentScans, setRecentScans] = useState<ScanResultDetail[]>([]);
   const [scanCount, setScanCount] = useState<number>(0);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
@@ -39,7 +41,7 @@ export function CameraQrScannerModal({
   const lastScannedTimeRef = useRef<number>(0);
   const isProcessingRef = useRef<boolean>(false);
 
-  // Play subtle feedback beep on successful scan
+  // Play subtle feedback beep on scan
   const playBeep = useCallback((success: boolean) => {
     if (!soundEnabled || typeof window === 'undefined') return;
     try {
@@ -93,7 +95,7 @@ export function CameraQrScannerModal({
     isProcessingRef.current = false;
   }, []);
 
-  // Frame processing loop
+  // Frame processing loop - Fast & Responsive
   const processFrame = useCallback(() => {
     const video = videoRef.current;
     if (!video || video.readyState < 2 || video.paused || video.ended) {
@@ -104,7 +106,6 @@ export function CameraQrScannerModal({
     const vh = video.videoHeight;
     if (vw === 0 || vh === 0) return;
 
-    // Use offscreen canvas to extract pixel data
     let canvas = canvasRef.current;
     if (!canvas) {
       canvas = document.createElement('canvas');
@@ -120,7 +121,6 @@ export function CameraQrScannerModal({
 
     ctx.drawImage(video, 0, 0, vw, vh);
 
-    // Analyze central scanning region for optimal speed and accuracy
     const imgData = ctx.getImageData(0, 0, vw, vh);
     const code = jsQR(imgData.data, vw, vh, {
       inversionAttempts: 'dontInvert'
@@ -132,13 +132,13 @@ export function CameraQrScannerModal({
       const elapsed = now - lastScannedTimeRef.current;
       const isSameCode = lastScannedPayloadRef.current === payload;
 
-      // Duplicate frame debounce / cooldown:
-      // Same code: wait at least 3.5 seconds
-      // Different code: wait at least 1.5 seconds to avoid accidental immediate re-trigger
-      if (isSameCode && elapsed < 3500) {
+      // Debounce:
+      // Same code: wait 3.2 seconds
+      // Different code: wait 1.2 seconds
+      if (isSameCode && elapsed < 3200) {
         return;
       }
-      if (!isSameCode && elapsed < 1500) {
+      if (!isSameCode && elapsed < 1200) {
         return;
       }
 
@@ -151,18 +151,24 @@ export function CameraQrScannerModal({
       // Execute attendance registration
       const result = onScan(payload);
 
+      // Update persistent feedback
       setLastScanResult(result);
+
       if (result.success) {
         setScanCount((prev) => prev + 1);
+        setRecentScans((prev) => {
+          const filtered = prev.filter((item) => item.payload !== result.payload);
+          return [result, ...filtered].slice(0, 3);
+        });
         playBeep(true);
       } else {
         playBeep(false);
       }
 
-      // Unlock processing after brief pause
+      // Quick release lock
       setTimeout(() => {
         isProcessingRef.current = false;
-      }, 500);
+      }, 400);
     }
   }, [onScan, playBeep]);
 
@@ -208,8 +214,8 @@ export function CameraQrScannerModal({
         await videoRef.current.play();
         setCameraStatus('active');
 
-        // Start scanning at ~12 fps (every 80ms)
-        scanIntervalRef.current = setInterval(processFrame, 80);
+        // Fast scan loop at ~14 FPS (every 70ms)
+        scanIntervalRef.current = setInterval(processFrame, 70);
       }
     } catch (err: unknown) {
       console.error('Camera initialization error:', err);
@@ -233,6 +239,7 @@ export function CameraQrScannerModal({
     if (isOpen) {
       setScanCount(0);
       setLastScanResult(null);
+      setRecentScans([]);
       lastScannedPayloadRef.current = null;
       lastScannedTimeRef.current = 0;
       startCamera();
@@ -262,9 +269,9 @@ export function CameraQrScannerModal({
         className="modal-content modal-lg"
         onClick={(e) => e.stopPropagation()}
         style={{
-          maxWidth: '680px',
+          maxWidth: '620px',
           width: '95%',
-          maxHeight: '92vh',
+          maxHeight: '94vh',
           display: 'flex',
           flexDirection: 'column',
           padding: 0,
@@ -274,7 +281,7 @@ export function CameraQrScannerModal({
         role="dialog"
         aria-modal="true"
       >
-        {/* Custom CSS for scanline animation and viewfinder */}
+        {/* Scoped CSS for scanline animation and reticles */}
         <style>{`
           @keyframes qrLaserSweep {
             0% { top: 8%; opacity: 0.8; }
@@ -287,22 +294,22 @@ export function CameraQrScannerModal({
             right: 5%;
             height: 3px;
             background: linear-gradient(90deg, transparent, #22C55E, #10B981, transparent);
-            box-shadow: 0 0 12px #22C55E;
-            animation: qrLaserSweep 2.2s infinite ease-in-out;
+            box-shadow: 0 0 10px #22C55E;
+            animation: qrLaserSweep 2s infinite ease-in-out;
             pointer-events: none;
           }
           .reticle-corner {
             position: absolute;
-            width: 28px;
-            height: 28px;
+            width: 24px;
+            height: 24px;
             border-color: #22C55E;
             border-style: solid;
             pointer-events: none;
           }
-          .reticle-tl { top: 0; left: 0; border-width: 4px 0 0 4px; border-top-left-radius: 8px; }
-          .reticle-tr { top: 0; right: 0; border-width: 4px 4px 0 0; border-top-right-radius: 8px; }
-          .reticle-bl { bottom: 0; left: 0; border-width: 0 0 4px 4px; border-bottom-left-radius: 8px; }
-          .reticle-br { bottom: 0; right: 0; border-width: 0 4px 4px 0; border-bottom-right-radius: 8px; }
+          .reticle-tl { top: 0; left: 0; border-width: 3.5px 0 0 3.5px; border-top-left-radius: 6px; }
+          .reticle-tr { top: 0; right: 0; border-width: 3.5px 3.5px 0 0; border-top-right-radius: 6px; }
+          .reticle-bl { bottom: 0; left: 0; border-width: 0 0 3.5px 3.5px; border-bottom-left-radius: 6px; }
+          .reticle-br { bottom: 0; right: 0; border-width: 0 3.5px 3.5px 0; border-bottom-right-radius: 6px; }
         `}</style>
 
         {/* Modal Header */}
@@ -311,7 +318,7 @@ export function CameraQrScannerModal({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '14px 20px',
+            padding: '12px 18px',
             backgroundColor: '#0F172A',
             color: '#FFFFFF',
             borderBottom: '1px solid #1E293B'
@@ -336,8 +343,8 @@ export function CameraQrScannerModal({
               <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, letterSpacing: '0.02em' }}>
                 SCAN QR ABSENSI
               </h3>
-              <p style={{ margin: 0, fontSize: '11.5px', color: '#94A3B8' }}>
-                Arahkan kartu QR Pegawai ke kamera. Kamera tetap aktif untuk scan berkali-kali.
+              <p style={{ margin: 0, fontSize: '11px', color: '#94A3B8' }}>
+                Arahkan kartu QR Pegawai ke kamera. Scanner siap membaca secara berulang.
               </p>
             </div>
           </div>
@@ -353,12 +360,12 @@ export function CameraQrScannerModal({
                 border: 'none',
                 color: '#E2E8F0',
                 borderRadius: '6px',
-                padding: '6px 10px',
+                padding: '6px 8px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px',
-                fontSize: '12px'
+                fontSize: '11px'
               }}
             >
               {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
@@ -379,11 +386,11 @@ export function CameraQrScannerModal({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px',
-                fontSize: '12px'
+                fontSize: '11px'
               }}
             >
-              <RefreshCw size={14} />
-              <span style={{ fontSize: '11px' }}>{facingMode === 'environment' ? 'Belakang' : 'Depan'}</span>
+              <RefreshCw size={13} />
+              <span>{facingMode === 'environment' ? 'Belakang' : 'Depan'}</span>
             </button>
 
             {/* Close X */}
@@ -402,8 +409,8 @@ export function CameraQrScannerModal({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                minWidth: '36px',
-                minHeight: '36px'
+                minWidth: '34px',
+                minHeight: '34px'
               }}
             >
               <X size={18} />
@@ -411,13 +418,13 @@ export function CameraQrScannerModal({
           </div>
         </div>
 
-        {/* Modal Body: Camera Viewport */}
+        {/* Modal Body: Compact Live Camera Viewport (Height 260px) */}
         <div
           style={{
             position: 'relative',
             backgroundColor: '#000000',
             width: '100%',
-            height: '380px',
+            height: '260px',
             overflow: 'hidden',
             display: 'flex',
             alignItems: 'center',
@@ -442,20 +449,20 @@ export function CameraQrScannerModal({
           {/* Camera Initializing */}
           {cameraStatus === 'initializing' && (
             <div style={{ textAlign: 'center', color: '#94A3B8', padding: '20px' }}>
-              <RefreshCw size={36} className="spin-animation" style={{ margin: '0 auto 12px', color: '#38BDF8' }} />
-              <div style={{ fontSize: '14px', fontWeight: 600 }}>Menghubungkan ke kamera...</div>
-              <div style={{ fontSize: '12px', marginTop: '4px' }}>Mohon izinkan akses kamera jika diminta browser.</div>
+              <RefreshCw size={32} className="spin-animation" style={{ margin: '0 auto 10px', color: '#38BDF8' }} />
+              <div style={{ fontSize: '13.5px', fontWeight: 600 }}>Menghubungkan ke kamera...</div>
+              <div style={{ fontSize: '11.5px', marginTop: '3px' }}>Mohon izinkan akses kamera jika diminta browser.</div>
             </div>
           )}
 
           {/* Camera Error Screen */}
           {cameraStatus === 'error' && (
-            <div style={{ textAlign: 'center', color: '#FCA5A5', padding: '24px', maxWidth: '420px' }}>
-              <AlertCircle size={40} style={{ margin: '0 auto 12px', color: '#EF4444' }} />
-              <div style={{ fontSize: '15px', fontWeight: 700, color: '#FEE2E2', marginBottom: '6px' }}>
+            <div style={{ textAlign: 'center', color: '#FCA5A5', padding: '20px', maxWidth: '420px' }}>
+              <AlertCircle size={36} style={{ margin: '0 auto 10px', color: '#EF4444' }} />
+              <div style={{ fontSize: '14.5px', fontWeight: 700, color: '#FEE2E2', marginBottom: '4px' }}>
                 Kamera Tidak Dapat Diakses
               </div>
-              <div style={{ fontSize: '13px', lineHeight: 1.5, color: '#CBD5E1', marginBottom: '16px' }}>
+              <div style={{ fontSize: '12.5px', lineHeight: 1.4, color: '#CBD5E1', marginBottom: '14px' }}>
                 {errorMessage}
               </div>
               <Button
@@ -490,10 +497,10 @@ export function CameraQrScannerModal({
               <div
                 style={{
                   position: 'relative',
-                  width: '240px',
-                  height: '240px',
-                  boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.45)',
-                  borderRadius: '12px',
+                  width: '190px',
+                  height: '190px',
+                  boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.42)',
+                  borderRadius: '10px',
                   overflow: 'hidden'
                 }}
               >
@@ -511,12 +518,12 @@ export function CameraQrScannerModal({
               <div
                 style={{
                   position: 'absolute',
-                  bottom: '14px',
+                  bottom: '10px',
                   backgroundColor: 'rgba(15, 23, 42, 0.85)',
                   color: '#F8FAFC',
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  fontSize: '12px',
+                  padding: '5px 12px',
+                  borderRadius: '16px',
+                  fontSize: '11.5px',
                   fontWeight: 500,
                   display: 'flex',
                   alignItems: 'center',
@@ -528,25 +535,29 @@ export function CameraQrScannerModal({
                 <span
                   style={{
                     display: 'inline-block',
-                    width: '8px',
-                    height: '8px',
+                    width: '7px',
+                    height: '7px',
                     borderRadius: '50%',
                     backgroundColor: '#22C55E'
                   }}
                 />
-                Kamera aktif &mdash; Arahkan QR Pegawai ke dalam kotak pemindai
+                Kamera aktif &mdash; Arahkan QR Pegawai ke kotak pemindai
               </div>
             </div>
           )}
         </div>
 
-        {/* Scan Result Feedback Banner & Session Stats */}
+        {/* Persistent Last Scan Feedback Area */}
         <div
           style={{
-            padding: '14px 20px',
-            backgroundColor: '#F8FAFC',
+            padding: '14px 18px',
+            backgroundColor: '#FFFFFF',
             borderTop: '1px solid #E2E8F0',
-            borderBottom: '1px solid #E2E8F0'
+            borderBottom: '1px solid #E2E8F0',
+            minHeight: '84px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center'
           }}
         >
           {lastScanResult ? (
@@ -556,7 +567,7 @@ export function CameraQrScannerModal({
                   backgroundColor: '#F0FDF4',
                   border: '1.5px solid #86EFAC',
                   borderRadius: '10px',
-                  padding: '12px 16px',
+                  padding: '10px 14px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
@@ -564,11 +575,11 @@ export function CameraQrScannerModal({
                 }}
                 id="scanner-success-feedback"
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div
                     style={{
-                      width: '36px',
-                      height: '36px',
+                      width: '32px',
+                      height: '32px',
                       borderRadius: '50%',
                       backgroundColor: '#22C55E',
                       color: '#FFFFFF',
@@ -578,27 +589,58 @@ export function CameraQrScannerModal({
                       flexShrink: 0
                     }}
                   >
-                    <CheckCircle2 size={22} />
+                    <CheckCircle2 size={20} />
                   </div>
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 800, color: '#166534', textTransform: 'uppercase' }}>
-                        ✓ Absensi Berhasil
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <strong style={{ fontSize: '15px', color: '#0F172A' }}>
+                        {lastScanResult.pegawai?.name}
+                      </strong>
+                      <span
+                        style={{
+                          fontSize: '11.5px',
+                          fontFamily: 'monospace',
+                          color: '#1D4ED8',
+                          fontWeight: 700
+                        }}
+                      >
+                        [{lastScanResult.payload}]
                       </span>
-                      <span style={{ fontSize: '11px', color: '#15803D', fontWeight: 600 }}>
-                        [{lastScanResult.time || 'WIB'}]
-                      </span>
+                      {lastScanResult.isAlreadyAttended ? (
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: '#92400E',
+                            backgroundColor: '#FEF3C7',
+                            border: '1px solid #FCD34D',
+                            padding: '2px 8px',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          Sudah Absen (Absensi sudah diambil)
+                        </span>
+                      ) : (
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: '#15803D',
+                            backgroundColor: '#DCFCE7',
+                            border: '1px solid #86EFAC',
+                            padding: '2px 8px',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          ✓ Absensi berhasil dicatat
+                        </span>
+                      )}
                     </div>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', marginTop: '2px' }}>
-                      {lastScanResult.pegawai?.name}{' '}
-                      <span style={{ fontSize: '12.5px', fontFamily: 'monospace', color: '#1D4ED8' }}>
-                        ({lastScanResult.payload})
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#475569', marginTop: '1px' }}>
+                    <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
                       {lastScanResult.pegawai?.role} &bull;{' '}
                       <strong>{lastScanResult.shift?.name}</strong>{' '}
-                      ({lastScanResult.shift?.startTime}&ndash;{lastScanResult.shift?.endTime} WIB)
+                      ({lastScanResult.shift?.startTime}&ndash;{lastScanResult.shift?.endTime} WIB) &bull;{' '}
+                      <span style={{ fontWeight: 600 }}>Jam {lastScanResult.time || 'WIB'}</span>
                     </div>
                   </div>
                 </div>
@@ -607,9 +649,9 @@ export function CameraQrScannerModal({
                   style={{
                     backgroundColor: '#DCFCE7',
                     color: '#15803D',
-                    padding: '4px 10px',
-                    borderRadius: '6px',
-                    fontSize: '11.5px',
+                    padding: '3px 8px',
+                    borderRadius: '5px',
+                    fontSize: '11px',
                     fontWeight: 700,
                     textAlign: 'right',
                     flexShrink: 0
@@ -624,20 +666,20 @@ export function CameraQrScannerModal({
                   backgroundColor: '#FEF2F2',
                   border: '1.5px solid #FCA5A5',
                   borderRadius: '10px',
-                  padding: '12px 16px',
+                  padding: '10px 14px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px'
+                  gap: '10px'
                 }}
                 id="scanner-error-feedback"
               >
-                <AlertCircle size={26} color="#DC2626" style={{ flexShrink: 0 }} />
+                <AlertCircle size={22} color="#DC2626" style={{ flexShrink: 0 }} />
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 800, color: '#991B1B' }}>
-                    QR Tidak Dikenali: [{lastScanResult.payload}]
+                    ⚠ QR Tidak Dikenali: [{lastScanResult.payload}]
                   </div>
-                  <div style={{ fontSize: '12px', color: '#B91C1C', marginTop: '2px' }}>
-                    {lastScanResult.message || 'Pegawai tidak ditemukan dalam Master Pegawai.'} Kamera tetap aktif, silakan scan QR lainnya.
+                  <div style={{ fontSize: '11.5px', color: '#B91C1C', marginTop: '1px' }}>
+                    {lastScanResult.message || 'Pegawai tidak ditemukan dalam Master Pegawai.'} Kamera tetap aktif, silakan arahkan QR lain.
                   </div>
                 </div>
               </div>
@@ -648,26 +690,108 @@ export function CameraQrScannerModal({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '8px 4px',
-                fontSize: '13px',
+                padding: '6px 4px',
+                fontSize: '12.5px',
                 color: '#64748B'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Clock size={16} color="#3B82F6" />
-                <span>Dekatkan QR identitas pegawai ke kamera untuk mencatat presensi.</span>
+                <span>Dekatkan QR kartu pegawai ke kamera. Scanner akan otomatis merekam.</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: '#0F172A' }}>
+              <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#0F172A' }}>
                 Sesi ini: {scanCount} scan
               </span>
             </div>
           )}
         </div>
 
+        {/* Recent Scans List (Refinement E) */}
+        {recentScans.length > 0 && (
+          <div
+            style={{
+              padding: '10px 18px',
+              backgroundColor: '#F8FAFC',
+              borderBottom: '1px solid #E2E8F0'
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '11px',
+                fontWeight: 700,
+                color: '#64748B',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                marginBottom: '6px'
+              }}
+            >
+              <History size={13} />
+              <span>Scan Terakhir (Sesi Ini)</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {recentScans.map((scan) => (
+                <div
+                  key={scan.payload}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid #E2E8F0',
+                    fontSize: '12px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CheckCircle2 size={13} color="#16A34A" />
+                    <strong style={{ color: '#0F172A' }}>{scan.pegawai?.name}</strong>
+                    <span style={{ color: '#64748B', fontSize: '11.5px' }}>
+                      ({scan.payload}) &bull; {scan.shift?.name} &bull; {scan.time} WIB
+                    </span>
+                  </div>
+                  <div>
+                    {scan.isAlreadyAttended ? (
+                      <span
+                        style={{
+                          fontSize: '10.5px',
+                          fontWeight: 600,
+                          color: '#B45309',
+                          backgroundColor: '#FEF3C7',
+                          padding: '1px 6px',
+                          borderRadius: '4px'
+                        }}
+                      >
+                        Sudah Absen
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          fontSize: '10.5px',
+                          fontWeight: 600,
+                          color: '#15803D',
+                          backgroundColor: '#DCFCE7',
+                          padding: '1px 6px',
+                          borderRadius: '4px'
+                        }}
+                      >
+                        Hadir
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Modal Footer with Large Close Button */}
         <div
           style={{
-            padding: '14px 20px',
+            padding: '12px 18px',
             backgroundColor: '#FFFFFF',
             display: 'flex',
             alignItems: 'center',
@@ -675,7 +799,7 @@ export function CameraQrScannerModal({
             gap: '12px'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', color: '#64748B' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748B' }}>
             <ShieldCheck size={16} color="#10B981" />
             <span>
               Total tercatat sesi ini: <strong style={{ color: '#0F172A' }}>{scanCount}</strong> pegawai
@@ -689,10 +813,10 @@ export function CameraQrScannerModal({
             id="btn-close-scanner-modal"
             style={{
               fontWeight: 700,
-              minWidth: '140px',
+              minWidth: '130px',
               minHeight: '44px',
               fontSize: '14px',
-              padding: '10px 24px'
+              padding: '8px 20px'
             }}
           >
             Tutup Scanner
