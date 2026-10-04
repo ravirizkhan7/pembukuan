@@ -10,12 +10,20 @@ import {
   Calendar,
   RotateCcw,
   UserX,
-  ShieldCheck
+  ShieldCheck,
+  QrCode,
+  Download
 } from 'lucide-react';
 import { PageHeader, MetricCard } from '../components/common';
 import { Card, Button, Modal, Badge } from '../components/ui';
 import { Pegawai, Attendance, AttendanceStatus, ToastType } from '../types';
 import { useAppContext } from '../context/AppContext';
+import {
+  generateEmployeeIdCardPngDataUrl,
+  formatQrFilename,
+  downloadQrPng
+} from '../services/qrService';
+import { CameraQrScannerModal, ScanResultDetail } from '../components/CameraQrScannerModal';
 
 export interface PegawaiPageProps {
   activeSubTab?: string;
@@ -120,12 +128,96 @@ export function PegawaiPage({
   };
 
   // ==========================================
+  // QR CODE PREVIEW & DOWNLOAD STATE & HANDLERS
+  // ==========================================
+  const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
+  const [selectedPegawaiForQr, setSelectedPegawaiForQr] = useState<Pegawai | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [isGeneratingQr, setIsGeneratingQr] = useState<boolean>(false);
+
+  const handleOpenQrModal = async (p: Pegawai) => {
+    setSelectedPegawaiForQr(p);
+    setIsGeneratingQr(true);
+    setQrDataUrl('');
+    setIsQrModalOpen(true);
+    try {
+      // Generate ID card PNG with QR code (strictly p.id as payload), Nama, and Jabatan
+      const url = await generateEmployeeIdCardPngDataUrl(p.id, p.name, p.role);
+      setQrDataUrl(url);
+    } catch (err) {
+      console.error('Failed to generate QR code card:', err);
+      showToast('Gagal membuat kartu QR Code pegawai.', 'danger');
+    } finally {
+      setIsGeneratingQr(false);
+    }
+  };
+
+  const handleDownloadQrPng = () => {
+    if (!selectedPegawaiForQr || !qrDataUrl) return;
+    try {
+      const filename = formatQrFilename(selectedPegawaiForQr.name, selectedPegawaiForQr.id);
+      downloadQrPng(qrDataUrl, filename);
+      showToast(`Kartu QR Code [${filename}] berhasil diunduh.`, 'success');
+    } catch (err) {
+      console.error('Failed to download QR code:', err);
+      showToast('Gagal mengunduh file Kartu QR Code PNG.', 'danger');
+    }
+  };
+
+  // ==========================================
   // TAB 2: ABSENSI STATE & HANDLERS
   // ==========================================
   const [filterDate, setFilterDate] = useState<string>('2026-09-24');
   const [filterShiftId, setFilterShiftId] = useState<string>('all');
   const [filterEmployeeId, setFilterEmployeeId] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+
+  // Live Camera QR Scanner State & Handler
+  const [isScannerModalOpen, setIsScannerModalOpen] = useState<boolean>(false);
+
+  const handleScanAttendance = (payload: string): ScanResultDetail => {
+    const trimmedId = payload.trim();
+    // 1. Search employee in Master Pegawai by ID
+    const emp = pegawaiList.find((p) => p.id === trimmedId);
+
+    if (!emp) {
+      return {
+        success: false,
+        payload: trimmedId,
+        message: `ID [${trimmedId}] tidak ditemukan dalam Master Pegawai.`
+      };
+    }
+
+    // 2. Retrieve shift assigned to employee in Master Pegawai
+    const assignedShift = shifts.find((s) => s.id === emp.shiftId) || shifts[0];
+
+    // 3. Current time & date
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const dateStr = filterDate || '2026-09-24';
+
+    // 4. Record attendance
+    addAttendance({
+      employeeId: emp.id,
+      employeeName: emp.name,
+      shiftId: assignedShift.id,
+      shiftName: assignedShift.name,
+      date: dateStr,
+      status: 'Hadir',
+      checkInTime: timeStr,
+      notes: 'Presensi Live Scanner QR'
+    });
+
+    showToast(`Presensi [${emp.name}] (${assignedShift.name}) berhasil dicatat.`, 'success');
+
+    return {
+      success: true,
+      payload: trimmedId,
+      pegawai: emp,
+      shift: assignedShift,
+      time: timeStr
+    };
+  };
 
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState<boolean>(false);
   const [editingAttendance, setEditingAttendance] = useState<Attendance | null>(null);
@@ -481,7 +573,7 @@ export function PegawaiPage({
                     <th>Penugasan Shift</th>
                     <th>Jam Kerja Shift</th>
                     <th>Status</th>
-                    <th style={{ width: '180px', textAlign: 'center' }}>Aksi</th>
+                    <th style={{ width: '270px', textAlign: 'center' }}>Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -536,7 +628,17 @@ export function PegawaiPage({
                           </Badge>
                         </td>
                         <td>
-                          <div style={{ display: 'flex', justifyContent: 'center', gap: '6px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              onClick={() => handleOpenQrModal(p)}
+                              style={{ padding: '4px 8px', fontSize: '12px' }}
+                              id={`btn-qr-pegawai-${p.id}`}
+                            >
+                              <QrCode size={13} style={{ marginRight: '4px' }} />
+                              Lihat QR
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -592,16 +694,28 @@ export function PegawaiPage({
             title="Absensi & Kehadiran Pegawai"
             subtitle="Pencatatan presensi harian operator (Jadwal shift otomatis terikat dengan penugasan Master Pegawai)"
             actions={
-              <Button
-                variant="primary"
-                size="md"
-                icon={Plus}
-                onClick={openAddAttendanceModal}
-                id="btn-catat-absensi"
-                style={{ fontWeight: 600 }}
-              >
-                + Catat Kehadiran
-              </Button>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <Button
+                  variant="outline-primary"
+                  size="md"
+                  icon={QrCode}
+                  onClick={() => setIsScannerModalOpen(true)}
+                  id="btn-scan-qr-absensi"
+                  style={{ fontWeight: 600 }}
+                >
+                  Scan QR Absensi
+                </Button>
+                <Button
+                  variant="primary"
+                  size="md"
+                  icon={Plus}
+                  onClick={openAddAttendanceModal}
+                  id="btn-catat-absensi"
+                  style={{ fontWeight: 600 }}
+                >
+                  + Catat Kehadiran
+                </Button>
+              </div>
             }
           />
 
@@ -1589,6 +1703,116 @@ export function PegawaiPage({
           </div>
         </form>
       </Modal>
+
+      {/* ========================================================================= */}
+      {/* MODAL 5: PREVIEW & DOWNLOAD QR CODE PEGAWAI                               */}
+      {/* ========================================================================= */}
+      <Modal
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        title="KARTU QR IDENTITAS PEGAWAI"
+        icon={QrCode}
+      >
+        {selectedPegawaiForQr && (
+          <div style={{ textAlign: 'center', padding: '6px 0' }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                justifyContent: 'center',
+                padding: '12px',
+                backgroundColor: 'var(--color-surface-subtle)',
+                borderRadius: '16px',
+                border: '1px solid var(--color-border)',
+                marginBottom: '16px'
+              }}
+            >
+              {isGeneratingQr ? (
+                <div style={{ width: '280px', height: '360px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span className="text-muted">Membuat Kartu Identitas QR...</span>
+                </div>
+              ) : qrDataUrl ? (
+                <img
+                  src={qrDataUrl}
+                  alt={`Kartu QR ${selectedPegawaiForQr.name} (${selectedPegawaiForQr.id})`}
+                  style={{
+                    maxWidth: '100%',
+                    width: '300px',
+                    height: 'auto',
+                    display: 'block',
+                    borderRadius: '12px',
+                    boxShadow: 'var(--shadow-md)',
+                    border: '1px solid #E2E8F0'
+                  }}
+                  id="img-qr-card-preview"
+                />
+              ) : (
+                <div style={{ width: '280px', height: '360px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span className="text-muted">Kartu QR tidak tersedia</span>
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                backgroundColor: 'var(--color-surface-subtle)',
+                border: '1px solid var(--color-border-subtle)',
+                borderRadius: '8px',
+                padding: '10px 14px',
+                fontSize: '12px',
+                color: 'var(--color-muted-text)',
+                textAlign: 'left',
+                marginBottom: '18px'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                <span>Payload QR:</span>
+                <strong style={{ fontFamily: 'monospace', color: 'var(--color-dark-text)' }}>
+                  {selectedPegawaiForQr.id}
+                </strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                <span>Format File:</span>
+                <span>PNG Kartu Identitas (QR, Nama, Jabatan)</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Nama File Unduhan:</span>
+                <span style={{ fontFamily: 'monospace', fontSize: '11px', color: 'var(--color-primary-dark)' }}>
+                  {formatQrFilename(selectedPegawaiForQr.name, selectedPegawaiForQr.id)}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <Button
+                variant="secondary"
+                onClick={() => setIsQrModalOpen(false)}
+                id="btn-tutup-qr-modal"
+              >
+                Tutup
+              </Button>
+              <Button
+                variant="primary"
+                icon={Download}
+                onClick={handleDownloadQrPng}
+                disabled={!qrDataUrl || isGeneratingQr}
+                id="btn-download-qr-png"
+                style={{ fontWeight: 700 }}
+              >
+                Unduh Kartu PNG
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* ========================================================================= */}
+      {/* MODAL 6: LIVE CAMERA QR SCANNER ABSENSI                                   */}
+      {/* ========================================================================= */}
+      <CameraQrScannerModal
+        isOpen={isScannerModalOpen}
+        onClose={() => setIsScannerModalOpen(false)}
+        onScan={handleScanAttendance}
+      />
     </div>
   );
 }
