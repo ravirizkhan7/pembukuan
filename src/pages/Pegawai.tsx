@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Users,
   UserCheck,
@@ -175,60 +175,63 @@ export function PegawaiPage({
   // Live Camera QR Scanner State & Handler
   const [isScannerModalOpen, setIsScannerModalOpen] = useState<boolean>(false);
 
-  const handleScanAttendance = (payload: string): ScanResultDetail => {
-    const trimmedId = payload.trim();
-    // 1. Search employee in Master Pegawai by ID
-    const emp = pegawaiList.find((p) => p.id === trimmedId);
+  const handleScanAttendance = useCallback(
+    (payload: string): ScanResultDetail => {
+      const trimmedId = payload.trim();
+      // 1. Search employee in Master Pegawai by ID
+      const emp = pegawaiList.find((p) => p.id === trimmedId);
 
-    if (!emp) {
+      if (!emp) {
+        return {
+          success: false,
+          payload: trimmedId,
+          message: `ID [${trimmedId}] tidak ditemukan dalam Master Pegawai.`
+        };
+      }
+
+      // 2. Retrieve shift assigned to employee in Master Pegawai
+      const assignedShift = shifts.find((s) => s.id === emp.shiftId) || shifts[0];
+
+      // 3. Current time & date
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const dateStr = filterDate || '2026-09-24';
+
+      // Check if employee already attended today (informative status)
+      const alreadyAttended = attendances.some(
+        (a) => a.employeeId === emp.id && a.date === dateStr
+      );
+
+      // 4. Record attendance
+      addAttendance({
+        employeeId: emp.id,
+        employeeName: emp.name,
+        shiftId: assignedShift.id,
+        shiftName: assignedShift.name,
+        date: dateStr,
+        status: 'Hadir',
+        checkInTime: timeStr,
+        notes: alreadyAttended ? 'Presensi Ulang (Sudah Absen)' : 'Presensi Live Scanner QR'
+      });
+
+      showToast(
+        alreadyAttended
+          ? `[${emp.name}] sudah absen sebelumnya (absensi tercatat ulang).`
+          : `Presensi [${emp.name}] (${assignedShift.name}) berhasil dicatat.`,
+        'success'
+      );
+
       return {
-        success: false,
+        success: true,
         payload: trimmedId,
-        message: `ID [${trimmedId}] tidak ditemukan dalam Master Pegawai.`
+        pegawai: emp,
+        shift: assignedShift,
+        time: timeStr,
+        isAlreadyAttended: alreadyAttended
       };
-    }
-
-    // 2. Retrieve shift assigned to employee in Master Pegawai
-    const assignedShift = shifts.find((s) => s.id === emp.shiftId) || shifts[0];
-
-    // 3. Current time & date
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const dateStr = filterDate || '2026-09-24';
-
-    // Check if employee already attended today (informative status)
-    const alreadyAttended = attendances.some(
-      (a) => a.employeeId === emp.id && a.date === dateStr
-    );
-
-    // 4. Record attendance
-    addAttendance({
-      employeeId: emp.id,
-      employeeName: emp.name,
-      shiftId: assignedShift.id,
-      shiftName: assignedShift.name,
-      date: dateStr,
-      status: 'Hadir',
-      checkInTime: timeStr,
-      notes: alreadyAttended ? 'Presensi Ulang (Sudah Absen)' : 'Presensi Live Scanner QR'
-    });
-
-    showToast(
-      alreadyAttended
-        ? `[${emp.name}] sudah absen sebelumnya (absensi tercatat ulang).`
-        : `Presensi [${emp.name}] (${assignedShift.name}) berhasil dicatat.`,
-      'success'
-    );
-
-    return {
-      success: true,
-      payload: trimmedId,
-      pegawai: emp,
-      shift: assignedShift,
-      time: timeStr,
-      isAlreadyAttended: alreadyAttended
-    };
-  };
+    },
+    [pegawaiList, shifts, filterDate, attendances, addAttendance, showToast]
+  );
 
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState<boolean>(false);
   const [editingAttendance, setEditingAttendance] = useState<Attendance | null>(null);

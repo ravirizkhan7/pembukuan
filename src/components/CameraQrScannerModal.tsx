@@ -41,6 +41,12 @@ export function CameraQrScannerModal({
   const lastScannedTimeRef = useRef<number>(0);
   const isProcessingRef = useRef<boolean>(false);
 
+  // Keep latest onScan callback in ref to prevent camera stream restarts on parent re-renders
+  const onScanRef = useRef(onScan);
+  useEffect(() => {
+    onScanRef.current = onScan;
+  }, [onScan]);
+
   // Play subtle feedback beep on scan
   const playBeep = useCallback((success: boolean) => {
     if (!soundEnabled || typeof window === 'undefined') return;
@@ -73,6 +79,11 @@ export function CameraQrScannerModal({
     }
   }, [soundEnabled]);
 
+  const playBeepRef = useRef(playBeep);
+  useEffect(() => {
+    playBeepRef.current = playBeep;
+  }, [playBeep]);
+
   // Clean stop for camera tracks
   const stopCameraStream = useCallback(() => {
     if (scanIntervalRef.current) {
@@ -95,7 +106,7 @@ export function CameraQrScannerModal({
     isProcessingRef.current = false;
   }, []);
 
-  // Frame processing loop - Fast & Responsive
+  // Frame processing loop - Fast, continuous, zero delay for different employees
   const processFrame = useCallback(() => {
     const video = videoRef.current;
     if (!video || video.readyState < 2 || video.paused || video.ended) {
@@ -132,47 +143,51 @@ export function CameraQrScannerModal({
       const elapsed = now - lastScannedTimeRef.current;
       const isSameCode = lastScannedPayloadRef.current === payload;
 
-      // Debounce:
-      // Same code: wait 3.2 seconds
-      // Different code: wait 1.2 seconds
-      if (isSameCode && elapsed < 3200) {
-        return;
-      }
-      if (!isSameCode && elapsed < 1200) {
+      // Dedupe:
+      // 1. Same employee card: 2.5s guard against continuous duplicate frames
+      if (isSameCode && elapsed < 2500) {
         return;
       }
 
+      // 2. Different employee card: ZERO artificial delay! Read immediately!
       if (isProcessingRef.current) return;
       isProcessingRef.current = true;
 
       lastScannedPayloadRef.current = payload;
       lastScannedTimeRef.current = now;
 
-      // Execute attendance registration
-      const result = onScan(payload);
+      try {
+        // Execute attendance registration via ref
+        const result = onScanRef.current(payload);
 
-      // Update persistent feedback
-      setLastScanResult(result);
+        // Update persistent feedback
+        setLastScanResult(result);
 
-      if (result.success) {
-        setScanCount((prev) => prev + 1);
-        setRecentScans((prev) => {
-          const filtered = prev.filter((item) => item.payload !== result.payload);
-          return [result, ...filtered].slice(0, 3);
-        });
-        playBeep(true);
-      } else {
-        playBeep(false);
-      }
-
-      // Quick release lock
-      setTimeout(() => {
+        if (result.success) {
+          setScanCount((prev) => prev + 1);
+          setRecentScans((prev) => {
+            const filtered = prev.filter((item) => item.payload !== result.payload);
+            return [result, ...filtered].slice(0, 3);
+          });
+          playBeepRef.current(true);
+        } else {
+          playBeepRef.current(false);
+        }
+      } catch (err) {
+        console.error('Scan processing error:', err);
+      } finally {
+        // Immediately release lock so next frame can scan the next employee
         isProcessingRef.current = false;
-      }, 400);
+      }
     }
-  }, [onScan, playBeep]);
+  }, []);
 
-  // Start camera stream
+  const processFrameRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    processFrameRef.current = processFrame;
+  }, [processFrame]);
+
+  // Start camera stream - called ONLY when modal opens or camera facingMode toggles
   const startCamera = useCallback(async () => {
     stopCameraStream();
     setCameraStatus('initializing');
@@ -214,8 +229,10 @@ export function CameraQrScannerModal({
         await videoRef.current.play();
         setCameraStatus('active');
 
-        // Fast scan loop at ~14 FPS (every 70ms)
-        scanIntervalRef.current = setInterval(processFrame, 70);
+        // Fast continuous scan loop at ~14 FPS (every 70ms) using processFrameRef
+        scanIntervalRef.current = setInterval(() => {
+          processFrameRef.current();
+        }, 70);
       }
     } catch (err: unknown) {
       console.error('Camera initialization error:', err);
@@ -232,9 +249,10 @@ export function CameraQrScannerModal({
         setErrorMessage(error.message || 'Gagal memulai scanner kamera.');
       }
     }
-  }, [facingMode, processFrame, stopCameraStream]);
+  }, [facingMode, stopCameraStream]);
 
-  // Lifecycle when modal opens/closes
+  // Lifecycle when modal opens/closes - Depends ONLY on isOpen and facingMode!
+  // NEVER restarts the camera after attendance scanning!
   useEffect(() => {
     if (isOpen) {
       setScanCount(0);
@@ -250,7 +268,7 @@ export function CameraQrScannerModal({
     return () => {
       stopCameraStream();
     };
-  }, [isOpen, startCamera, stopCameraStream]);
+  }, [isOpen, facingMode, startCamera, stopCameraStream]);
 
   const handleClose = () => {
     stopCameraStream();
