@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useMemo, useCallback, ReactNode } from 'react';
 import * as initialMock from '../mock/mockData';
 import {
   Account,
@@ -20,6 +20,7 @@ import {
   Attendance
 } from '../types';
 import { postTransaction } from '../services/postingEngine';
+import { getLocalDateTimeString } from '../services/appSettings';
 
 export interface AppContextType {
   // Master Entities
@@ -129,7 +130,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ==========================================
   // A. Bagan Akun (COA) CRUD
   // ==========================================
-  const addAccount = (accountData: Omit<Account, 'id'> & { id?: string }): Account => {
+  const addAccount = useCallback((accountData: Omit<Account, 'id'> & { id?: string }): Account => {
     const newId = accountData.id || accountData.code;
     const newAcc: Account = {
       ...accountData,
@@ -138,24 +139,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     setAccounts((prev) => [...prev, newAcc]);
     return newAcc;
-  };
+  }, []);
 
-  const updateAccount = (updated: Account) => {
+  const updateAccount = useCallback((updated: Account) => {
     setAccounts((prev) =>
       prev.map((acc) => (acc.id === updated.id ? updated : acc))
     );
-  };
+  }, []);
 
-  const toggleAccountStatus = (id: string) => {
+  const toggleAccountStatus = useCallback((id: string) => {
     setAccounts((prev) =>
       prev.map((acc) => (acc.id === id ? { ...acc, isActive: !acc.isActive } : acc))
     );
-  };
+  }, []);
 
   // ==========================================
   // B. Produk CRUD (dengan relasi tankId)
   // ==========================================
-  const addProduct = (prodData: Omit<Product, 'id'> & { id?: string }): Product => {
+  const addProduct = useCallback((prodData: Omit<Product, 'id'> & { id?: string }): Product => {
     const newId = prodData.id || `PRD-${Date.now().toString().slice(-4)}`;
     const newProd: Product = {
       ...prodData,
@@ -176,9 +177,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     return newProd;
-  };
+  }, []);
 
-  const updateProduct = (updated: Product) => {
+  const updateProduct = useCallback((updated: Product) => {
     setProducts((prev) =>
       prev.map((p) => (p.id === updated.id ? updated : p))
     );
@@ -193,9 +194,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         )
       );
     }
-  };
+  }, []);
 
-  const toggleProductStatus = (id: string) => {
+  const toggleProductStatus = useCallback((id: string) => {
     setProducts((prev) =>
       prev.map((p) => {
         if (p.id === id) {
@@ -205,12 +206,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return p;
       })
     );
-  };
+  }, []);
 
   // ==========================================
   // B.1. Kategori Produk CRUD
   // ==========================================
-  const addProductCategory = (catData: Omit<ProductCategory, 'id'> & { id?: string }): ProductCategory => {
+  const addProductCategory = useCallback((catData: Omit<ProductCategory, 'id'> & { id?: string }): ProductCategory => {
     const newId = catData.id || `PCAT-${(productCategories.length + 1).toString().padStart(3, '0')}`;
     const newCat: ProductCategory = {
       ...catData,
@@ -219,15 +220,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     setProductCategories((prev) => [...prev, newCat]);
     return newCat;
-  };
+  }, [productCategories.length]);
 
-  const updateProductCategory = (updated: ProductCategory) => {
+  const updateProductCategory = useCallback((updated: ProductCategory) => {
     setProductCategories((prev) =>
       prev.map((c) => (c.id === updated.id ? updated : c))
     );
-  };
+  }, []);
 
-  const toggleProductCategoryStatus = (id: string) => {
+  const toggleProductCategoryStatus = useCallback((id: string) => {
     setProductCategories((prev) =>
       prev.map((c) => {
         if (c.id === id) {
@@ -237,12 +238,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return c;
       })
     );
-  };
+  }, []);
 
   // ==========================================
   // B.2. Tanki Pendam CRUD
   // ==========================================
-  const addTank = (tankData: Omit<Tank, 'id'> & { id?: string }): Tank => {
+  const addTank = useCallback((tankData: Omit<Tank, 'id'> & { id?: string }): Tank => {
     const newId = tankData.id || `TNK-${(tanks.length + 1).toString().padStart(2, '0')}`;
     const linkedProd = products.find((p) => p.id === tankData.productId);
     const newTank: Tank = {
@@ -251,14 +252,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       productName: linkedProd?.name || tankData.productName || 'BBM',
       currentStock: tankData.currentStock ?? 0,
       unit: tankData.unit || 'Liter',
-      lastSounding: tankData.lastSounding || new Date().toISOString().replace('T', ' ').slice(0, 16),
+      lastSounding: tankData.lastSounding || getLocalDateTimeString(),
       status: tankData.status || 'Aktif'
     };
     setTanks((prev) => [...prev, newTank]);
     return newTank;
-  };
+  }, [products, tanks.length]);
 
-  const updateTank = (updated: Tank) => {
+  const updateTank = useCallback((updated: Tank) => {
     const linkedProd = products.find((p) => p.id === updated.productId);
     const enrichedTank: Tank = {
       ...updated,
@@ -267,9 +268,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTanks((prev) =>
       prev.map((t) => (t.id === updated.id ? enrichedTank : t))
     );
-  };
+  }, [products]);
 
-  const toggleTankStatus = (id: string) => {
+  const toggleTankStatus = useCallback((id: string) => {
     setTanks((prev) =>
       prev.map((t) => {
         if (t.id === id) {
@@ -279,12 +280,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return t;
       })
     );
-  };
+  }, []);
 
   // ==========================================
   // B.3. Nozzle Dispenser CRUD
   // ==========================================
-  const addNozzle = (nozzleData: Omit<Nozzle, 'id'> & { id?: string }): Nozzle => {
+  const addNozzle = useCallback((nozzleData: Omit<Nozzle, 'id'> & { id?: string }): Nozzle => {
     const newId = nozzleData.id || `NZL-${(nozzles.length + 1).toString().padStart(2, '0')}`;
     const linkedProd = products.find((p) => p.id === nozzleData.productId);
     const newNozzle: Nozzle = {
@@ -296,9 +297,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     setNozzles((prev) => [...prev, newNozzle]);
     return newNozzle;
-  };
+  }, [products, nozzles.length]);
 
-  const updateNozzle = (updated: Nozzle) => {
+  const updateNozzle = useCallback((updated: Nozzle) => {
     const linkedProd = products.find((p) => p.id === updated.productId);
     const enrichedNozzle: Nozzle = {
       ...updated,
@@ -307,9 +308,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setNozzles((prev) =>
       prev.map((n) => (n.id === updated.id ? enrichedNozzle : n))
     );
-  };
+  }, [products]);
 
-  const toggleNozzleStatus = (id: string) => {
+  const toggleNozzleStatus = useCallback((id: string) => {
     setNozzles((prev) =>
       prev.map((n) => {
         if (n.id === id) {
@@ -319,12 +320,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return n;
       })
     );
-  };
+  }, []);
 
   // ==========================================
   // C. Master Kode CRUD (dengan mapping COA & Produk)
   // ==========================================
-  const addMasterCode = (mcData: Omit<MasterCode, 'id'> & { id?: string }): MasterCode => {
+  const addMasterCode = useCallback((mcData: Omit<MasterCode, 'id'> & { id?: string }): MasterCode => {
     const newId = mcData.id || `MK-${mcData.code}`;
     const newMc: MasterCode = {
       ...mcData,
@@ -333,24 +334,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     setMasterCodes((prev) => [...prev, newMc]);
     return newMc;
-  };
+  }, []);
 
-  const updateMasterCode = (updated: MasterCode) => {
+  const updateMasterCode = useCallback((updated: MasterCode) => {
     setMasterCodes((prev) =>
       prev.map((mc) => (mc.id === updated.id ? updated : mc))
     );
-  };
+  }, []);
 
-  const toggleMasterCodeStatus = (id: string) => {
+  const toggleMasterCodeStatus = useCallback((id: string) => {
     setMasterCodes((prev) =>
       prev.map((mc) => (mc.id === id ? { ...mc, isActive: !mc.isActive } : mc))
     );
-  };
+  }, []);
 
   // ==========================================
   // D. Shift Dinamis (Buka & Tutup)
   // ==========================================
-  const bukaShift = (
+  const bukaShift = useCallback((
     shiftId: string,
     params: { date: string; startTime: string; operator: string; initialCash: number }
   ) => {
@@ -372,9 +373,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return s;
       })
     );
-  };
+  }, []);
 
-  const tutupShift = (
+  const tutupShift = useCallback((
     shiftId: string,
     params: { cashHandover: number }
   ) => {
@@ -400,16 +401,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return s;
       })
     );
-  };
+  }, [transactions]);
 
   // ==========================================
   // E. Tera & Transaksi (Relasional + Posting Engine)
   // ==========================================
-  const addTera = (tera: Tera) => {
+  const addTera = useCallback((tera: Tera) => {
     setTeraList((prev) => [tera, ...prev]);
-  };
+  }, []);
 
-  const addTransaction = (tx: Transaction): { success: boolean; error?: string; journal?: Journal } => {
+  const addTransaction = useCallback((tx: Transaction): { success: boolean; error?: string; journal?: Journal } => {
     if (!activeShift) {
       return {
         success: false,
@@ -460,12 +461,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       success: true,
       journal: postResult.journal
     };
-  };
+  }, [activeShift, masterCodes, accounts, businessPartners, receivables, payables]);
 
   // ==========================================
   // F. Business Partner
   // ==========================================
-  const addBusinessPartner = (bp: Omit<BusinessPartner, 'id'> & { id?: string }): BusinessPartner => {
+  const addBusinessPartner = useCallback((bp: Omit<BusinessPartner, 'id'> & { id?: string }): BusinessPartner => {
     const newId = bp.id || `BP-${Date.now().toString().slice(-4)}`;
     const newPartner: BusinessPartner = {
       ...bp,
@@ -473,12 +474,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     setBusinessPartners((prev) => [...prev, newPartner]);
     return newPartner;
-  };
+  }, []);
 
   // ==========================================
   // G. Master Pegawai CRUD
   // ==========================================
-  const addPegawai = (pData: Omit<Pegawai, 'id'> & { id?: string }): Pegawai => {
+  const addPegawai = useCallback((pData: Omit<Pegawai, 'id'> & { id?: string }): Pegawai => {
     const nextNum = pegawaiList.length + 1;
     const padded = nextNum.toString().padStart(3, '0');
     const newId = pData.id || `OPR-${padded}`;
@@ -489,24 +490,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     setPegawaiList((prev) => [...prev, newPegawai]);
     return newPegawai;
-  };
+  }, [pegawaiList.length]);
 
-  const updatePegawai = (updated: Pegawai) => {
+  const updatePegawai = useCallback((updated: Pegawai) => {
     setPegawaiList((prev) =>
       prev.map((p) => (p.id === updated.id ? updated : p))
     );
-  };
+  }, []);
 
-  const togglePegawaiStatus = (id: string) => {
+  const togglePegawaiStatus = useCallback((id: string) => {
     setPegawaiList((prev) =>
       prev.map((p) => (p.id === id ? { ...p, status: p.status === 'Aktif' ? 'Nonaktif' : 'Aktif' } : p))
     );
-  };
+  }, []);
 
   // ==========================================
   // H. Absensi & Kehadiran Pegawai
   // ==========================================
-  const addAttendance = (attData: Omit<Attendance, 'id'> & { id?: string }): Attendance => {
+  const addAttendance = useCallback((attData: Omit<Attendance, 'id'> & { id?: string }): Attendance => {
     const newId = attData.id || `ATT-${Date.now().toString().slice(-6)}`;
     const newAtt: Attendance = {
       ...attData,
@@ -514,27 +515,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     setAttendances((prev) => [newAtt, ...prev]);
     return newAtt;
-  };
+  }, []);
 
-  const updateAttendance = (updated: Attendance) => {
+  const updateAttendance = useCallback((updated: Attendance) => {
     setAttendances((prev) =>
       prev.map((att) => (att.id === updated.id ? updated : att))
     );
-  };
+  }, []);
 
-  const deleteAttendance = (id: string) => {
+  const deleteAttendance = useCallback((id: string) => {
     setAttendances((prev) => prev.filter((att) => att.id !== id));
-  };
+  }, []);
 
-  const updateStationInfo = (info: StationInfo) => {
+  const updateStationInfo = useCallback((info: StationInfo) => {
     setStationInfo(info);
-  };
+  }, []);
 
-  const changePin = (newPin: string) => {
+  const changePin = useCallback((newPin: string) => {
     setAuthPin(newPin);
-  };
+  }, []);
 
-  const value: AppContextType = {
+  const value: AppContextType = useMemo(() => ({
     productCategories,
     accounts,
     products,
@@ -585,7 +586,58 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteAttendance,
     updateStationInfo,
     changePin
-  };
+  }), [
+    productCategories,
+    accounts,
+    products,
+    tanks,
+    nozzles,
+    masterCodes,
+    shifts,
+    activeShift,
+    pegawaiList,
+    attendances,
+    teraList,
+    transactions,
+    journals,
+    receivables,
+    payables,
+    businessPartners,
+    stationInfo,
+    authPin,
+    reports,
+    addProductCategory,
+    updateProductCategory,
+    toggleProductCategoryStatus,
+    addAccount,
+    updateAccount,
+    toggleAccountStatus,
+    addProduct,
+    updateProduct,
+    toggleProductStatus,
+    addTank,
+    updateTank,
+    toggleTankStatus,
+    addNozzle,
+    updateNozzle,
+    toggleNozzleStatus,
+    addMasterCode,
+    updateMasterCode,
+    toggleMasterCodeStatus,
+    bukaShift,
+    tutupShift,
+    addTera,
+    addTransaction,
+    addBusinessPartner,
+    addPegawai,
+    updatePegawai,
+    togglePegawaiStatus,
+    addAttendance,
+    updateAttendance,
+    deleteAttendance,
+    updateStationInfo,
+    changePin
+  ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

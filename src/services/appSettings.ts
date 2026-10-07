@@ -103,3 +103,35 @@ export function verifyAndChangePin(
   return { success: true, message: 'PIN berhasil diubah.' };
 }
 
+/**
+ * LOCAL DATE/TIME HELPERS (Waktu Lokal Indonesia)
+ * Memastikan tanggal dan waktu menggunakan kalender lokal perangkat (WIB/WITA/WIT),
+ * bukan UTC (mencegah date-shifting akibat perbedaan zona waktu).
+ */
+
+/**
+ * Format tanggal lokal: 'YYYY-MM-DD'
+ */
+export function getLocalDateString(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Format waktu lokal: 'HH:mm'
+ */
+export function getLocalTimeString(date: Date = new Date()): string {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+/**
+ * Format tanggal & jam lokal: 'YYYY-MM-DD HH:mm'
+ */
+export function getLocalDateTimeString(date: Date = new Date()): string {
+  return `${getLocalDateString(date)} ${getLocalTimeString(date)}`;
+}
+

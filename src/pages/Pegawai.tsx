@@ -24,6 +24,7 @@ import {
   downloadQrPng
 } from '../services/qrService';
 import { CameraQrScannerModal, ScanResultDetail } from '../components/CameraQrScannerModal';
+import { getLocalDateString, getLocalTimeString } from '../services/appSettings';
 
 export interface PegawaiPageProps {
   activeSubTab?: string;
@@ -167,7 +168,7 @@ export function PegawaiPage({
   // ==========================================
   // TAB 2: ABSENSI STATE & HANDLERS
   // ==========================================
-  const [filterDate, setFilterDate] = useState<string>('2026-09-24');
+  const [filterDate, setFilterDate] = useState<string>(getLocalDateString());
   const [filterShiftId, setFilterShiftId] = useState<string>('all');
   const [filterEmployeeId, setFilterEmployeeId] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -192,17 +193,34 @@ export function PegawaiPage({
       // 2. Retrieve shift assigned to employee in Master Pegawai
       const assignedShift = shifts.find((s) => s.id === emp.shiftId) || shifts[0];
 
-      // 3. Current time & date
+      // 3. Current local time & business date when actually scanned (independent of table filter)
       const now = new Date();
-      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      const dateStr = filterDate || '2026-09-24';
+      const timeStr = getLocalTimeString(now);
+      const dateStr = getLocalDateString(now);
 
-      // Check if employee already attended today (informative status)
-      const alreadyAttended = attendances.some(
+      // 4. Duplicate check based on employeeId + business date
+      const existingAttendance = attendances.find(
         (a) => a.employeeId === emp.id && a.date === dateStr
       );
 
-      // 4. Record attendance
+      if (existingAttendance) {
+        showToast(
+          `[${emp.name}] sudah memiliki absensi untuk hari ini (${dateStr}). Absensi sudah diambil.`,
+          'warning'
+        );
+
+        return {
+          success: true,
+          payload: trimmedId,
+          pegawai: emp,
+          shift: assignedShift,
+          time: existingAttendance.checkInTime || timeStr,
+          message: 'Absensi sudah diambil.',
+          isAlreadyAttended: true
+        };
+      }
+
+      // 5. Record new attendance if not attended yet
       addAttendance({
         employeeId: emp.id,
         employeeName: emp.name,
@@ -211,13 +229,11 @@ export function PegawaiPage({
         date: dateStr,
         status: 'Hadir',
         checkInTime: timeStr,
-        notes: alreadyAttended ? 'Presensi Ulang (Sudah Absen)' : 'Presensi Live Scanner QR'
+        notes: 'Presensi Live Scanner QR'
       });
 
       showToast(
-        alreadyAttended
-          ? `[${emp.name}] sudah absen sebelumnya (absensi tercatat ulang).`
-          : `Presensi [${emp.name}] (${assignedShift.name}) berhasil dicatat.`,
+        `Presensi [${emp.name}] (${assignedShift.name}) berhasil dicatat.`,
         'success'
       );
 
@@ -227,17 +243,17 @@ export function PegawaiPage({
         pegawai: emp,
         shift: assignedShift,
         time: timeStr,
-        isAlreadyAttended: alreadyAttended
+        isAlreadyAttended: false
       };
     },
-    [pegawaiList, shifts, filterDate, attendances, addAttendance, showToast]
+    [pegawaiList, shifts, attendances, addAttendance, showToast]
   );
 
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState<boolean>(false);
   const [editingAttendance, setEditingAttendance] = useState<Attendance | null>(null);
 
   const [formEmployeeId, setFormEmployeeId] = useState<string>(pegawaiList[0]?.id || 'OPR-001');
-  const [formAttDate, setFormAttDate] = useState<string>('2026-09-24');
+  const [formAttDate, setFormAttDate] = useState<string>(getLocalDateString());
   const [formAttStatus, setFormAttStatus] = useState<AttendanceStatus>('Hadir');
   const [formAttCheckInTime, setFormAttCheckInTime] = useState<string>('07:00');
   const [formAttNotes, setFormAttNotes] = useState<string>('');
@@ -270,7 +286,7 @@ export function PegawaiPage({
       const defaultShift = shifts.find((s) => s.id === defaultEmp.shiftId) || shifts[0];
       setFormAttCheckInTime(defaultShift?.startTime || '07:00');
     }
-    setFormAttDate(filterDate || '2026-09-24');
+    setFormAttDate(getLocalDateString());
     setFormAttStatus('Hadir');
     setFormAttNotes('');
     setIsAttendanceModalOpen(true);
@@ -334,7 +350,7 @@ export function PegawaiPage({
   const [selectedShiftToOpen, setSelectedShiftToOpen] = useState<string>(
     shifts.find((s) => s.status === 'Menunggu')?.id || shifts[0]?.id || 'SFT-01'
   );
-  const [bukaDate, setBukaDate] = useState<string>('2026-09-24');
+  const [bukaDate, setBukaDate] = useState<string>(getLocalDateString());
   const [bukaStartTime, setBukaStartTime] = useState<string>('07:00');
   const [bukaOperator, setBukaOperator] = useState<string>('Ahmad Fauzi');
   const [bukaInitialCash, setBukaInitialCash] = useState<string>('1000000');
@@ -829,7 +845,7 @@ export function PegawaiPage({
               <button
                 type="button"
                 onClick={() => {
-                  setFilterDate('2026-09-24');
+                  setFilterDate(getLocalDateString());
                   setFilterShiftId('all');
                   setFilterEmployeeId('all');
                   setFilterStatus('all');

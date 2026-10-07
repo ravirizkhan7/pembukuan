@@ -10,6 +10,7 @@ import {
   ToastType
 } from '../types';
 import { useAppContext } from '../context/AppContext';
+import { getLocalDateString, getLocalDateTimeString } from '../services/appSettings';
 
 export interface OperasionalPageProps {
   mockData?: any;
@@ -82,7 +83,7 @@ export function OperasionalPage({
 
     const newTera: Tera = {
       id: `TRA-${Date.now().toString().slice(-4)}`,
-      date: '2026-09-24',
+      date: getLocalDateString(),
       shiftId: activeShift ? activeShift.id : 'SFT-01',
       shift: activeShift ? activeShift.name : 'Shift 1',
       nozzleId: currentNozzle.id,
@@ -114,7 +115,7 @@ export function OperasionalPage({
   const [selectedShiftToOpen, setSelectedShiftToOpen] = useState<string>(
     shifts.find(s => s.status === 'Menunggu')?.id || shifts[0]?.id || 'SFT-01'
   );
-  const [bukaDate, setBukaDate] = useState<string>('2026-09-24');
+  const [bukaDate, setBukaDate] = useState<string>(getLocalDateString());
   const [bukaStartTime, setBukaStartTime] = useState<string>('07:00');
   const [bukaOperator, setBukaOperator] = useState<string>('Ahmad Fauzi');
   const [bukaInitialCash, setBukaInitialCash] = useState<string>('1000000');
@@ -389,7 +390,7 @@ export function OperasionalPage({
         capacity: capNum,
         currentStock: 0,
         unit: 'Liter',
-        lastSounding: new Date().toISOString().replace('T', ' ').slice(0, 16),
+        lastSounding: getLocalDateTimeString(),
         status: tankStatus
       });
       showToast(`Tanki [${cleanId}] berhasil ditambahkan.`, 'success');

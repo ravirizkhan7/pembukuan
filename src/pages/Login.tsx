@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, AlertCircle, ArrowRight, KeyRound, CheckCircle2 } from 'lucide-react';
 import { Button, Modal } from '../components/ui';
 import { StationInfo } from '../types';
@@ -16,6 +16,8 @@ export function LoginPage({ onLogin, authPin, stationInfo, onResetPin }: LoginPa
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [loginNotice, setLoginNotice] = useState('');
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
 
   // LUPA PIN MODAL STATE
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
@@ -30,9 +32,29 @@ export function LoginPage({ onLogin, authPin, stationInfo, onResetPin }: LoginPa
 
   const registeredEmail = stationInfo?.email || 'admin@spbucontoh.co.id';
 
+  // Cooldown countdown timer effect
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutSeconds]);
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoginNotice('');
+
+    if (lockoutSeconds > 0) {
+      setError(`Akses terkunci sementara karena percobaan berulang. Tunggu ${lockoutSeconds} detik.`);
+      return;
+    }
 
     if (!pin) {
       setError('Masukkan PIN untuk melanjutkan');
@@ -40,9 +62,19 @@ export function LoginPage({ onLogin, authPin, stationInfo, onResetPin }: LoginPa
     }
 
     if (pin === authPin) {
+      setFailedAttempts(0);
+      setError('');
       onLogin();
     } else {
-      setError('PIN tidak valid. Silakan coba kembali.');
+      const nextAttempts = failedAttempts + 1;
+      if (nextAttempts >= 5) {
+        setLockoutSeconds(30);
+        setFailedAttempts(0);
+        setError('Terlalu banyak percobaan salah (5x). Akses dikunci sementara selama 30 detik untuk keamanan terminal.');
+      } else {
+        setFailedAttempts(nextAttempts);
+        setError(`PIN tidak valid. Sisa percobaan: ${5 - nextAttempts}x.`);
+      }
     }
   };
 
@@ -88,6 +120,8 @@ export function LoginPage({ onLogin, authPin, stationInfo, onResetPin }: LoginPa
     setConfirmPin('');
     setPin('');
     setError('');
+    setFailedAttempts(0);
+    setLockoutSeconds(0);
     setLoginNotice('PIN berhasil diperbarui. Silakan masuk menggunakan PIN baru Anda.');
   };
 
@@ -422,9 +456,10 @@ export function LoginPage({ onLogin, authPin, stationInfo, onResetPin }: LoginPa
                     textAlign: 'center',
                     fontWeight: 700,
                     fontFamily: 'monospace',
-                    backgroundColor: 'var(--color-surface-subtle)',
+                    backgroundColor: lockoutSeconds > 0 ? 'var(--color-bg-subtle)' : 'var(--color-surface-subtle)',
                     borderColor: error ? 'var(--color-danger)' : 'var(--color-border)',
-                    boxShadow: error ? '0 0 0 3px rgba(211, 47, 47, 0.15)' : undefined
+                    boxShadow: error ? '0 0 0 3px rgba(211, 47, 47, 0.15)' : undefined,
+                    cursor: lockoutSeconds > 0 ? 'not-allowed' : 'text'
                   }}
                   value={pin}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -432,8 +467,9 @@ export function LoginPage({ onLogin, authPin, stationInfo, onResetPin }: LoginPa
                     setError('');
                     setLoginNotice('');
                   }}
-                  placeholder="••••"
+                  placeholder={lockoutSeconds > 0 ? `LOCKED` : '••••'}
                   maxLength={6}
+                  disabled={lockoutSeconds > 0}
                   autoFocus
                 />
               </div>
@@ -442,6 +478,7 @@ export function LoginPage({ onLogin, authPin, stationInfo, onResetPin }: LoginPa
             <Button
               type="submit"
               variant="primary"
+              disabled={lockoutSeconds > 0}
               style={{
                 width: '100%',
                 minHeight: '46px',
@@ -450,10 +487,12 @@ export function LoginPage({ onLogin, authPin, stationInfo, onResetPin }: LoginPa
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '8px'
+                gap: '8px',
+                opacity: lockoutSeconds > 0 ? 0.7 : 1,
+                cursor: lockoutSeconds > 0 ? 'not-allowed' : 'pointer'
               }}
             >
-              <span>Masuk</span>
+              <span>{lockoutSeconds > 0 ? `Terkunci (${lockoutSeconds}s)` : 'Masuk'}</span>
               <ArrowRight size={16} />
             </Button>
           </form>

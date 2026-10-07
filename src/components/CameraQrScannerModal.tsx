@@ -29,7 +29,7 @@ export function CameraQrScannerModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lastScanResult, setLastScanResult] = useState<ScanResultDetail | null>(null);
   const [recentScans, setRecentScans] = useState<ScanResultDetail[]>([]);
-  const [scanCount, setScanCount] = useState<number>(0);
+  const [recordedEmployeeIds, setRecordedEmployeeIds] = useState<string[]>([]);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
 
@@ -40,6 +40,10 @@ export function CameraQrScannerModal({
   const lastScannedPayloadRef = useRef<string | null>(null);
   const lastScannedTimeRef = useRef<number>(0);
   const isProcessingRef = useRef<boolean>(false);
+  const isOpenRef = useRef<boolean>(isOpen);
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
 
   // Keep latest onScan callback in ref to prevent camera stream restarts on parent re-renders
   const onScanRef = useRef(onScan);
@@ -117,23 +121,34 @@ export function CameraQrScannerModal({
     const vh = video.videoHeight;
     if (vw === 0 || vh === 0) return;
 
+    // Viewfinder/reticle coverage: sample central 72% of minimum dimension with generous tolerance
+    const minDim = Math.min(vw, vh);
+    const cropDim = Math.round(minDim * 0.72);
+    const sx = Math.round((vw - cropDim) / 2);
+    const sy = Math.round((vh - cropDim) / 2);
+
+    // Target processing canvas resolution: 400x400
+    // Memory per frame: 400 * 400 * 4 = 640 KB (reduced from ~3.68 MB, ~82.6% reduction in GC pressure)
+    // jsQR executes >5x faster on 160k pixels than 921k pixels while retaining high module contrast
+    const targetDim = 400;
+
     let canvas = canvasRef.current;
     if (!canvas) {
       canvas = document.createElement('canvas');
       canvasRef.current = canvas;
     }
-    if (canvas.width !== vw || canvas.height !== vh) {
-      canvas.width = vw;
-      canvas.height = vh;
+    if (canvas.width !== targetDim || canvas.height !== targetDim) {
+      canvas.width = targetDim;
+      canvas.height = targetDim;
     }
 
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
-    ctx.drawImage(video, 0, 0, vw, vh);
+    ctx.drawImage(video, sx, sy, cropDim, cropDim, 0, 0, targetDim, targetDim);
 
-    const imgData = ctx.getImageData(0, 0, vw, vh);
-    const code = jsQR(imgData.data, vw, vh, {
+    const imgData = ctx.getImageData(0, 0, targetDim, targetDim);
+    const code = jsQR(imgData.data, targetDim, targetDim, {
       inversionAttempts: 'dontInvert'
     });
 
@@ -164,7 +179,13 @@ export function CameraQrScannerModal({
         setLastScanResult(result);
 
         if (result.success) {
-          setScanCount((prev) => prev + 1);
+          const empId = result.pegawai?.id || result.payload.trim();
+          if (!result.isAlreadyAttended && empId) {
+            setRecordedEmployeeIds((prev) => {
+              if (prev.includes(empId)) return prev;
+              return [...prev, empId];
+            });
+          }
           setRecentScans((prev) => {
             const filtered = prev.filter((item) => item.payload !== result.payload);
             return [result, ...filtered].slice(0, 3);
@@ -222,20 +243,44 @@ export function CameraQrScannerModal({
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+      // Guard: if modal closed while awaiting getUserMedia, release tracks immediately
+      if (!isOpenRef.current) {
+        stream.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch {
+            // ignore
+          }
+        });
+        return;
+      }
+
       streamRef.current = stream;
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
+
+        // Second guard: if modal closed during video.play()
+        if (!isOpenRef.current) {
+          stopCameraStream();
+          return;
+        }
+
         setCameraStatus('active');
 
         // Fast continuous scan loop at ~14 FPS (every 70ms) using processFrameRef
         scanIntervalRef.current = setInterval(() => {
           processFrameRef.current();
         }, 70);
+      } else {
+        stopCameraStream();
       }
     } catch (err: unknown) {
       console.error('Camera initialization error:', err);
+      // Clean up any acquired stream tracks immediately
+      stopCameraStream();
       setCameraStatus('error');
 
       const error = err as { name?: string; message?: string };
@@ -255,13 +300,14 @@ export function CameraQrScannerModal({
   // NEVER restarts the camera after attendance scanning!
   useEffect(() => {
     if (isOpen) {
-      setScanCount(0);
+      setRecordedEmployeeIds([]);
       setLastScanResult(null);
       setRecentScans([]);
       lastScannedPayloadRef.current = null;
       lastScannedTimeRef.current = 0;
       startCamera();
     } else {
+      setRecordedEmployeeIds([]);
       stopCameraStream();
     }
 
@@ -271,6 +317,7 @@ export function CameraQrScannerModal({
   }, [isOpen, facingMode, startCamera, stopCameraStream]);
 
   const handleClose = () => {
+    setRecordedEmployeeIds([]);
     stopCameraStream();
     onClose();
   };
@@ -718,7 +765,7 @@ export function CameraQrScannerModal({
                 <span>Dekatkan QR kartu pegawai ke kamera. Scanner akan otomatis merekam.</span>
               </div>
               <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#0F172A' }}>
-                Sesi ini: {scanCount} scan
+                Sesi ini: {recordedEmployeeIds.length} pegawai tercatat
               </span>
             </div>
           )}
@@ -820,7 +867,7 @@ export function CameraQrScannerModal({
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748B' }}>
             <ShieldCheck size={16} color="#10B981" />
             <span>
-              Total tercatat sesi ini: <strong style={{ color: '#0F172A' }}>{scanCount}</strong> pegawai
+              Total tercatat sesi ini: <strong style={{ color: '#0F172A' }}>{recordedEmployeeIds.length}</strong> pegawai
             </span>
           </div>
 

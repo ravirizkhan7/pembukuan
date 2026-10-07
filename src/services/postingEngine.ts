@@ -140,15 +140,24 @@ export function postTransaction(params: {
 
   // B. Pelunasan Piutang (Mengurangi Piutang)
   if (masterCode.category === 'Pelunasan' && creditAccount.code === '1-1101') {
-    // Cari receivable yang belum lunas (Open atau Partial)
+    if (!transaction.relatedReceivableId) {
+      return {
+        success: false,
+        error: 'Transaksi pelunasan piutang wajib memilih faktur/tagihan piutang terkait (relatedReceivableId).',
+        updatedAccounts: accounts,
+        updatedReceivables: receivables,
+        updatedPayables: payables
+      };
+    }
+
     const targetIdx = currentReceivables.findIndex(
-      (r) => (transaction.relatedReceivableId ? r.id === transaction.relatedReceivableId : r.status !== 'Paid')
+      (r) => r.id === transaction.relatedReceivableId
     );
 
     if (targetIdx === -1) {
       return {
         success: false,
-        error: 'Tidak ditemukan tagihan piutang terbuka untuk dilunasi.',
+        error: `Faktur piutang dengan ID "${transaction.relatedReceivableId}" tidak ditemukan.`,
         updatedAccounts: accounts,
         updatedReceivables: receivables,
         updatedPayables: payables
@@ -156,6 +165,27 @@ export function postTransaction(params: {
     }
 
     const targetRec = currentReceivables[targetIdx];
+
+    if (targetRec.status === 'Paid') {
+      return {
+        success: false,
+        error: `Faktur piutang "${targetRec.id}" sudah berstatus lunas (Paid).`,
+        updatedAccounts: accounts,
+        updatedReceivables: receivables,
+        updatedPayables: payables
+      };
+    }
+
+    if (transaction.partnerId && targetRec.partnerId && transaction.partnerId !== targetRec.partnerId) {
+      return {
+        success: false,
+        error: `Faktur piutang "${targetRec.id}" milik mitra ${targetRec.partnerName}, tidak sesuai dengan mitra transaksi (${partnerName}).`,
+        updatedAccounts: accounts,
+        updatedReceivables: receivables,
+        updatedPayables: payables
+      };
+    }
+
     const newOutstanding = targetRec.outstanding - transaction.total;
 
     if (newOutstanding < 0) {
@@ -196,15 +226,24 @@ export function postTransaction(params: {
 
   // B. Pembayaran Hutang Usaha (Mengurangi Hutang)
   if (masterCode.category === 'Pelunasan' && debitAccount.code === '2-1001') {
-    // Cari payable yang belum lunas (Open atau Partial)
+    if (!transaction.relatedPayableId) {
+      return {
+        success: false,
+        error: 'Transaksi pembayaran hutang wajib memilih tagihan hutang terkait (relatedPayableId).',
+        updatedAccounts: accounts,
+        updatedReceivables: receivables,
+        updatedPayables: payables
+      };
+    }
+
     const targetIdx = currentPayables.findIndex(
-      (p) => (transaction.relatedPayableId ? p.id === transaction.relatedPayableId : p.status !== 'Paid')
+      (p) => p.id === transaction.relatedPayableId
     );
 
     if (targetIdx === -1) {
       return {
         success: false,
-        error: 'Tidak ditemukan tagihan hutang terbuka untuk dibayar.',
+        error: `Tagihan hutang dengan ID "${transaction.relatedPayableId}" tidak ditemukan.`,
         updatedAccounts: accounts,
         updatedReceivables: receivables,
         updatedPayables: payables
@@ -212,6 +251,27 @@ export function postTransaction(params: {
     }
 
     const targetPay = currentPayables[targetIdx];
+
+    if (targetPay.status === 'Paid') {
+      return {
+        success: false,
+        error: `Tagihan hutang "${targetPay.id}" sudah berstatus lunas (Paid).`,
+        updatedAccounts: accounts,
+        updatedReceivables: receivables,
+        updatedPayables: payables
+      };
+    }
+
+    if (transaction.partnerId && targetPay.partnerId && transaction.partnerId !== targetPay.partnerId) {
+      return {
+        success: false,
+        error: `Tagihan hutang "${targetPay.id}" milik vendor ${targetPay.partnerName}, tidak sesuai dengan vendor transaksi (${partnerName}).`,
+        updatedAccounts: accounts,
+        updatedReceivables: receivables,
+        updatedPayables: payables
+      };
+    }
+
     const newOutstanding = targetPay.outstanding - transaction.total;
 
     if (newOutstanding < 0) {

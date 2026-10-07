@@ -11,6 +11,7 @@ import {
   Tera
 } from '../types';
 import { useAppContext } from '../context/AppContext';
+import { getLocalDateString, getLocalDateTimeString } from '../services/appSettings';
 
 export interface TransaksiPageProps {
   mockData?: {
@@ -229,6 +230,19 @@ export function TransaksiPage({
       }
     }
 
+    const isPelunasanPiutang = activeTemplate?.code === '312' || (activeTemplate?.category === 'Pelunasan' && (activeTemplate.creditAccountId === '1-1101' || activeTemplate.creditAccountId === 'ACC-03'));
+    const isPembayaranHutang = activeTemplate?.code === '315' || (activeTemplate?.category === 'Pelunasan' && (activeTemplate.debitAccountId === '2-1001' || activeTemplate.debitAccountId === 'ACC-06'));
+
+    if (isPelunasanPiutang && !selectedReceivableId) {
+      showToast('Pilih faktur piutang yang ingin dilunasi terlebih dahulu.', 'danger');
+      return;
+    }
+
+    if (isPembayaranHutang && !selectedPayableId) {
+      showToast('Pilih tagihan hutang yang ingin dibayar terlebih dahulu.', 'danger');
+      return;
+    }
+
     setStep(3);
   };
 
@@ -237,6 +251,19 @@ export function TransaksiPage({
     if (!activeTemplate) return;
     if (!activeShift) {
       showToast('Belum ada shift aktif. Buka shift terlebih dahulu.', 'danger');
+      return;
+    }
+
+    const isPelunasanPiutang = activeTemplate.code === '312' || (activeTemplate.category === 'Pelunasan' && (activeTemplate.creditAccountId === '1-1101' || activeTemplate.creditAccountId === 'ACC-03'));
+    const isPembayaranHutang = activeTemplate.code === '315' || (activeTemplate.category === 'Pelunasan' && (activeTemplate.debitAccountId === '2-1001' || activeTemplate.debitAccountId === 'ACC-06'));
+
+    if (isPelunasanPiutang && !selectedReceivableId) {
+      showToast('Pilih faktur piutang yang ingin dilunasi.', 'danger');
+      return;
+    }
+
+    if (isPembayaranHutang && !selectedPayableId) {
+      showToast('Pilih tagihan hutang yang ingin dibayar.', 'danger');
       return;
     }
 
@@ -249,7 +276,7 @@ export function TransaksiPage({
       createdTeraId = `TRA-${Date.now().toString().slice(-4)}`;
       const newTera: Tera = {
         id: createdTeraId,
-        date: '2026-09-24',
+        date: getLocalDateString(),
         shiftId: activeShift.id,
         shift: activeShift.name,
         nozzleId: currentNzl.id,
@@ -273,7 +300,7 @@ export function TransaksiPage({
 
     const newTx: Transaction = {
       id: txId,
-      date: '2026-09-24 11:15',
+      date: getLocalDateTimeString(),
       code: activeTemplate.code,
       masterCodeId: activeTemplate.id,
       name: activeTemplate.name,
