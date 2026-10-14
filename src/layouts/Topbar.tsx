@@ -13,6 +13,7 @@ export interface TopbarProps {
 const pageTitles: Record<string, string> = {
   dashboard: 'Dashboard',
   transaksi: 'Transaksi',
+  pegawai: 'Pegawai',
   monitoring: 'Monitoring',
   akuntansi: 'Akuntansi',
   laporan: 'Laporan',
@@ -20,6 +21,9 @@ const pageTitles: Record<string, string> = {
 };
 
 const subPageTitles: Record<string, string> = {
+  daftar_pegawai: 'Daftar Pegawai',
+  absensi: 'Absensi',
+  shift_kerja: 'Shift Kerja',
   tera: 'Monitoring Tera',
   tanki: 'Tanki Pendam',
   nozzle: 'Nozzle Dispenser',

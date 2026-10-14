@@ -93,39 +93,46 @@ export function PegawaiPage({
     setIsPegawaiModalOpen(true);
   };
 
-  const handleSavePegawai = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSavePegawai = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!formPegawaiName.trim()) {
       showToast('Nama pegawai wajib diisi.', 'danger');
       return;
     }
 
-    if (editingPegawai) {
-      updatePegawai({
-        ...editingPegawai,
-        name: formPegawaiName.trim(),
-        role: formPegawaiRole.trim(),
-        shiftId: formPegawaiShiftId,
-        status: formPegawaiStatus
-      });
-      showToast(`Data pegawai [${formPegawaiName.trim()}] berhasil diperbarui.`, 'success');
-    } else {
-      const created = addPegawai({
-        name: formPegawaiName.trim(),
-        role: formPegawaiRole.trim(),
-        shiftId: formPegawaiShiftId,
-        status: formPegawaiStatus
-      });
-      showToast(`Pegawai baru [${created.id} - ${created.name}] berhasil ditambahkan.`, 'success');
+    try {
+      if (editingPegawai) {
+        await updatePegawai({
+          ...editingPegawai,
+          name: formPegawaiName.trim(),
+          role: formPegawaiRole.trim(),
+          shiftId: formPegawaiShiftId,
+          status: formPegawaiStatus
+        });
+        showToast(`Data pegawai [${formPegawaiName.trim()}] berhasil diperbarui.`, 'success');
+      } else {
+        const created = await addPegawai({
+          name: formPegawaiName.trim(),
+          role: formPegawaiRole.trim(),
+          shiftId: formPegawaiShiftId,
+          status: formPegawaiStatus
+        });
+        showToast(`Pegawai baru [${created.id} - ${created.name}] berhasil ditambahkan.`, 'success');
+      }
+      setIsPegawaiModalOpen(false);
+    } catch (err: any) {
+      showToast(err?.message || 'Gagal menyimpan data pegawai.', 'danger');
     }
-
-    setIsPegawaiModalOpen(false);
   };
 
-  const handleTogglePegawai = (p: Pegawai) => {
-    togglePegawaiStatus(p.id);
-    const nextStatus = p.status === 'Aktif' ? 'dinonaktifkan' : 'diaktifkan';
-    showToast(`Status pegawai [${p.name}] ${nextStatus}.`, 'primary');
+  const handleTogglePegawai = async (p: Pegawai) => {
+    try {
+      await togglePegawaiStatus(p.id);
+      const nextStatus = p.status === 'Aktif' ? 'dinonaktifkan' : 'diaktifkan';
+      showToast(`Status pegawai [${p.name}] ${nextStatus}.`, 'primary');
+    } catch (err: any) {
+      showToast(err?.message || 'Gagal mengubah status pegawai.', 'danger');
+    }
   };
 
   // ==========================================
@@ -302,7 +309,7 @@ export function PegawaiPage({
     setIsAttendanceModalOpen(true);
   };
 
-  const handleSaveAttendance = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveAttendance = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!selectedEmployeeForAttendance) {
@@ -312,34 +319,38 @@ export function PegawaiPage({
 
     const assignedShift = assignedShiftForSelectedEmployee;
 
-    if (editingAttendance) {
-      updateAttendance({
-        ...editingAttendance,
-        employeeId: selectedEmployeeForAttendance.id,
-        employeeName: selectedEmployeeForAttendance.name,
-        shiftId: assignedShift.id,
-        shiftName: assignedShift.name,
-        date: formAttDate,
-        status: formAttStatus,
-        checkInTime: formAttCheckInTime,
-        notes: formAttNotes.trim()
-      });
-      showToast(`Absensi [${selectedEmployeeForAttendance.name}] (${assignedShift.name}) berhasil diperbarui.`, 'success');
-    } else {
-      addAttendance({
-        employeeId: selectedEmployeeForAttendance.id,
-        employeeName: selectedEmployeeForAttendance.name,
-        shiftId: assignedShift.id,
-        shiftName: assignedShift.name,
-        date: formAttDate,
-        status: formAttStatus,
-        checkInTime: formAttCheckInTime,
-        notes: formAttNotes.trim()
-      });
-      showToast(`Absensi [${selectedEmployeeForAttendance.name}] (${assignedShift.name}) berhasil dicatat.`, 'success');
-    }
+    try {
+      if (editingAttendance) {
+        await updateAttendance({
+          ...editingAttendance,
+          employeeId: selectedEmployeeForAttendance.id,
+          employeeName: selectedEmployeeForAttendance.name,
+          shiftId: assignedShift.id,
+          shiftName: assignedShift.name,
+          date: formAttDate,
+          status: formAttStatus,
+          checkInTime: formAttCheckInTime,
+          notes: formAttNotes.trim()
+        });
+        showToast(`Absensi [${selectedEmployeeForAttendance.name}] (${assignedShift.name}) berhasil diperbarui.`, 'success');
+      } else {
+        await addAttendance({
+          employeeId: selectedEmployeeForAttendance.id,
+          employeeName: selectedEmployeeForAttendance.name,
+          shiftId: assignedShift.id,
+          shiftName: assignedShift.name,
+          date: formAttDate,
+          status: formAttStatus,
+          checkInTime: formAttCheckInTime,
+          notes: formAttNotes.trim()
+        });
+        showToast(`Absensi [${selectedEmployeeForAttendance.name}] (${assignedShift.name}) berhasil dicatat.`, 'success');
+      }
 
-    setIsAttendanceModalOpen(false);
+      setIsAttendanceModalOpen(false);
+    } catch (err: any) {
+      showToast(err?.message || 'Gagal menyimpan absensi.', 'danger');
+    }
   };
 
   // ==========================================
@@ -389,32 +400,40 @@ export function PegawaiPage({
     setIsTutupShiftModalOpen(true);
   };
 
-  const handleExecuteBukaShift = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleExecuteBukaShift = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    bukaShift(selectedShiftToOpen, {
-      date: bukaDate,
-      startTime: bukaStartTime,
-      operator: bukaOperator.trim(),
-      initialCash: parseFloat(bukaInitialCash) || 0
-    });
-    const s = shifts.find((item) => item.id === selectedShiftToOpen);
-    showToast(`${s?.name || selectedShiftToOpen} berhasil dibuka (Aktif).`, 'success');
-    setIsBukaShiftModalOpen(false);
+    try {
+      await bukaShift(selectedShiftToOpen, {
+        date: bukaDate,
+        startTime: bukaStartTime,
+        operator: bukaOperator.trim(),
+        initialCash: parseFloat(bukaInitialCash) || 0
+      });
+      const s = shifts.find((item) => item.id === selectedShiftToOpen);
+      showToast(`${s?.name || selectedShiftToOpen} berhasil dibuka (Aktif).`, 'success');
+      setIsBukaShiftModalOpen(false);
+    } catch (err: any) {
+      showToast(err?.message || 'Gagal membuka shift', 'danger');
+    }
   };
 
-  const handleExecuteTutupShift = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleExecuteTutupShift = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!tutupCashHandover) {
       showToast('Masukkan jumlah setoran kas fisik.', 'danger');
       return;
     }
 
-    tutupShift(selectedShiftToClose, {
-      cashHandover: parseFloat(tutupCashHandover) || 0
-    });
-    const s = shifts.find((item) => item.id === selectedShiftToClose);
-    showToast(`${s?.name || selectedShiftToClose} telah ditutup.`, 'success');
-    setIsTutupShiftModalOpen(false);
+    try {
+      await tutupShift(selectedShiftToClose, {
+        cashHandover: parseFloat(tutupCashHandover) || 0
+      });
+      const s = shifts.find((item) => item.id === selectedShiftToClose);
+      showToast(`${s?.name || selectedShiftToClose} telah ditutup.`, 'success');
+      setIsTutupShiftModalOpen(false);
+    } catch (err: any) {
+      showToast(err?.message || 'Gagal menutup shift', 'danger');
+    }
   };
 
   // Helper badge color

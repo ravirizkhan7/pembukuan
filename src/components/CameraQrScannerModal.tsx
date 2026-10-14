@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Camera, X, CheckCircle2, AlertCircle, RefreshCw, Volume2, VolumeX, ShieldCheck, Clock, History } from 'lucide-react';
+import { Camera, X, CheckCircle2, AlertCircle, RefreshCw, Volume2, VolumeX, ShieldCheck, Clock, History, Settings } from 'lucide-react';
 import jsQR from 'jsqr';
+import { Capacitor } from '@capacitor/core';
 import { Button } from './ui';
 import { Pegawai, Shift } from '../types';
+import { NativeBackupRestore } from '../services/database/backupRestoreService';
 
 export interface ScanResultDetail {
   success: boolean;
@@ -27,6 +29,7 @@ export function CameraQrScannerModal({
 }: CameraQrScannerModalProps) {
   const [cameraStatus, setCameraStatus] = useState<'initializing' | 'active' | 'error'>('initializing');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isPermanentlyDenied, setIsPermanentlyDenied] = useState<boolean>(false);
   const [lastScanResult, setLastScanResult] = useState<ScanResultDetail | null>(null);
   const [recentScans, setRecentScans] = useState<ScanResultDetail[]>([]);
   const [recordedEmployeeIds, setRecordedEmployeeIds] = useState<string[]>([]);
@@ -213,9 +216,13 @@ export function CameraQrScannerModal({
     stopCameraStream();
     setCameraStatus('initializing');
     setErrorMessage(null);
+    setIsPermanentlyDenied(false);
 
-    // Check secure context
+    const isAndroid = Capacitor.isNativePlatform() || Capacitor.getPlatform() === 'android';
+
+    // Check secure context for web
     if (
+      !isAndroid &&
       typeof window !== 'undefined' &&
       !window.isSecureContext &&
       window.location.hostname !== 'localhost' &&
@@ -230,6 +237,30 @@ export function CameraQrScannerModal({
       setCameraStatus('error');
       setErrorMessage('Browser atau perangkat ini tidak mendukung akses kamera langsung.');
       return;
+    }
+
+    // Android Native: Periksa & minta izin kamera secara native sebelum memanggil getUserMedia
+    if (isAndroid && NativeBackupRestore.checkCameraPermission && NativeBackupRestore.requestCameraPermission) {
+      try {
+        const check = await NativeBackupRestore.checkCameraPermission();
+        if (!check.granted) {
+          const req = await NativeBackupRestore.requestCameraPermission();
+          if (!req.granted) {
+            stopCameraStream();
+            setCameraStatus('error');
+            const permDenied = !req.shouldShowRationale;
+            setIsPermanentlyDenied(permDenied);
+            if (permDenied) {
+              setErrorMessage('Izin kamera dinonaktifkan di pengaturan sistem Android. Buka Pengaturan Aplikasi untuk mengizinkan akses kamera.');
+            } else {
+              setErrorMessage('Izin kamera diperlukan untuk memindai QR absensi pegawai. Tekan "Coba Lagi" untuk mengizinkan.');
+            }
+            return;
+          }
+        }
+      } catch (nativeErr) {
+        console.warn('Native camera permission check error:', nativeErr);
+      }
     }
 
     try {
@@ -283,9 +314,30 @@ export function CameraQrScannerModal({
       stopCameraStream();
       setCameraStatus('error');
 
+      let permDenied = false;
+      if (isAndroid && NativeBackupRestore.checkCameraPermission) {
+        try {
+          const check = await NativeBackupRestore.checkCameraPermission();
+          if (!check.granted && !check.shouldShowRationale) {
+            permDenied = true;
+          }
+        } catch {
+          // ignore
+        }
+      }
+      setIsPermanentlyDenied(permDenied);
+
       const error = err as { name?: string; message?: string };
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        setErrorMessage('Izin kamera ditolak. Berikan izin akses kamera pada pengaturan browser untuk melakukan scan.');
+        if (isAndroid) {
+          if (permDenied) {
+            setErrorMessage('Izin kamera dinonaktifkan di pengaturan sistem Android. Buka Pengaturan Aplikasi untuk mengaktifkan izin Kamera.');
+          } else {
+            setErrorMessage('Izin kamera ditolak. Tekan "Coba Lagi" untuk memberikan izin kamera scanner.');
+          }
+        } else {
+          setErrorMessage('Izin kamera ditolak. Berikan izin akses kamera pada pengaturan browser untuk melakukan scan.');
+        }
       } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
         setErrorMessage('Kamera tidak ditemukan pada perangkat ini.');
       } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
@@ -530,16 +582,36 @@ export function CameraQrScannerModal({
               <div style={{ fontSize: '12.5px', lineHeight: 1.4, color: '#CBD5E1', marginBottom: '14px' }}>
                 {errorMessage}
               </div>
-              <Button
-                variant="primary"
-                size="sm"
-                icon={RefreshCw}
-                onClick={startCamera}
-                id="btn-retry-camera"
-                style={{ fontWeight: 600 }}
-              >
-                Coba Lagi
-              </Button>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={RefreshCw}
+                  onClick={startCamera}
+                  id="btn-retry-camera"
+                  style={{ fontWeight: 600 }}
+                >
+                  Coba Lagi
+                </Button>
+                {isPermanentlyDenied && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={Settings}
+                    onClick={async () => {
+                      try {
+                        await NativeBackupRestore.openAppSettings?.();
+                      } catch (err) {
+                        console.error('Gagal membuka pengaturan:', err);
+                      }
+                    }}
+                    id="btn-open-settings"
+                    style={{ fontWeight: 600 }}
+                  >
+                    Buka Pengaturan Aplikasi
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 

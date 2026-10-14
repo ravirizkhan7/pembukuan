@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AKRUAL SPBU</string>
+    <string name="title_activity_main">AKRUAL SPBU</string>
+    <string name="package_name">com.akrual.pembukuan</string>
+    <string name="custom_url_scheme">com.akrual.pembukuan</string>
+</resources>

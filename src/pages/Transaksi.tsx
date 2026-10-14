@@ -247,7 +247,7 @@ export function TransaksiPage({
   };
 
   // Simpan Transaksi & Auto-focus kembali ke input kode
-  const handleSaveTransaction = () => {
+  const handleSaveTransaction = async () => {
     if (!activeTemplate) return;
     if (!activeShift) {
       showToast('Belum ada shift aktif. Buka shift terlebih dahulu.', 'danger');
@@ -270,11 +270,12 @@ export function TransaksiPage({
     const txId = `TX-${Date.now().toString().slice(-6)}`;
     const currentNzl = nozzles.find(n => n.id === selectedNozzleId) || nozzles[0];
     let createdTeraId: string | undefined = undefined;
+    let newTera: Tera | undefined = undefined;
 
     // Relasi Tera (Requirement H)
     if (activeTemplate.requiresTera && currentNzl) {
       createdTeraId = `TRA-${Date.now().toString().slice(-4)}`;
-      const newTera: Tera = {
+      newTera = {
         id: createdTeraId,
         date: getLocalDateString(),
         shiftId: activeShift.id,
@@ -293,7 +294,7 @@ export function TransaksiPage({
         status: 'Valid',
         transactionId: txId
       };
-      addTera(newTera);
+      await addTera(newTera);
     }
 
     const matchedPartner = businessPartners.find(p => p.id === selectedPartnerId);
@@ -326,7 +327,7 @@ export function TransaksiPage({
       teraAkhir: activeTemplate.requiresTera ? numTeraAkhir : undefined
     };
 
-    const postResult = addTransaction(newTx);
+    const postResult = await addTransaction(newTx, newTera);
     if (!postResult.success) {
       showToast(postResult.error || 'Gagal posting transaksi.', 'danger');
       return;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PageHeader } from '../components/common';
-import { Card, Button } from '../components/ui';
+import { Card, Button, Modal } from '../components/ui';
 import {
   Building2,
   KeyRound,
@@ -8,10 +8,23 @@ import {
   HardDrive,
   Laptop,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Download,
+  Upload,
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react';
 import { StationInfo, ToastType } from '../types';
 import { isValidEmail, verifyAndChangePin } from '../services/appSettings';
+import {
+  AppMetadataService,
+  DatabaseDiagnosticsResult,
+  BackupRestoreService,
+  PlatformStorageAdapter,
+  SpbuBackupFile,
+  BackupValidationResult
+} from '../services/database';
+import { useAppContext } from '../context/AppContext';
 
 export interface PengaturanPageProps {
   stationInfo: StationInfo;
@@ -36,6 +49,7 @@ export function PengaturanPage({
   const [phone, setPhone] = useState<string>(stationInfo.phone);
   const [email, setEmail] = useState<string>(stationInfo.email || '');
   const [profileError, setProfileError] = useState<string>('');
+  const [dbDiag, setDbDiag] = useState<DatabaseDiagnosticsResult | null>(null);
 
   // SINKRONISASI JIKA DATA PROFIL BERUBAH DARI LUAR
   useEffect(() => {
@@ -46,6 +60,13 @@ export function PengaturanPage({
     setPhone(stationInfo.phone);
     setEmail(stationInfo.email || '');
   }, [stationInfo]);
+
+  // LOAD DIAGNOSTIK DATABASE SQLITE
+  useEffect(() => {
+    AppMetadataService.runDiagnostics()
+      .then((res) => setDbDiag(res))
+      .catch((err) => console.warn('[Pengaturan] Failed to load db diagnostics:', err));
+  }, []);
 
   // KEAMANAN (PIN LOGIN) FORM STATE
   const [oldPin, setOldPin] = useState<string>('');
@@ -113,12 +134,84 @@ export function PengaturanPage({
     showToast('PIN berhasil diubah.', 'success');
   };
 
-  const handleBackup = () => {
-    showToast(`File backup database (${stationInfo.id}_backup.db) berhasil diunduh.`, 'success');
+  const { reloadFromDatabase } = useAppContext();
+
+  // BACKUP & RESTORE STATE
+  const [isBackingUp, setIsBackingUp] = useState<boolean>(false);
+  const [isRestoring, setIsRestoring] = useState<boolean>(false);
+  const [restoreModalOpen, setRestoreModalOpen] = useState<boolean>(false);
+  const [pendingBackupFile, setPendingBackupFile] = useState<SpbuBackupFile | null>(null);
+  const [pendingValidation, setPendingValidation] = useState<BackupValidationResult | null>(null);
+  const [pendingFilename, setPendingFilename] = useState<string>('');
+  const [lastBackupTime, setLastBackupTime] = useState<string>(stationInfo.lastBackup || '');
+
+  // HANDLER BUAT & UNDUH BACKUP
+  const handleBackup = async () => {
+    setIsBackingUp(true);
+    try {
+      const res = await BackupRestoreService.createAndDownloadBackup(stationInfo);
+      if (res.cancelled) {
+        showToast('Penyimpanan berkas cadangan dibatalkan.', 'primary');
+        return;
+      }
+      const now = new Date().toISOString();
+      setLastBackupTime(now);
+      showToast(`Berkas cadangan (${res.filename}) berhasil disimpan (${res.totalRecords} baris data).`, 'success');
+    } catch (err: any) {
+      console.error('[Pengaturan] Backup error:', err);
+      showToast(`Gagal membuat cadangan database: ${err.message || String(err)}`, 'danger');
+    } finally {
+      setIsBackingUp(false);
+    }
   };
 
-  const handleRestore = () => {
-    showToast('Database lokal dipulihkan dari arsip konfigurasi.', 'primary');
+  // HANDLER PILIH BERKAS & VALIDASI AWAL SEBELUM RESTORE
+  const handleStartRestore = async () => {
+    try {
+      const picked = await PlatformStorageAdapter.pickBackupFile();
+      if (!picked) return; // user membatalkan pemilihan file
+
+      const validation = BackupRestoreService.validateBackup(picked.content);
+      if (!validation.valid || !validation.metadata) {
+        showToast(`Validasi berkas cadangan gagal: ${validation.error || 'Berkas tidak valid'}`, 'danger');
+        return;
+      }
+
+      const parsed = JSON.parse(picked.content) as SpbuBackupFile;
+      setPendingBackupFile(parsed);
+      setPendingValidation(validation);
+      setPendingFilename(picked.filename);
+      setRestoreModalOpen(true);
+    } catch (err: any) {
+      console.error('[Pengaturan] Start restore error:', err);
+      showToast(`Gagal memproses berkas cadangan: ${err.message || String(err)}`, 'danger');
+    }
+  };
+
+  // HANDLER KONFIRMASI RESTORE ATOMIK
+  const handleConfirmRestore = async () => {
+    if (!pendingBackupFile) return;
+    setIsRestoring(true);
+    try {
+      const res = await BackupRestoreService.restoreBackup(pendingBackupFile);
+      if (reloadFromDatabase) {
+        await reloadFromDatabase();
+      }
+      AppMetadataService.runDiagnostics()
+        .then((resDiag) => setDbDiag(resDiag))
+        .catch(() => {});
+
+      setRestoreModalOpen(false);
+      setPendingBackupFile(null);
+      setPendingValidation(null);
+      showToast(res.message, 'success');
+    } catch (err: any) {
+      console.error('[Pengaturan] Confirm restore error:', err);
+      setRestoreModalOpen(false);
+      showToast(`Pemulihan database gagal: ${err.message || String(err)}. Data sebelumnya tetap aman.`, 'danger');
+    } finally {
+      setIsRestoring(false);
+    }
   };
 
   return (
@@ -419,9 +512,21 @@ export function PengaturanPage({
                 <span className="text-muted">Versi Rilis</span>
                 <span>v0.1.0-generic</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '6px', borderBottom: '1px solid var(--color-border)' }}>
                 <span className="text-muted">Model Penyimpanan</span>
                 <span>Lokal (Offline-First Device)</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '6px', borderBottom: '1px solid var(--color-border)' }}>
+                <span className="text-muted">Database Engine</span>
+                <span style={{ fontWeight: 600 }}>
+                  {dbDiag ? `SQLite ${dbDiag.isNative ? 'Native (Android)' : 'Web'} (v${dbDiag.sqliteVersion})` : 'SQLite Memuat...'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span className="text-muted">ID Instalasi Database</span>
+                <span style={{ fontFamily: 'monospace', fontSize: '11px', color: 'var(--color-primary-dark)', fontWeight: 600 }}>
+                  {dbDiag?.installationId || '-'}
+                </span>
               </div>
             </div>
           </Card>
@@ -445,23 +550,193 @@ export function PengaturanPage({
           </Card>
 
           {/* SECTION 5: BACKUP & PEMULIHAN */}
-          <Card title="Backup & Pemulihan" icon={HardDrive}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <Card title="Backup & Pemulihan Database" icon={HardDrive}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ fontSize: '12.5px', color: 'var(--color-muted-text)', lineHeight: 1.5 }}>
-                Unduh salinan data konfigurasi lokal atau pulihkan database instance dari arsip cadangan.
+                Ekspor seluruh data persisten SQLite (Master Data, COA, Pegawai, Sesi Shift, Absensi, Transaksi, Tera, Jurnal, dan Piutang/Hutang) ke arsip berkas JSON terenkapsulasi dengan hash integritas data (SHA-256), atau pulihkan instance SPBU dari arsip cadangan terverifikasi.
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <Button variant="secondary" size="sm" onClick={handleBackup}>
-                  Unduh Backup
+
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px',
+                  fontSize: '12px',
+                  padding: '10px 12px',
+                  backgroundColor: 'var(--color-bg)',
+                  borderRadius: 'var(--border-radius-sm)',
+                  border: '1px solid var(--color-border)'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span className="text-muted">Database Aktif:</span>
+                  <span style={{ fontWeight: 600, fontFamily: 'monospace' }}>akrual_spbu (v4)</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span className="text-muted">Cadangan Terakhir:</span>
+                  <span style={{ fontWeight: 600 }}>
+                    {lastBackupTime ? new Date(lastBackupTime).toLocaleString('id-ID') : 'Belum pernah dicadangkan'}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={Download}
+                  onClick={handleBackup}
+                  disabled={isBackingUp || isRestoring}
+                >
+                  {isBackingUp ? 'Membuat Backup...' : 'Unduh Backup'}
                 </Button>
-                <Button variant="secondary" size="sm" onClick={handleRestore}>
-                  Pulihkan Data
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={Upload}
+                  onClick={handleStartRestore}
+                  disabled={isBackingUp || isRestoring}
+                >
+                  {isRestoring ? 'Memulihkan...' : 'Pulihkan Data'}
                 </Button>
               </div>
             </div>
           </Card>
         </div>
       </div>
+
+      {/* MODAL KONFIRMASI PEMULIHAN (RESTORE) DATABASE */}
+      <Modal
+        isOpen={restoreModalOpen}
+        onClose={() => {
+          if (!isRestoring) {
+            setRestoreModalOpen(false);
+            setPendingBackupFile(null);
+            setPendingValidation(null);
+          }
+        }}
+        title="Konfirmasi Pemulihan Database"
+        icon={AlertTriangle}
+        size="md"
+        footer={
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', width: '100%' }}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setRestoreModalOpen(false);
+                setPendingBackupFile(null);
+                setPendingValidation(null);
+              }}
+              disabled={isRestoring}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              icon={isRestoring ? RefreshCw : Upload}
+              onClick={handleConfirmRestore}
+              disabled={isRestoring}
+            >
+              {isRestoring ? 'Memproses Pemulihan...' : 'Ya, Timpa & Pulihkan Database'}
+            </Button>
+          </div>
+        }
+      >
+        {pendingValidation?.metadata && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '13px' }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: '10px',
+                padding: '12px',
+                borderRadius: 'var(--border-radius-sm)',
+                backgroundColor: 'var(--color-danger-subtle)',
+                border: '1px solid var(--color-danger-border)',
+                color: 'var(--color-danger)'
+              }}
+              role="alert"
+            >
+              <AlertTriangle size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ fontSize: '12.5px', lineHeight: 1.5 }}>
+                <strong>PERINGATAN INTEGRITAS:</strong> Tindakan ini akan <u>menghapus dan menimpa seluruh database aktif</u> dengan rekaman dari berkas cadangan terpilih. Pastikan Anda telah membuat cadangan database terkini sebelum melanjutkan.
+              </div>
+            </div>
+
+            <div
+              style={{
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--border-radius-sm)',
+                padding: '12px',
+                backgroundColor: 'var(--color-bg)'
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 600,
+                  marginBottom: '8px',
+                  borderBottom: '1px solid var(--color-border)',
+                  paddingBottom: '4px'
+                }}
+              >
+                Rincian Berkas Cadangan Terverifikasi:
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
+                <div>
+                  <span className="text-muted">Nama Berkas:</span>
+                  <div style={{ fontWeight: 600, wordBreak: 'break-all' }}>{pendingFilename}</div>
+                </div>
+                <div>
+                  <span className="text-muted">Waktu Backup:</span>
+                  <div style={{ fontWeight: 600 }}>
+                    {new Date(pendingValidation.metadata.createdAt).toLocaleString('id-ID')}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-muted">ID SPBU Asal:</span>
+                  <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{pendingValidation.metadata.stationId}</div>
+                </div>
+                <div>
+                  <span className="text-muted">Versi Skema:</span>
+                  <div style={{ fontWeight: 600 }}>v{pendingValidation.metadata.schemaVersion} (Kompatibel)</div>
+                </div>
+                <div>
+                  <span className="text-muted">Total Baris Rekaman:</span>
+                  <div style={{ fontWeight: 700, color: 'var(--color-primary-dark)' }}>
+                    {pendingValidation.recordCount} baris
+                  </div>
+                </div>
+                <div>
+                  <span className="text-muted">Status Integritas:</span>
+                  <div style={{ fontWeight: 600, color: '#065F46' }}>Lolos Verifikasi Hash & Relasi Data</div>
+                </div>
+              </div>
+
+              {pendingValidation.metadata.tableCounts && (
+                <div
+                  style={{
+                    marginTop: '10px',
+                    paddingTop: '8px',
+                    borderTop: '1px solid var(--color-border)',
+                    fontSize: '11.5px'
+                  }}
+                >
+                  <span className="text-muted">Ringkasan Tabel Utama: </span>
+                  <span>
+                    Akun ({pendingValidation.metadata.tableCounts.accounts || 0}), Produk (
+                    {pendingValidation.metadata.tableCounts.products || 0}), Transaksi (
+                    {pendingValidation.metadata.tableCounts.transactions || 0}), Jurnal (
+                    {pendingValidation.metadata.tableCounts.journals || 0}), Absensi (
+                    {pendingValidation.metadata.tableCounts.attendances || 0}), Piutang (
+                    {pendingValidation.metadata.tableCounts.receivables || 0})
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

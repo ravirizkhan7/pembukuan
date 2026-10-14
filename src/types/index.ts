@@ -72,6 +72,24 @@ export interface Shift {
   discrepancy?: number;
 }
 
+export interface ShiftSession {
+  id: string;
+  shiftId: string;
+  name: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  operator: string;
+  status: 'Aktif' | 'Tutup';
+  initialCash: number;
+  totalSales: number;
+  cashHandover: number;
+  discrepancy: number;
+  closedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Pegawai {
   id: string;
   name: string;
@@ -245,6 +263,8 @@ export interface StockReportItem {
   unit: string;
   kapasitasTanki: number;
   persenTerisi: number;
+  statusStok?: string;
+  isEstimasi?: boolean;
 }
 
 export interface LabaRugiRow {
@@ -284,6 +304,23 @@ export interface NeracaRow {
   isGrandTotal?: boolean;
 }
 
+export interface AccountDiscrepancy {
+  accountCode: string;
+  accountName: string;
+  storedBalance: number;
+  journalBalance: number;
+  selisih: number;
+}
+
+export interface UnbalancedJournalItem {
+  id: string;
+  transCode?: string;
+  description: string;
+  totalDebit: number;
+  totalCredit: number;
+  selisih: number;
+}
+
 export interface NeracaKonsolidasi {
   title: string;
   periodDate: string;
@@ -291,6 +328,13 @@ export interface NeracaKonsolidasi {
   location: string;
   signerDate: string;
   rows: NeracaRow[];
+  totalAset?: number;
+  totalKewajibanDanEkuitas?: number;
+  selisihKeseimbangan?: number;
+  isSeimbang?: boolean;
+  hasAccountBalanceDiscrepancy?: boolean;
+  accountDiscrepancies?: AccountDiscrepancy[];
+  unbalancedJournals?: UnbalancedJournalItem[];
 }
 
 export interface ReportsData {
@@ -308,8 +352,44 @@ export interface ReportsData {
     investasi: FinancialItem[];
     pendanaan: FinancialItem[];
     saldoAwal: number;
+    saldoAwalKasFisik?: number;
+    saldoAwalBank?: number;
+    saldoAkhirKasFisik?: number;
+    saldoAkhirBank?: number;
   };
   stokPenjualan: StockReportItem[];
+  salesAndShiftRecap?: SalesAndShiftRecap;
+}
+
+export interface ShiftSalesItem {
+  shiftId: string;
+  shiftName: string;
+  operator: string;
+  status: string;
+  initialCash: number;
+  totalSales: number;
+  cashSales: number;
+  creditSales: number;
+  transferSales: number;
+  cashHandover: number;
+  discrepancy?: number;
+}
+
+export interface PaymentMethodSalesSummary {
+  method: string;
+  amount: number;
+  transactionCount: number;
+}
+
+export interface SalesAndShiftRecap {
+  period: string;
+  totalGrossSales: number;
+  cashSales: number;
+  creditSales: number;
+  transferSales: number;
+  byPaymentMethod: PaymentMethodSalesSummary[];
+  byProduct: { productId: string; productName: string; volume: number; amount: number }[];
+  shifts: ShiftSalesItem[];
 }
 
 export type ToastType = 'primary' | 'success' | 'danger' | 'warning';

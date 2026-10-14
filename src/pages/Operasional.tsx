@@ -72,7 +72,7 @@ export function OperasionalPage({
   const computedVolume = Math.max(0, parseFloat((numTeraAkhir - numTeraAwal).toFixed(2)));
   const computedSalesValue = computedVolume * (matchedProduct ? matchedProduct.sellPrice : 0);
 
-  const handleSaveTera = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveTera = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!currentNozzle) return;
 
@@ -100,9 +100,13 @@ export function OperasionalPage({
       status: 'Valid'
     };
 
-    addTera(newTera);
-    setIsTeraModalOpen(false);
-    showToast(`Data Tera Nozzle [${currentNozzle.code}] berhasil dicatat.`, 'success');
+    try {
+      await addTera(newTera);
+      setIsTeraModalOpen(false);
+      showToast(`Data Tera Nozzle [${currentNozzle.code}] berhasil dicatat.`, 'success');
+    } catch (err: any) {
+      showToast(`Gagal menyimpan data tera: ${err?.message || err}`, 'danger');
+    }
   };
 
   // ==========================================
@@ -154,32 +158,40 @@ export function OperasionalPage({
     setIsTutupShiftModalOpen(true);
   };
 
-  const handleExecuteBukaShift = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleExecuteBukaShift = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    bukaShift(selectedShiftToOpen, {
-      date: bukaDate,
-      startTime: bukaStartTime,
-      operator: bukaOperator.trim(),
-      initialCash: parseFloat(bukaInitialCash) || 0
-    });
-    const s = shifts.find(item => item.id === selectedShiftToOpen);
-    showToast(`${s?.name || selectedShiftToOpen} berhasil dibuka (Aktif).`, 'success');
-    setIsBukaShiftModalOpen(false);
+    try {
+      await bukaShift(selectedShiftToOpen, {
+        date: bukaDate,
+        startTime: bukaStartTime,
+        operator: bukaOperator.trim(),
+        initialCash: parseFloat(bukaInitialCash) || 0
+      });
+      const s = shifts.find(item => item.id === selectedShiftToOpen);
+      showToast(`${s?.name || selectedShiftToOpen} berhasil dibuka (Aktif).`, 'success');
+      setIsBukaShiftModalOpen(false);
+    } catch (err: any) {
+      showToast(err?.message || 'Gagal membuka shift', 'danger');
+    }
   };
 
-  const handleExecuteTutupShift = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleExecuteTutupShift = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!tutupCashHandover) {
       showToast('Masukkan jumlah setoran kas fisik.', 'danger');
       return;
     }
 
-    tutupShift(selectedShiftToClose, {
-      cashHandover: parseFloat(tutupCashHandover) || 0
-    });
-    const s = shifts.find(item => item.id === selectedShiftToClose);
-    showToast(`${s?.name || selectedShiftToClose} telah ditutup.`, 'success');
-    setIsTutupShiftModalOpen(false);
+    try {
+      await tutupShift(selectedShiftToClose, {
+        cashHandover: parseFloat(tutupCashHandover) || 0
+      });
+      const s = shifts.find(item => item.id === selectedShiftToClose);
+      showToast(`${s?.name || selectedShiftToClose} telah ditutup.`, 'success');
+      setIsTutupShiftModalOpen(false);
+    } catch (err: any) {
+      showToast(err?.message || 'Gagal menutup shift', 'danger');
+    }
   };
 
   // ==========================================

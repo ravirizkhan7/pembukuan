@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useMemo, useCallback, useEffect, ReactNode } from 'react';
 import * as initialMock from '../mock/mockData';
 import {
   Account,
@@ -19,8 +19,24 @@ import {
   Pegawai,
   Attendance
 } from '../types';
-import { postTransaction } from '../services/postingEngine';
 import { getLocalDateTimeString } from '../services/appSettings';
+import {
+  sqliteService,
+  MasterDataService,
+  productCategoryRepository,
+  productRepository,
+  tankRepository,
+  nozzleRepository,
+  accountRepository,
+  masterCodeRepository,
+  businessPartnerRepository,
+  shiftRepository,
+  pegawaiRepository,
+  attendanceRepository,
+  teraRepository,
+  accountingService,
+  reportRepository
+} from '../services/database';
 
 export interface AppContextType {
   // Master Entities
@@ -43,61 +59,73 @@ export interface AppContextType {
   stationInfo: StationInfo;
   authPin: string;
   reports: ReportsData;
+  isDbLoaded?: boolean;
 
   // Master Pegawai CRUD
-  addPegawai: (pegawai: Omit<Pegawai, 'id'> & { id?: string }) => Pegawai;
-  updatePegawai: (pegawai: Pegawai) => void;
-  togglePegawaiStatus: (id: string) => void;
+  addPegawai: (pegawai: Omit<Pegawai, 'id'> & { id?: string }) => Promise<Pegawai> | Pegawai;
+  updatePegawai: (pegawai: Pegawai) => Promise<void> | void;
+  togglePegawaiStatus: (id: string) => Promise<void> | void;
 
   // Attendance Actions
-  addAttendance: (attendance: Omit<Attendance, 'id'> & { id?: string }) => Attendance;
-  updateAttendance: (attendance: Attendance) => void;
-  deleteAttendance: (id: string) => void;
+  addAttendance: (attendance: Omit<Attendance, 'id'> & { id?: string }) => Promise<Attendance> | Attendance;
+  updateAttendance: (attendance: Attendance) => Promise<void> | void;
+  deleteAttendance: (id: string) => Promise<boolean> | void;
 
   // Product Category CRUD
-  addProductCategory: (category: Omit<ProductCategory, 'id'> & { id?: string }) => ProductCategory;
-  updateProductCategory: (category: ProductCategory) => void;
-  toggleProductCategoryStatus: (id: string) => void;
+  addProductCategory: (category: Omit<ProductCategory, 'id'> & { id?: string }) => Promise<ProductCategory> | ProductCategory;
+  updateProductCategory: (category: ProductCategory) => Promise<void> | void;
+  toggleProductCategoryStatus: (id: string) => Promise<void> | void;
+  deleteProductCategory?: (id: string) => Promise<boolean>;
 
   // Account CRUD
-  addAccount: (account: Omit<Account, 'id'> & { id?: string }) => Account;
-  updateAccount: (account: Account) => void;
-  toggleAccountStatus: (id: string) => void;
+  addAccount: (account: Omit<Account, 'id'> & { id?: string }) => Promise<Account> | Account;
+  updateAccount: (account: Account) => Promise<void> | void;
+  toggleAccountStatus: (id: string) => Promise<void> | void;
+  deleteAccount?: (id: string) => Promise<boolean>;
 
   // Product CRUD
-  addProduct: (product: Omit<Product, 'id'> & { id?: string }) => Product;
-  updateProduct: (product: Product) => void;
-  toggleProductStatus: (id: string) => void;
+  addProduct: (product: Omit<Product, 'id'> & { id?: string }) => Promise<Product> | Product;
+  updateProduct: (product: Product) => Promise<void> | void;
+  toggleProductStatus: (id: string) => Promise<void> | void;
+  deleteProduct?: (id: string) => Promise<boolean>;
 
   // Tank CRUD
-  addTank: (tank: Omit<Tank, 'id'> & { id?: string }) => Tank;
-  updateTank: (tank: Tank) => void;
-  toggleTankStatus: (id: string) => void;
+  addTank: (tank: Omit<Tank, 'id'> & { id?: string }) => Promise<Tank> | Tank;
+  updateTank: (tank: Tank) => Promise<void> | void;
+  toggleTankStatus: (id: string) => Promise<void> | void;
+  deleteTank?: (id: string) => Promise<boolean>;
 
   // Nozzle CRUD
-  addNozzle: (nozzle: Omit<Nozzle, 'id'> & { id?: string }) => Nozzle;
-  updateNozzle: (nozzle: Nozzle) => void;
-  toggleNozzleStatus: (id: string) => void;
+  addNozzle: (nozzle: Omit<Nozzle, 'id'> & { id?: string }) => Promise<Nozzle> | Nozzle;
+  updateNozzle: (nozzle: Nozzle) => Promise<void> | void;
+  toggleNozzleStatus: (id: string) => Promise<void> | void;
+  deleteNozzle?: (id: string) => Promise<boolean>;
 
   // Master Code CRUD
-  addMasterCode: (code: Omit<MasterCode, 'id'> & { id?: string }) => MasterCode;
-  updateMasterCode: (code: MasterCode) => void;
-  toggleMasterCodeStatus: (id: string) => void;
+  addMasterCode: (code: Omit<MasterCode, 'id'> & { id?: string }) => Promise<MasterCode> | MasterCode;
+  updateMasterCode: (code: MasterCode) => Promise<void> | void;
+  toggleMasterCodeStatus: (id: string) => Promise<void> | void;
+  deleteMasterCode?: (id: string) => Promise<boolean>;
 
   // Shift Dynamic Actions
-  bukaShift: (shiftId: string, params: { date: string; startTime: string; operator: string; initialCash: number }) => void;
-  tutupShift: (shiftId: string, params: { cashHandover: number }) => void;
+  bukaShift: (shiftId: string, params: { date: string; startTime: string; operator: string; initialCash: number }) => Promise<void> | void;
+  tutupShift: (shiftId: string, params: { cashHandover: number }) => Promise<void> | void;
 
   // Tera & Transaction Actions
-  addTera: (tera: Tera) => void;
-  addTransaction: (tx: Transaction) => { success: boolean; error?: string; journal?: Journal };
+  addTera: (tera: Tera) => Promise<void> | void;
+  addTransaction: (tx: Transaction, tera?: Tera) => Promise<{ success: boolean; error?: string; journal?: Journal }>;
 
   // Business Partner
-  addBusinessPartner: (bp: Omit<BusinessPartner, 'id'> & { id?: string }) => BusinessPartner;
+  addBusinessPartner: (bp: Omit<BusinessPartner, 'id'> & { id?: string }) => Promise<BusinessPartner> | BusinessPartner;
+  deleteBusinessPartner?: (id: string) => Promise<boolean>;
+
+  // Reports Action
+  refreshReports: (period?: string) => Promise<ReportsData>;
 
   // Station & Security
   updateStationInfo: (info: StationInfo) => void;
   changePin: (newPin: string) => void;
+  reloadFromDatabase?: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -109,18 +137,107 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [tanks, setTanks] = useState<Tank[]>(initialMock.mockTanks);
   const [nozzles, setNozzles] = useState<Nozzle[]>(initialMock.mockNozzles);
   const [masterCodes, setMasterCodes] = useState<MasterCode[]>(initialMock.mockMasterCodes);
-  const [shifts, setShifts] = useState<Shift[]>(initialMock.mockShifts);
+  const [shifts, setShifts] = useState<Shift[]>([
+    { id: "SFT-01", name: "Shift 1", startTime: "07:00", endTime: "15:00", operator: "Ahmad Fauzi", status: "Menunggu", totalSales: 0, cashHandover: 0, date: "2026-09-24", initialCash: 0, discrepancy: 0 },
+    { id: "SFT-02", name: "Shift 2", startTime: "15:00", endTime: "23:00", operator: "Siti Rahma", status: "Menunggu", totalSales: 0, cashHandover: 0, date: "2026-09-24", initialCash: 0, discrepancy: 0 }
+  ]);
   const [pegawaiList, setPegawaiList] = useState<Pegawai[]>(initialMock.mockPegawai);
-  const [attendances, setAttendances] = useState<Attendance[]>(initialMock.mockAttendances);
-  const [teraList, setTeraList] = useState<Tera[]>(initialMock.mockTera);
-  const [transactions, setTransactions] = useState<Transaction[]>(initialMock.mockTransactions);
-  const [journals, setJournals] = useState<Journal[]>(initialMock.mockJournal);
-  const [receivables, setReceivables] = useState<Receivable[]>(initialMock.mockReceivables);
-  const [payables, setPayables] = useState<Payable[]>(initialMock.mockPayables);
+  const [attendances, setAttendances] = useState<Attendance[]>([]);
+  const [teraList, setTeraList] = useState<Tera[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [journals, setJournals] = useState<Journal[]>([]);
+  const [receivables, setReceivables] = useState<Receivable[]>([]);
+  const [payables, setPayables] = useState<Payable[]>([]);
+  const [pendingTera, setPendingTera] = useState<Tera | null>(null);
   const [businessPartners, setBusinessPartners] = useState<BusinessPartner[]>(initialMock.mockBusinessPartners);
   const [stationInfo, setStationInfo] = useState<StationInfo>(initialMock.mockStationInfo);
   const [authPin, setAuthPin] = useState<string>(initialMock.initialAuthPin);
-  const [reports] = useState<ReportsData>(initialMock.mockReports);
+  const [reports, setReports] = useState<ReportsData>(initialMock.mockReports);
+  const [isDbLoaded, setIsDbLoaded] = useState<boolean>(false);
+
+  // Inisialisasi SQLite database dan load master data secara persisten
+  useEffect(() => {
+    let isMounted = true;
+    async function initDatabaseAndMasterData() {
+      try {
+        await sqliteService.initialize();
+        await MasterDataService.initializeMasterData(sqliteService);
+        const snapshot = await MasterDataService.loadAllMasterData(sqliteService);
+        if (isMounted) {
+          setAccounts(snapshot.accounts);
+          setProductCategories(snapshot.productCategories);
+          setProducts(snapshot.products);
+          setTanks(snapshot.tanks);
+          setNozzles(snapshot.nozzles);
+          setMasterCodes(snapshot.masterCodes);
+          setBusinessPartners(snapshot.businessPartners);
+          setShifts(snapshot.shifts);
+          setPegawaiList(snapshot.pegawaiList);
+          setAttendances(snapshot.attendances);
+          setTransactions(snapshot.transactions);
+          setTeraList(snapshot.teraList);
+          setJournals(snapshot.journals);
+          setReceivables(snapshot.receivables);
+          setPayables(snapshot.payables);
+          if (snapshot.reports) {
+            setReports(snapshot.reports);
+          }
+          setIsDbLoaded(true);
+        }
+      } catch (err) {
+        console.warn('[AppContext] Inisialisasi database SQLite atau master data warning:', err);
+      }
+    }
+
+    initDatabaseAndMasterData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Memuat ulang seluruh data dari SQLite setelah Restore atau sinkronisasi eksternal
+  const reloadFromDatabase = useCallback(async (): Promise<void> => {
+    try {
+      const snapshot = await MasterDataService.loadAllMasterData(sqliteService);
+      setAccounts(snapshot.accounts);
+      setProductCategories(snapshot.productCategories);
+      setProducts(snapshot.products);
+      setTanks(snapshot.tanks);
+      setNozzles(snapshot.nozzles);
+      setMasterCodes(snapshot.masterCodes);
+      setBusinessPartners(snapshot.businessPartners);
+      setShifts(snapshot.shifts);
+      setPegawaiList(snapshot.pegawaiList);
+      setAttendances(snapshot.attendances);
+      setTransactions(snapshot.transactions);
+      setTeraList(snapshot.teraList);
+      setJournals(snapshot.journals);
+      setReceivables(snapshot.receivables);
+      setPayables(snapshot.payables);
+      if (snapshot.reports) {
+        setReports(snapshot.reports);
+      }
+
+      // Muat ulang profil SPBU jika ada di database SQLite
+      const stationRows = await sqliteService.query<any>('SELECT * FROM station_info LIMIT 1;');
+      if (stationRows && stationRows.length > 0) {
+        setStationInfo((prev) => ({
+          ...prev,
+          id: stationRows[0].id || prev.id,
+          name: stationRows[0].name || prev.name,
+          address: stationRows[0].address || prev.address,
+          manager: stationRows[0].manager || prev.manager,
+          phone: stationRows[0].phone || prev.phone,
+          email: stationRows[0].email || prev.email,
+          status: stationRows[0].status || prev.status,
+          lastBackup: stationRows[0].last_backup || prev.lastBackup
+        }));
+      }
+    } catch (err) {
+      console.error('[AppContext] Gagal memuat ulang data dari SQLite:', err);
+      throw err;
+    }
+  }, []);
 
   // Active shift is strictly the one with status === 'Aktif'
   const activeShift = useMemo(() => {
@@ -128,45 +245,73 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [shifts]);
 
   // ==========================================
-  // A. Bagan Akun (COA) CRUD
+  // A. Bagan Akun (COA) CRUD (SQLite Persisted)
   // ==========================================
-  const addAccount = useCallback((accountData: Omit<Account, 'id'> & { id?: string }): Account => {
+  const addAccount = useCallback(async (accountData: Omit<Account, 'id'> & { id?: string }): Promise<Account> => {
     const newId = accountData.id || accountData.code;
     const newAcc: Account = {
       ...accountData,
       id: newId,
+      balance: accountData.balance ?? 0,
       isActive: accountData.isActive ?? true
     };
-    setAccounts((prev) => [...prev, newAcc]);
+    await accountRepository.create(newAcc);
+    setAccounts((prev) => [...prev.filter((a) => a.id !== newAcc.id), newAcc]);
     return newAcc;
   }, []);
 
-  const updateAccount = useCallback((updated: Account) => {
+  const updateAccount = useCallback(async (updated: Account): Promise<void> => {
+    await accountRepository.update(updated.id, {
+      code: updated.code,
+      name: updated.name,
+      category: updated.category,
+      normalBalance: updated.normalBalance,
+      balance: updated.balance,
+      isActive: updated.isActive
+    });
     setAccounts((prev) =>
       prev.map((acc) => (acc.id === updated.id ? updated : acc))
     );
   }, []);
 
-  const toggleAccountStatus = useCallback((id: string) => {
+  const toggleAccountStatus = useCallback(async (id: string): Promise<void> => {
+    const acc = accounts.find((a) => a.id === id);
+    if (!acc) return;
+    const nextIsActive = !acc.isActive;
+    await accountRepository.update(id, { isActive: nextIsActive });
     setAccounts((prev) =>
-      prev.map((acc) => (acc.id === id ? { ...acc, isActive: !acc.isActive } : acc))
+      prev.map((a) => (a.id === id ? { ...a, isActive: nextIsActive } : a))
     );
+  }, [accounts]);
+
+  const deleteAccount = useCallback(async (id: string): Promise<boolean> => {
+    const deleted = await accountRepository.delete(id);
+    if (deleted) {
+      setAccounts((prev) => prev.filter((a) => a.id !== id));
+    }
+    return deleted;
   }, []);
 
   // ==========================================
-  // B. Produk CRUD (dengan relasi tankId)
+  // B. Produk CRUD (SQLite Persisted + Relasi Tanki)
   // ==========================================
-  const addProduct = useCallback((prodData: Omit<Product, 'id'> & { id?: string }): Product => {
+  const addProduct = useCallback(async (prodData: Omit<Product, 'id'> & { id?: string }): Promise<Product> => {
     const newId = prodData.id || `PRD-${Date.now().toString().slice(-4)}`;
     const newProd: Product = {
       ...prodData,
       id: newId,
       status: prodData.status || 'Aktif'
     };
-    setProducts((prev) => [...prev, newProd]);
+    await productRepository.create(newProd);
+    setProducts((prev) => [...prev.filter((p) => p.id !== newProd.id), newProd]);
 
-    // If tankId assigned, sync tank's productId
+    // Jika produk mengaitkan tankId, sinkronkan relasi tanki
     if (newProd.tankId) {
+      try {
+        await tankRepository.update(newProd.tankId, { productId: newProd.id });
+      } catch (e) {
+        console.warn('[AppContext] Sinkronisasi link produk ke tanki:', e);
+      }
       setTanks((prevTanks) =>
         prevTanks.map((t) =>
           t.id === newProd.tankId
@@ -179,13 +324,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return newProd;
   }, []);
 
-  const updateProduct = useCallback((updated: Product) => {
+  const updateProduct = useCallback(async (updated: Product): Promise<void> => {
+    await productRepository.update(updated.id, {
+      code: updated.code,
+      name: updated.name,
+      categoryId: updated.categoryId,
+      sellPrice: updated.sellPrice,
+      buyPrice: updated.buyPrice,
+      unit: updated.unit,
+      color: updated.color,
+      status: updated.status,
+      tankId: updated.tankId
+    });
     setProducts((prev) =>
       prev.map((p) => (p.id === updated.id ? updated : p))
     );
 
-    // Sync tank relation if changed
+    // Sinkronisasi relasi tanki jika berubah
     if (updated.tankId) {
+      try {
+        await tankRepository.update(updated.tankId, { productId: updated.id });
+      } catch (e) {
+        console.warn('[AppContext] Sinkronisasi link produk ke tanki on update:', e);
+      }
       setTanks((prevTanks) =>
         prevTanks.map((t) =>
           t.id === updated.tankId
@@ -196,54 +357,71 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const toggleProductStatus = useCallback((id: string) => {
+  const toggleProductStatus = useCallback(async (id: string): Promise<void> => {
+    const prod = products.find((p) => p.id === id);
+    if (!prod) return;
+    const nextStatus = prod.status === 'Aktif' ? 'Nonaktif' : 'Aktif';
+    await productRepository.update(id, { status: nextStatus });
     setProducts((prev) =>
-      prev.map((p) => {
-        if (p.id === id) {
-          const nextStatus = p.status === 'Aktif' ? 'Nonaktif' : 'Aktif';
-          return { ...p, status: nextStatus };
-        }
-        return p;
-      })
+      prev.map((p) => (p.id === id ? { ...p, status: nextStatus } : p))
     );
+  }, [products]);
+
+  const deleteProduct = useCallback(async (id: string): Promise<boolean> => {
+    const deleted = await productRepository.delete(id);
+    if (deleted) {
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+    }
+    return deleted;
   }, []);
 
   // ==========================================
-  // B.1. Kategori Produk CRUD
+  // B.1. Kategori Produk CRUD (SQLite Persisted)
   // ==========================================
-  const addProductCategory = useCallback((catData: Omit<ProductCategory, 'id'> & { id?: string }): ProductCategory => {
+  const addProductCategory = useCallback(async (catData: Omit<ProductCategory, 'id'> & { id?: string }): Promise<ProductCategory> => {
     const newId = catData.id || `PCAT-${(productCategories.length + 1).toString().padStart(3, '0')}`;
     const newCat: ProductCategory = {
       ...catData,
       id: newId,
       status: catData.status || 'Aktif'
     };
-    setProductCategories((prev) => [...prev, newCat]);
+    await productCategoryRepository.create(newCat);
+    setProductCategories((prev) => [...prev.filter((c) => c.id !== newCat.id), newCat]);
     return newCat;
   }, [productCategories.length]);
 
-  const updateProductCategory = useCallback((updated: ProductCategory) => {
+  const updateProductCategory = useCallback(async (updated: ProductCategory): Promise<void> => {
+    await productCategoryRepository.update(updated.id, {
+      name: updated.name,
+      status: updated.status
+    });
     setProductCategories((prev) =>
       prev.map((c) => (c.id === updated.id ? updated : c))
     );
   }, []);
 
-  const toggleProductCategoryStatus = useCallback((id: string) => {
+  const toggleProductCategoryStatus = useCallback(async (id: string): Promise<void> => {
+    const cat = productCategories.find((c) => c.id === id);
+    if (!cat) return;
+    const nextStatus = cat.status === 'Aktif' ? 'Nonaktif' : 'Aktif';
+    await productCategoryRepository.update(id, { status: nextStatus });
     setProductCategories((prev) =>
-      prev.map((c) => {
-        if (c.id === id) {
-          const nextStatus = c.status === 'Aktif' ? 'Nonaktif' : 'Aktif';
-          return { ...c, status: nextStatus };
-        }
-        return c;
-      })
+      prev.map((c) => (c.id === id ? { ...c, status: nextStatus } : c))
     );
+  }, [productCategories]);
+
+  const deleteProductCategory = useCallback(async (id: string): Promise<boolean> => {
+    const deleted = await productCategoryRepository.delete(id);
+    if (deleted) {
+      setProductCategories((prev) => prev.filter((c) => c.id !== id));
+    }
+    return deleted;
   }, []);
 
   // ==========================================
-  // B.2. Tanki Pendam CRUD
+  // B.2. Tanki Pendam CRUD (SQLite Persisted)
   // ==========================================
-  const addTank = useCallback((tankData: Omit<Tank, 'id'> & { id?: string }): Tank => {
+  const addTank = useCallback(async (tankData: Omit<Tank, 'id'> & { id?: string }): Promise<Tank> => {
     const newId = tankData.id || `TNK-${(tanks.length + 1).toString().padStart(2, '0')}`;
     const linkedProd = products.find((p) => p.id === tankData.productId);
     const newTank: Tank = {
@@ -255,37 +433,53 @@ export function AppProvider({ children }: { children: ReactNode }) {
       lastSounding: tankData.lastSounding || getLocalDateTimeString(),
       status: tankData.status || 'Aktif'
     };
-    setTanks((prev) => [...prev, newTank]);
+    await tankRepository.create(newTank);
+    setTanks((prev) => [...prev.filter((t) => t.id !== newTank.id), newTank]);
     return newTank;
   }, [products, tanks.length]);
 
-  const updateTank = useCallback((updated: Tank) => {
+  const updateTank = useCallback(async (updated: Tank): Promise<void> => {
     const linkedProd = products.find((p) => p.id === updated.productId);
     const enrichedTank: Tank = {
       ...updated,
       productName: linkedProd?.name || updated.productName
     };
+    await tankRepository.update(updated.id, {
+      name: updated.name,
+      productId: updated.productId,
+      capacity: updated.capacity,
+      currentStock: updated.currentStock,
+      unit: updated.unit,
+      lastSounding: updated.lastSounding,
+      status: updated.status
+    });
     setTanks((prev) =>
       prev.map((t) => (t.id === updated.id ? enrichedTank : t))
     );
   }, [products]);
 
-  const toggleTankStatus = useCallback((id: string) => {
+  const toggleTankStatus = useCallback(async (id: string): Promise<void> => {
+    const t = tanks.find((tank) => tank.id === id);
+    if (!t) return;
+    const nextStatus = t.status === 'Aktif' || t.status === 'Aman' ? 'Nonaktif' : 'Aktif';
+    await tankRepository.update(id, { status: nextStatus });
     setTanks((prev) =>
-      prev.map((t) => {
-        if (t.id === id) {
-          const nextStatus = t.status === 'Aktif' || t.status === 'Aman' ? 'Nonaktif' : 'Aktif';
-          return { ...t, status: nextStatus };
-        }
-        return t;
-      })
+      prev.map((tank) => (tank.id === id ? { ...tank, status: nextStatus } : tank))
     );
+  }, [tanks]);
+
+  const deleteTank = useCallback(async (id: string): Promise<boolean> => {
+    const deleted = await tankRepository.delete(id);
+    if (deleted) {
+      setTanks((prev) => prev.filter((t) => t.id !== id));
+    }
+    return deleted;
   }, []);
 
   // ==========================================
-  // B.3. Nozzle Dispenser CRUD
+  // B.3. Nozzle Dispenser CRUD (SQLite Persisted)
   // ==========================================
-  const addNozzle = useCallback((nozzleData: Omit<Nozzle, 'id'> & { id?: string }): Nozzle => {
+  const addNozzle = useCallback(async (nozzleData: Omit<Nozzle, 'id'> & { id?: string }): Promise<Nozzle> => {
     const newId = nozzleData.id || `NZL-${(nozzles.length + 1).toString().padStart(2, '0')}`;
     const linkedProd = products.find((p) => p.id === nozzleData.productId);
     const newNozzle: Nozzle = {
@@ -295,143 +489,162 @@ export function AppProvider({ children }: { children: ReactNode }) {
       currentMeter: nozzleData.currentMeter ?? 0,
       status: nozzleData.status || 'Aktif'
     };
-    setNozzles((prev) => [...prev, newNozzle]);
+    await nozzleRepository.create(newNozzle);
+    setNozzles((prev) => [...prev.filter((n) => n.id !== newNozzle.id), newNozzle]);
     return newNozzle;
   }, [products, nozzles.length]);
 
-  const updateNozzle = useCallback((updated: Nozzle) => {
+  const updateNozzle = useCallback(async (updated: Nozzle): Promise<void> => {
     const linkedProd = products.find((p) => p.id === updated.productId);
     const enrichedNozzle: Nozzle = {
       ...updated,
       productName: linkedProd?.name || updated.productName
     };
+    await nozzleRepository.update(updated.id, {
+      code: updated.code,
+      island: updated.island,
+      tankId: updated.tankId,
+      productId: updated.productId,
+      currentMeter: updated.currentMeter,
+      status: updated.status
+    });
     setNozzles((prev) =>
       prev.map((n) => (n.id === updated.id ? enrichedNozzle : n))
     );
   }, [products]);
 
-  const toggleNozzleStatus = useCallback((id: string) => {
+  const toggleNozzleStatus = useCallback(async (id: string): Promise<void> => {
+    const n = nozzles.find((noz) => noz.id === id);
+    if (!n) return;
+    const nextStatus = n.status === 'Aktif' ? 'Maintenance' : 'Aktif';
+    await nozzleRepository.update(id, { status: nextStatus });
     setNozzles((prev) =>
-      prev.map((n) => {
-        if (n.id === id) {
-          const nextStatus = n.status === 'Aktif' ? 'Maintenance' : 'Aktif';
-          return { ...n, status: nextStatus };
-        }
-        return n;
-      })
+      prev.map((noz) => (noz.id === id ? { ...noz, status: nextStatus } : noz))
     );
+  }, [nozzles]);
+
+  const deleteNozzle = useCallback(async (id: string): Promise<boolean> => {
+    const deleted = await nozzleRepository.delete(id);
+    if (deleted) {
+      setNozzles((prev) => prev.filter((n) => n.id !== id));
+    }
+    return deleted;
   }, []);
 
   // ==========================================
-  // C. Master Kode CRUD (dengan mapping COA & Produk)
+  // C. Master Kode CRUD (SQLite Persisted)
   // ==========================================
-  const addMasterCode = useCallback((mcData: Omit<MasterCode, 'id'> & { id?: string }): MasterCode => {
+  const addMasterCode = useCallback(async (mcData: Omit<MasterCode, 'id'> & { id?: string }): Promise<MasterCode> => {
     const newId = mcData.id || `MK-${mcData.code}`;
     const newMc: MasterCode = {
       ...mcData,
       id: newId,
       isActive: mcData.isActive ?? true
     };
-    setMasterCodes((prev) => [...prev, newMc]);
+    await masterCodeRepository.create(newMc);
+    setMasterCodes((prev) => [...prev.filter((m) => m.id !== newMc.id), newMc]);
     return newMc;
   }, []);
 
-  const updateMasterCode = useCallback((updated: MasterCode) => {
+  const updateMasterCode = useCallback(async (updated: MasterCode): Promise<void> => {
+    await masterCodeRepository.update(updated.id, {
+      code: updated.code,
+      name: updated.name,
+      category: updated.category,
+      type: updated.type,
+      requiresTera: updated.requiresTera,
+      productId: updated.productId,
+      unitPrice: updated.unitPrice,
+      debitAccountId: updated.debitAccountId,
+      creditAccountId: updated.creditAccountId,
+      description: updated.description,
+      paymentMethod: updated.paymentMethod,
+      isActive: updated.isActive
+    });
     setMasterCodes((prev) =>
       prev.map((mc) => (mc.id === updated.id ? updated : mc))
     );
   }, []);
 
-  const toggleMasterCodeStatus = useCallback((id: string) => {
+  const toggleMasterCodeStatus = useCallback(async (id: string): Promise<void> => {
+    const mc = masterCodes.find((m) => m.id === id);
+    if (!mc) return;
+    const nextIsActive = !mc.isActive;
+    await masterCodeRepository.update(id, { isActive: nextIsActive });
     setMasterCodes((prev) =>
-      prev.map((mc) => (mc.id === id ? { ...mc, isActive: !mc.isActive } : mc))
+      prev.map((m) => (m.id === id ? { ...m, isActive: nextIsActive } : m))
     );
+  }, [masterCodes]);
+
+  const deleteMasterCode = useCallback(async (id: string): Promise<boolean> => {
+    const deleted = await masterCodeRepository.delete(id);
+    if (deleted) {
+      setMasterCodes((prev) => prev.filter((m) => m.id !== id));
+    }
+    return deleted;
   }, []);
 
   // ==========================================
-  // D. Shift Dinamis (Buka & Tutup)
+  // D. Shift Dinamis (Buka & Tutup) - SQLite Persisted
   // ==========================================
-  const bukaShift = useCallback((
+  const bukaShift = useCallback(async (
     shiftId: string,
     params: { date: string; startTime: string; operator: string; initialCash: number }
-  ) => {
-    setShifts((prev) =>
-      prev.map((s) => {
-        if (s.id === shiftId) {
-          return {
-            ...s,
-            status: 'Aktif',
-            date: params.date,
-            startTime: params.startTime,
-            operator: params.operator,
-            initialCash: params.initialCash,
-            totalSales: 0,
-            cashHandover: 0,
-            discrepancy: 0
-          };
-        }
-        return s;
-      })
-    );
+  ): Promise<void> => {
+    await shiftRepository.bukaShift(shiftId, params);
+    const updated = await shiftRepository.getAllShifts();
+    setShifts(updated);
   }, []);
 
-  const tutupShift = useCallback((
+  const tutupShift = useCallback(async (
     shiftId: string,
     params: { cashHandover: number }
-  ) => {
-    setShifts((prev) =>
-      prev.map((s) => {
-        if (s.id === shiftId) {
-          // Calculate shift sales from transactions of this shift
-          const shiftTransactions = transactions.filter((tx) => tx.shiftId === shiftId);
-          const computedSales = shiftTransactions.reduce((acc, tx) => acc + (tx.total || 0), 0);
-          const finalSales = computedSales > 0 ? computedSales : s.totalSales;
-          const initial = s.initialCash || 0;
-          // Kas fisik yang disetor dikurangi (modal awal + penjualan)
-          const discrepancy = params.cashHandover - (initial + finalSales);
+  ): Promise<void> => {
+    const shiftTransactions = transactions.filter((tx) => tx.shiftId === shiftId && tx.status === 'Selesai');
+    const totalSales = shiftTransactions
+      .filter((tx) => tx.category === 'Penjualan')
+      .reduce((acc, tx) => acc + (tx.total || 0), 0);
+    const cashSales = shiftTransactions
+      .filter((tx) => tx.paymentMethod === 'Tunai' && tx.category === 'Penjualan')
+      .reduce((acc, tx) => acc + (tx.total || 0), 0);
 
-          return {
-            ...s,
-            status: 'Tutup',
-            totalSales: finalSales,
-            cashHandover: params.cashHandover,
-            discrepancy
-          };
-        }
-        return s;
-      })
-    );
+    await shiftRepository.tutupShift(shiftId, {
+      cashHandover: params.cashHandover,
+      computedSales: totalSales,
+      computedCashSales: cashSales
+    });
+    const updated = await shiftRepository.getAllShifts();
+    setShifts(updated);
   }, [transactions]);
 
   // ==========================================
-  // E. Tera & Transaksi (Relasional + Posting Engine)
+  // E. Tera & Transaksi (Relasional + Posting Engine ke SQLite)
   // ==========================================
-  const addTera = useCallback((tera: Tera) => {
-    setTeraList((prev) => [tera, ...prev]);
+  const addTera = useCallback(async (tera: Tera): Promise<void> => {
+    if (!tera.transactionId) {
+      await teraRepository.create(tera);
+      setTeraList((prev) => [tera, ...prev.filter((t) => t.id !== tera.id)]);
+    } else {
+      setPendingTera(tera);
+      setTeraList((prev) => [tera, ...prev.filter((t) => t.id !== tera.id)]);
+    }
   }, []);
 
-  const addTransaction = useCallback((tx: Transaction): { success: boolean; error?: string; journal?: Journal } => {
-    if (!activeShift) {
-      return {
-        success: false,
-        error: 'Belum ada shift aktif. Buka shift terlebih dahulu di menu Pegawai → Shift Kerja.'
-      };
-    }
+  const addTransaction = useCallback(async (
+    tx: Transaction,
+    teraParam?: Tera
+  ): Promise<{ success: boolean; error?: string; journal?: Journal }> => {
+    const teraToPost =
+      teraParam ||
+      (tx.teraId
+        ? pendingTera?.id === tx.teraId
+          ? pendingTera
+          : teraList.find((t) => t.id === tx.teraId)
+        : undefined);
 
-    const transactionToPost: Transaction = {
-      ...tx,
-      shiftId: activeShift.id,
-      shift: activeShift.name
-    };
-
-    // Jalankan Accounting Posting Engine Terpusat
-    const postResult = postTransaction({
-      transaction: transactionToPost,
-      masterCodes,
-      accounts,
-      businessPartners,
-      receivables,
-      payables
+    const postResult = await accountingService.executeTransaction({
+      transaction: tx,
+      tera: teraToPost
     });
 
     if (!postResult.success) {
@@ -441,45 +654,77 @@ export function AppProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    // Mutasi Atomik: Update transaksi, jurnal umum, saldo akun COA, dan buku pembantu
-    setTransactions((prev) => [transactionToPost, ...prev]);
-    if (postResult.journal) {
-      setJournals((prev) => [postResult.journal!, ...prev]);
+    if (postResult.transaction) {
+      setTransactions((prev) => [postResult.transaction!, ...prev.filter((t) => t.id !== postResult.transaction!.id)]);
     }
-    setAccounts(postResult.updatedAccounts);
-    setReceivables(postResult.updatedReceivables);
-    setPayables(postResult.updatedPayables);
+    if (postResult.tera) {
+      setTeraList((prev) => [postResult.tera!, ...prev.filter((t) => t.id !== postResult.tera!.id)]);
+    }
+    if (postResult.journal) {
+      setJournals((prev) => [postResult.journal!, ...prev.filter((j) => j.id !== postResult.journal!.id)]);
+    }
+    if (postResult.updatedAccounts) {
+      setAccounts(postResult.updatedAccounts);
+    }
+    if (postResult.updatedReceivables) {
+      setReceivables(postResult.updatedReceivables);
+    }
+    if (postResult.updatedPayables) {
+      setPayables(postResult.updatedPayables);
+    }
+    if (postResult.updatedShifts) {
+      setShifts(postResult.updatedShifts);
+    }
+    setPendingTera(null);
 
-    // Update akumulasi penjualan pada shift aktif
-    setShifts((prevShifts) =>
-      prevShifts.map((s) =>
-        s.id === activeShift.id ? { ...s, totalSales: s.totalSales + transactionToPost.total } : s
-      )
-    );
+    // Refresh reports dari SQLite secara asinkron
+    reportRepository.getAllReports(undefined, stationInfo).then((rep) => {
+      setReports(rep);
+    }).catch(console.error);
 
     return {
       success: true,
       journal: postResult.journal
     };
-  }, [activeShift, masterCodes, accounts, businessPartners, receivables, payables]);
+  }, [pendingTera, teraList, stationInfo]);
+
+  const refreshReports = useCallback(async (period?: string): Promise<ReportsData> => {
+    try {
+      const data = await reportRepository.getAllReports(period, stationInfo);
+      setReports(data);
+      return data;
+    } catch (err) {
+      console.error('[AppContext] Gagal me-refresh laporan:', err);
+      return reports;
+    }
+  }, [stationInfo, reports]);
 
   // ==========================================
-  // F. Business Partner
+  // F. Business Partner (SQLite Persisted)
   // ==========================================
-  const addBusinessPartner = useCallback((bp: Omit<BusinessPartner, 'id'> & { id?: string }): BusinessPartner => {
+  const addBusinessPartner = useCallback(async (bp: Omit<BusinessPartner, 'id'> & { id?: string }): Promise<BusinessPartner> => {
     const newId = bp.id || `BP-${Date.now().toString().slice(-4)}`;
     const newPartner: BusinessPartner = {
       ...bp,
       id: newId
     };
-    setBusinessPartners((prev) => [...prev, newPartner]);
+    await businessPartnerRepository.create(newPartner);
+    setBusinessPartners((prev) => [...prev.filter((p) => p.id !== newPartner.id), newPartner]);
     return newPartner;
   }, []);
 
+  const deleteBusinessPartner = useCallback(async (id: string): Promise<boolean> => {
+    const deleted = await businessPartnerRepository.delete(id);
+    if (deleted) {
+      setBusinessPartners((prev) => prev.filter((p) => p.id !== id));
+    }
+    return deleted;
+  }, []);
+
   // ==========================================
-  // G. Master Pegawai CRUD
+  // G. Master Pegawai CRUD (SQLite Persisted)
   // ==========================================
-  const addPegawai = useCallback((pData: Omit<Pegawai, 'id'> & { id?: string }): Pegawai => {
+  const addPegawai = useCallback(async (pData: Omit<Pegawai, 'id'> & { id?: string }): Promise<Pegawai> => {
     const nextNum = pegawaiList.length + 1;
     const padded = nextNum.toString().padStart(3, '0');
     const newId = pData.id || `OPR-${padded}`;
@@ -488,43 +733,57 @@ export function AppProvider({ children }: { children: ReactNode }) {
       id: newId,
       status: pData.status || 'Aktif'
     };
-    setPegawaiList((prev) => [...prev, newPegawai]);
-    return newPegawai;
+    const saved = await pegawaiRepository.create(newPegawai);
+    setPegawaiList((prev) => [...prev.filter((p) => p.id !== saved.id), saved]);
+    return saved;
   }, [pegawaiList.length]);
 
-  const updatePegawai = useCallback((updated: Pegawai) => {
+  const updatePegawai = useCallback(async (updated: Pegawai): Promise<void> => {
+    const saved = await pegawaiRepository.update(updated.id, {
+      name: updated.name,
+      role: updated.role,
+      status: updated.status,
+      shiftId: updated.shiftId
+    });
     setPegawaiList((prev) =>
-      prev.map((p) => (p.id === updated.id ? updated : p))
+      prev.map((p) => (p.id === saved.id ? saved : p))
     );
   }, []);
 
-  const togglePegawaiStatus = useCallback((id: string) => {
+  const togglePegawaiStatus = useCallback(async (id: string): Promise<void> => {
+    const saved = await pegawaiRepository.toggleStatus(id);
     setPegawaiList((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: p.status === 'Aktif' ? 'Nonaktif' : 'Aktif' } : p))
+      prev.map((p) => (p.id === id ? saved : p))
     );
   }, []);
 
   // ==========================================
-  // H. Absensi & Kehadiran Pegawai
+  // H. Absensi & Kehadiran Pegawai (SQLite Persisted)
   // ==========================================
-  const addAttendance = useCallback((attData: Omit<Attendance, 'id'> & { id?: string }): Attendance => {
+  const addAttendance = useCallback(async (attData: Omit<Attendance, 'id'> & { id?: string }): Promise<Attendance> => {
     const newId = attData.id || `ATT-${Date.now().toString().slice(-6)}`;
     const newAtt: Attendance = {
       ...attData,
       id: newId
     };
-    setAttendances((prev) => [newAtt, ...prev]);
-    return newAtt;
+    const saved = await attendanceRepository.create(newAtt);
+    setAttendances((prev) => [saved, ...prev.filter((a) => a.id !== saved.id)]);
+    return saved;
   }, []);
 
-  const updateAttendance = useCallback((updated: Attendance) => {
+  const updateAttendance = useCallback(async (updated: Attendance): Promise<void> => {
+    const saved = await attendanceRepository.update(updated.id, updated);
     setAttendances((prev) =>
-      prev.map((att) => (att.id === updated.id ? updated : att))
+      prev.map((att) => (att.id === saved.id ? saved : att))
     );
   }, []);
 
-  const deleteAttendance = useCallback((id: string) => {
-    setAttendances((prev) => prev.filter((att) => att.id !== id));
+  const deleteAttendance = useCallback(async (id: string): Promise<boolean> => {
+    const deleted = await attendanceRepository.delete(id);
+    if (deleted) {
+      setAttendances((prev) => prev.filter((att) => att.id !== id));
+    }
+    return deleted;
   }, []);
 
   const updateStationInfo = useCallback((info: StationInfo) => {
@@ -555,37 +814,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
     stationInfo,
     authPin,
     reports,
+    isDbLoaded,
     addProductCategory,
     updateProductCategory,
     toggleProductCategoryStatus,
+    deleteProductCategory,
     addAccount,
     updateAccount,
     toggleAccountStatus,
+    deleteAccount,
     addProduct,
     updateProduct,
     toggleProductStatus,
+    deleteProduct,
     addTank,
     updateTank,
     toggleTankStatus,
+    deleteTank,
     addNozzle,
     updateNozzle,
     toggleNozzleStatus,
+    deleteNozzle,
     addMasterCode,
     updateMasterCode,
     toggleMasterCodeStatus,
+    deleteMasterCode,
     bukaShift,
     tutupShift,
     addTera,
     addTransaction,
     addBusinessPartner,
+    deleteBusinessPartner,
     addPegawai,
     updatePegawai,
     togglePegawaiStatus,
     addAttendance,
     updateAttendance,
     deleteAttendance,
+    refreshReports,
     updateStationInfo,
-    changePin
+    changePin,
+    reloadFromDatabase
   }), [
     productCategories,
     accounts,
@@ -606,37 +875,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
     stationInfo,
     authPin,
     reports,
+    isDbLoaded,
     addProductCategory,
     updateProductCategory,
     toggleProductCategoryStatus,
+    deleteProductCategory,
     addAccount,
     updateAccount,
     toggleAccountStatus,
+    deleteAccount,
     addProduct,
     updateProduct,
     toggleProductStatus,
+    deleteProduct,
     addTank,
     updateTank,
     toggleTankStatus,
+    deleteTank,
     addNozzle,
     updateNozzle,
     toggleNozzleStatus,
+    deleteNozzle,
     addMasterCode,
     updateMasterCode,
     toggleMasterCodeStatus,
+    deleteMasterCode,
     bukaShift,
     tutupShift,
     addTera,
     addTransaction,
     addBusinessPartner,
+    deleteBusinessPartner,
     addPegawai,
     updatePegawai,
     togglePegawaiStatus,
     addAttendance,
     updateAttendance,
     deleteAttendance,
+    refreshReports,
     updateStationInfo,
-    changePin
+    changePin,
+    reloadFromDatabase
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
