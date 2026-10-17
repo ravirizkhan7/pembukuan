@@ -130,6 +130,104 @@ public class BackupRestorePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void saveBinaryFile(PluginCall call) {
+        String filename = call.getString("filename");
+        String base64Data = call.getString("base64Data");
+        String mimeType = call.getString("mimeType");
+
+        if (base64Data == null || base64Data.trim().isEmpty()) {
+            call.reject("Data biner dokumen kosong.");
+            return;
+        }
+
+        if (filename == null || filename.trim().isEmpty()) {
+            filename = "document.pdf";
+        }
+
+        if (mimeType == null || mimeType.trim().isEmpty()) {
+            mimeType = "application/pdf";
+        }
+
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType(mimeType);
+        intent.putExtra(Intent.EXTRA_TITLE, filename);
+
+        startActivityForResult(call, intent, "saveBinaryCallback");
+    }
+
+    @ActivityCallback
+    public void saveBinaryCallback(PluginCall call, ActivityResult result) {
+        if (call == null) {
+            return;
+        }
+
+        // Pengguna membatalkan dialog simpan file
+        if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null || result.getData().getData() == null) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("cancelled", true);
+            call.resolve(ret);
+            return;
+        }
+
+        Uri uri = result.getData().getData();
+        String base64Data = call.getString("base64Data");
+        if (base64Data == null) {
+            call.reject("Data biner tidak ditemukan pada sesi penyimpanan.");
+            return;
+        }
+
+        try {
+            // Bersihkan data URL prefix jika ada (data:application/pdf;base64,...)
+            int commaIdx = base64Data.indexOf(',');
+            if (commaIdx != -1 && commaIdx < 60) {
+                base64Data = base64Data.substring(commaIdx + 1);
+            }
+
+            byte[] bytes = android.util.Base64.decode(base64Data, android.util.Base64.DEFAULT);
+            ContentResolver resolver = getContext().getContentResolver();
+
+            try (OutputStream os = resolver.openOutputStream(uri);
+                 BufferedOutputStream bos = new BufferedOutputStream(os)) {
+                if (os == null) {
+                    call.reject("Gagal membuka stream penulisan pada lokasi yang dipilih.");
+                    return;
+                }
+                bos.write(bytes);
+                bos.flush();
+            }
+
+            // Dapatkan nama berkas aktual yang disimpan
+            String savedFilename = call.getString("filename");
+            try (Cursor cursor = resolver.query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (nameIndex != -1) {
+                        String name = cursor.getString(nameIndex);
+                        if (name != null && !name.trim().isEmpty()) {
+                            savedFilename = name;
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                Logger.warn("Tidak dapat membaca display name dokumen: " + ex.getMessage());
+            }
+
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            ret.put("cancelled", false);
+            ret.put("filename", savedFilename);
+            ret.put("uri", uri.toString());
+            ret.put("bytesWritten", bytes.length);
+            call.resolve(ret);
+        } catch (Exception e) {
+            Logger.error("Gagal menulis berkas biner ke Storage Access Framework", e);
+            call.reject("Gagal menyimpan dokumen biner: " + e.getMessage(), e);
+        }
+    }
+
+    @PluginMethod
     public void pickBackupFile(PluginCall call) {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);

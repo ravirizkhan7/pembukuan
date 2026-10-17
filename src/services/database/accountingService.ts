@@ -8,9 +8,19 @@ import {
   accountRepository,
   masterCodeRepository,
   shiftRepository,
-  businessPartnerRepository
+  businessPartnerRepository,
+  TransactionRepository,
+  TeraRepository,
+  JournalRepository,
+  ReceivableRepository,
+  PayableRepository,
+  AccountRepository,
+  MasterCodeRepository,
+  ShiftRepository,
+  BusinessPartnerRepository
 } from './repositories';
 import { calculateNewBalance } from '../postingEngine';
+import type { SqlExecutor } from './migrationRunner';
 import type {
   Transaction,
   Tera,
@@ -52,12 +62,24 @@ export class AccountingService {
   public static async executeTransaction(params: {
     transaction: Transaction;
     tera?: Tera;
+    executor?: SqlExecutor;
   }): Promise<AccountingPostResult> {
-    const { transaction, tera } = params;
+    const { transaction, tera, executor } = params;
+
+    const exec = executor || sqliteService;
+    const shiftRepo = executor ? new ShiftRepository(executor) : shiftRepository;
+    const mcRepo = executor ? new MasterCodeRepository(executor) : masterCodeRepository;
+    const accRepo = executor ? new AccountRepository(executor) : accountRepository;
+    const txRepo = executor ? new TransactionRepository(executor) : transactionRepository;
+    const jrnRepo = executor ? new JournalRepository(executor) : journalRepository;
+    const teraRepo = executor ? new TeraRepository(executor) : teraRepository;
+    const recRepo = executor ? new ReceivableRepository(executor) : receivableRepository;
+    const payRepo = executor ? new PayableRepository(executor) : payableRepository;
+    const bpRepo = executor ? new BusinessPartnerRepository(executor) : businessPartnerRepository;
 
     try {
       // 1. Ambil Sesi Shift Aktif (jika tersedia)
-      const activeShift = await shiftRepository.getActiveShift();
+      const activeShift = await shiftRepo.getActiveShift();
 
       if (transaction.total <= 0) {
         return {
@@ -67,9 +89,9 @@ export class AccountingService {
       }
 
       // 2. Validasi Master Code di SQLite
-      let masterCode = await masterCodeRepository.findByCode(transaction.code);
+      let masterCode = await mcRepo.findByCode(transaction.code);
       if (!masterCode && transaction.masterCodeId) {
-        masterCode = await masterCodeRepository.findById(transaction.masterCodeId);
+        masterCode = await mcRepo.findById(transaction.masterCodeId);
       }
 
       if (!masterCode || !masterCode.isActive) {
@@ -80,10 +102,10 @@ export class AccountingService {
       }
 
       // 3. Validasi Mapping Akun Debit & Kredit di SQLite
-      const debitAccount = await accountRepository.findById(masterCode.debitAccountId) ||
-                           await accountRepository.findByCode(masterCode.debitAccountId);
-      const creditAccount = await accountRepository.findById(masterCode.creditAccountId) ||
-                            await accountRepository.findByCode(masterCode.creditAccountId);
+      const debitAccount = await accRepo.findById(masterCode.debitAccountId) ||
+                           await accRepo.findByCode(masterCode.debitAccountId);
+      const creditAccount = await accRepo.findById(masterCode.creditAccountId) ||
+                            await accRepo.findByCode(masterCode.creditAccountId);
 
       if (!debitAccount) {
         return {
@@ -147,7 +169,7 @@ export class AccountingService {
             error: 'Transaksi pelunasan piutang wajib memilih tagihan piutang terkait (relatedReceivableId).'
           };
         }
-        targetReceivable = await receivableRepository.findById(transaction.relatedReceivableId);
+        targetReceivable = await recRepo.findById(transaction.relatedReceivableId);
         if (!targetReceivable) {
           return {
             success: false,
@@ -180,7 +202,7 @@ export class AccountingService {
             error: 'Transaksi pembayaran hutang wajib memilih tagihan hutang terkait (relatedPayableId).'
           };
         }
-        targetPayable = await payableRepository.findById(transaction.relatedPayableId);
+        targetPayable = await payRepo.findById(transaction.relatedPayableId);
         if (!targetPayable) {
           return {
             success: false,
@@ -206,10 +228,10 @@ export class AccountingService {
       let partnerId = transaction.partnerId;
       if (!partnerId) {
         if (masterCode.paymentMethod === 'Piutang' || debitAccount.code === '1-1101') {
-          const partners = await businessPartnerRepository.findByType('Customer');
+          const partners = await bpRepo.findByType('Customer');
           if (partners.length > 0) partnerId = partners[0].id;
         } else if (masterCode.paymentMethod === 'Hutang' || creditAccount.code === '2-1001') {
-          const partners = await businessPartnerRepository.findByType('Vendor');
+          const partners = await bpRepo.findByType('Vendor');
           if (partners.length > 0) partnerId = partners[0].id;
         }
       }
@@ -289,22 +311,37 @@ export class AccountingService {
       // =========================================================================
       // EKSEKUSI TRANSAKSI ATOMIK (BEGIN ... COMMIT / ROLLBACK) DI SQLITE
       // =========================================================================
-      await sqliteService.runTransaction(async () => {
+      const runInTx = async (action: () => Promise<void>) => {
+        if (executor) {
+          await executor.run('BEGIN TRANSACTION;');
+          try {
+            await action();
+            await executor.run('COMMIT;');
+          } catch (txErr) {
+            await executor.run('ROLLBACK;');
+            throw txErr;
+          }
+        } else {
+          await sqliteService.runTransaction(action);
+        }
+      };
+
+      await runInTx(async () => {
         // 1. Simpan Tera Dispenser (jika ada)
         if (finalTera) {
-          await teraRepository.create(finalTera);
+          await teraRepo.create(finalTera);
         }
 
         // 2. Simpan Transaksi Selesai
-        await transactionRepository.create(finalTx);
+        await txRepo.create(finalTx);
 
         // 3. Simpan Jurnal Umum & Detail Entries
-        await journalRepository.create(journal);
+        await jrnRepo.create(journal);
 
         // 4. Sub-ledger Piutang
         if (masterCode.paymentMethod === 'Piutang' || debitAccount.code === '1-1101') {
           const recId = `REC-${Date.now().toString().slice(-6)}`;
-          await receivableRepository.create({
+          await recRepo.create({
             id: recId,
             transactionId: txId,
             partnerId: partnerId || 'CUS-001',
@@ -317,13 +354,13 @@ export class AccountingService {
           });
         } else if (isPelunasanPiutang && targetReceivable) {
           const nextStatus = newRecOutstanding === 0 ? 'Paid' : 'Partial';
-          await receivableRepository.updateOutstanding(targetReceivable.id, newRecOutstanding, nextStatus);
+          await recRepo.updateOutstanding(targetReceivable.id, newRecOutstanding, nextStatus);
         }
 
         // 5. Sub-ledger Hutang
         if (masterCode.paymentMethod === 'Hutang' || creditAccount.code === '2-1001') {
           const payId = `PAY-${Date.now().toString().slice(-6)}`;
-          await payableRepository.create({
+          await payRepo.create({
             id: payId,
             transactionId: txId,
             partnerId: partnerId || 'VEN-001',
@@ -336,23 +373,23 @@ export class AccountingService {
           });
         } else if (isPembayaranHutang && targetPayable) {
           const nextStatus = newPayOutstanding === 0 ? 'Paid' : 'Partial';
-          await payableRepository.updateOutstanding(targetPayable.id, newPayOutstanding, nextStatus);
+          await payRepo.updateOutstanding(targetPayable.id, newPayOutstanding, nextStatus);
         }
 
         // 6. Mutasi Saldo Akun COA
         const newDebitBal = calculateNewBalance(debitAccount.balance, debitAccount.normalBalance, transaction.total, 0);
-        await accountRepository.update(debitAccount.id, { balance: newDebitBal });
+        await accRepo.update(debitAccount.id, { balance: newDebitBal });
 
         const newCreditBal = calculateNewBalance(creditAccount.balance, creditAccount.normalBalance, 0, transaction.total);
-        await accountRepository.update(creditAccount.id, { balance: newCreditBal });
+        await accRepo.update(creditAccount.id, { balance: newCreditBal });
 
         // 7. Akumulasi Total Penjualan Shift HANYA jika transaksi Penjualan memiliki relasi sesi shift aktif
         if (finalTx.shiftId && activeShift && finalTx.shiftId === activeShift.id && transaction.category === 'Penjualan') {
-          await sqliteService.run(
+          await exec.run(
             `UPDATE shifts SET total_sales = total_sales + ?, updated_at = ? WHERE id = ?;`,
             [transaction.total, nowIso, activeShift.id]
           );
-          await sqliteService.run(
+          await exec.run(
             `UPDATE shift_sessions SET total_sales = total_sales + ?, updated_at = ? WHERE shift_id = ? AND status = 'Aktif';`,
             [transaction.total, nowIso, activeShift.id]
           );
@@ -361,10 +398,10 @@ export class AccountingService {
 
       // Ambil snapshot terupdate untuk sinkronisasi state React
       const [updatedAccounts, updatedReceivables, updatedPayables, updatedShifts] = await Promise.all([
-        accountRepository.findAll(),
-        receivableRepository.findAll(),
-        payableRepository.findAll(),
-        shiftRepository.getAllShifts()
+        accRepo.findAll(),
+        recRepo.findAll(),
+        payRepo.findAll(),
+        shiftRepo.getAllShifts()
       ]);
 
       return {

@@ -164,7 +164,10 @@ class SQLiteService {
     const db = await this.getConnection();
     const isTrans = await db.isTransactionActive();
     const isInsideTransaction = !!isTrans?.result;
-    const result = await db.run(statement, params, !isInsideTransaction);
+    // On web and native platforms, individual run() statements must execute in autocommit mode (transaction=false).
+    // Multi-statement atomic transactions must be explicitly initiated via runTransaction().
+    // This avoids "cannot start a transaction within a transaction" concurrency issues.
+    const result = await db.run(statement, params, false);
 
     // Pada web, persist ke IndexedDB setelah mutasi jika di luar transaksi
     if (!isInsideTransaction && Capacitor.getPlatform() === 'web' && this.sqliteConnection) {
@@ -219,10 +222,26 @@ class SQLiteService {
 
       return result;
     } catch (err) {
-      await db.rollbackTransaction();
+      try {
+        const checkTrans = await db.isTransactionActive();
+        if (checkTrans?.result) {
+          await db.rollbackTransaction();
+        }
+      } catch (rbErr) {
+        console.warn('[SQLiteService] Warning checking/performing rollback:', rbErr);
+      }
       console.error('[SQLiteService] Transaksi di-rollback karena error:', err);
       throw err;
     }
+  }
+
+  /**
+   * Menutup dan membuka kembali koneksi SQLite (misalnya setelah bulk restore)
+   */
+  public async reopenConnection(): Promise<SQLiteDBConnection> {
+    console.log('[SQLiteService] Membuka kembali koneksi database SQLite...');
+    await this.close();
+    return this.initialize();
   }
 
   /**

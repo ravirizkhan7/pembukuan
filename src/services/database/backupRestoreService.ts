@@ -27,6 +27,13 @@ export interface NativeBackupRestorePlugin {
     uri?: string;
     bytesWritten?: number;
   }>;
+  saveBinaryFile?(options: { filename: string; base64Data: string; mimeType?: string }): Promise<{
+    success: boolean;
+    cancelled?: boolean;
+    filename?: string;
+    uri?: string;
+    bytesWritten?: number;
+  }>;
   pickBackupFile(): Promise<{
     success: boolean;
     cancelled?: boolean;
@@ -845,12 +852,11 @@ export class BackupRestoreService {
     let restoredRecords = 0;
     let restoredTables = 0;
 
-    // 3. Eksekusi Restore dalam Blok Transaksi Tunggal
-    // Nonaktifkan FK sementara saat perombakan bertahap dalam transaksi
+    // 3. Eksekusi Restore dalam Blok Transaksi Atomik Tunggal
+    // Nonaktifkan FK di luar transaksi sesuai aturan SQLite engine
     await executor.run('PRAGMA foreign_keys = OFF;');
-    await executor.run('BEGIN TRANSACTION;');
 
-    try {
+    const performRestoreOperations = async () => {
       // Tahap A: Kosongkan seluruh tabel operasional sesuai urutan terbalik
       for (const table of deleteOrder) {
         await executor.run(`DELETE FROM ${table};`);
@@ -878,21 +884,7 @@ export class BackupRestoreService {
         }
       }
 
-      // Tahap C: Verifikasi Kunci Asing & Integritas SQLite sebelum COMMIT
-      const fkViolations = await executor.query<any>('PRAGMA foreign_key_check;');
-      if (fkViolations && fkViolations.length > 0) {
-        throw new Error(
-          `Pemeriksaan relasi kunci asing (PRAGMA foreign_key_check) gagal: Terdeteksi ${fkViolations.length} pelanggaran relasi.`
-        );
-      }
-
-      const integrityRows = await executor.query<{ integrity_check: string }>('PRAGMA integrity_check;');
-      if (!integrityRows || integrityRows.length === 0 || integrityRows[0].integrity_check !== 'ok') {
-        const detail = integrityRows?.map((r) => r.integrity_check).join('; ') || 'Gagal';
-        throw new Error(`Pemeriksaan integritas SQLite (PRAGMA integrity_check) gagal: ${detail}`);
-      }
-
-      // Tahap D: Pastikan riwayat migrasi aktif tetap utuh dan konsisten dengan versi aplikasi saat ini (v1..v4)
+      // Tahap C: Pastikan riwayat migrasi aktif tetap utuh dan konsisten dengan versi aplikasi saat ini (v1..v4)
       for (let v = 1; v <= DATABASE_VERSION; v++) {
         const mDef = MIGRATIONS.find((m) => m.version === v);
         await executor.run(
@@ -910,23 +902,62 @@ export class BackupRestoreService {
            updated_at = excluded.updated_at;`,
         [DATABASE_VERSION.toString(), new Date().toISOString(), new Date().toISOString()]
       );
+    };
 
-      // Selesaikan transaksi
-      await executor.run('COMMIT;');
-    } catch (error) {
-      // Rollback menyeluruh jika ada error sekecil apa pun
-      try {
-        await executor.run('ROLLBACK;');
-      } catch (rbErr) {
-        console.warn('[BackupRestoreService] Error saat memanggil rollback:', rbErr);
+    try {
+      // Gunakan mekanisme transaksi driver jika didukung (mis. sqliteService di Android/Web)
+      if (typeof (executor as any).runTransaction === 'function') {
+        await (executor as any).runTransaction(async () => {
+          await performRestoreOperations();
+        });
+      } else {
+        // Fallback untuk SqlExecutor mandiri (mis. SQL.js pada unit testing)
+        await executor.run('BEGIN TRANSACTION;');
+        try {
+          await performRestoreOperations();
+          await executor.run('COMMIT;');
+        } catch (innerErr) {
+          try {
+            await executor.run('ROLLBACK;');
+          } catch (rbErr) {
+            console.warn('[BackupRestoreService] Error saat memanggil rollback:', rbErr);
+          }
+          throw innerErr;
+        }
       }
-      throw error;
     } finally {
-      // Pastikan Foreign Keys kembali aktif
-      await executor.run('PRAGMA foreign_keys = ON;');
+      // Pastikan Foreign Keys kembali aktif di luar transaksi
+      try {
+        await executor.run('PRAGMA foreign_keys = ON;');
+      } catch (fkOnErr) {
+        console.warn('[BackupRestoreService] Gagal mengaktifkan kembali PRAGMA foreign_keys:', fkOnErr);
+      }
     }
 
-    // 4. Sinkronkan ke Web Store jika di Web Browser
+    // 4. Verifikasi Pasca-Restore: Pemeriksaan Foreign Key & Integritas SQLite
+    const fkViolations = await executor.query<any>('PRAGMA foreign_key_check;');
+    if (fkViolations && fkViolations.length > 0) {
+      throw new Error(
+        `Pemeriksaan relasi kunci asing (PRAGMA foreign_key_check) gagal: Terdeteksi ${fkViolations.length} pelanggaran relasi.`
+      );
+    }
+
+    const integrityRows = await executor.query<{ integrity_check: string }>('PRAGMA integrity_check;');
+    if (!integrityRows || integrityRows.length === 0 || integrityRows[0].integrity_check !== 'ok') {
+      const detail = integrityRows?.map((r) => r.integrity_check).join('; ') || 'Gagal';
+      throw new Error(`Pemeriksaan integritas SQLite (PRAGMA integrity_check) gagal: ${detail}`);
+    }
+
+    // 5. Buka kembali koneksi plugin jika sqliteService digunakan
+    if (executor === sqliteService || typeof (executor as any).reopenConnection === 'function') {
+      try {
+        await (sqliteService as any).reopenConnection();
+      } catch (reopenErr) {
+        console.warn('[BackupRestoreService] Gagal membuka kembali koneksi setelah restore:', reopenErr);
+      }
+    }
+
+    // 6. Sinkronkan ke Web Store jika di Web Browser
     if (Capacitor.getPlatform() === 'web') {
       try {
         await (sqliteService as any).sqliteConnection?.saveToStore(DATABASE_NAME);

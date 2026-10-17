@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { PageHeader } from '../components/common';
 import { Card, Button } from '../components/ui';
 import {
@@ -28,79 +28,167 @@ export interface LaporanPageProps {
   showToast: (message: string, type?: ToastType) => void;
 }
 
+function getTodayLocalDate(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export function LaporanPage({
   activeSubTab = 'neraca',
   showToast
 }: LaporanPageProps) {
   const { reports, stationInfo, refreshReports } = useAppContext();
   const [activeTab, setActiveTab] = useState<string>(activeSubTab || 'neraca');
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('31 Agustus 2026');
+
+  // Filter Periode State (Tepat 6 Pilihan Standar)
+  const [selectedPeriodOption, setSelectedPeriodOption] = useState<string>('Semua Periode');
+  const [customStartDate, setCustomStartDate] = useState<string>(getTodayLocalDate());
+  const [customEndDate, setCustomEndDate] = useState<string>(getTodayLocalDate());
+  const [dateValidationError, setDateValidationError] = useState<string | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+
+  // Pencegah infinite render loop dan duplikasi query saat ganti subtab
+  const lastLoadedPeriodRef = useRef<string | null>(null);
+  const isFetchingRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (activeSubTab) setActiveTab(activeSubTab);
   }, [activeSubTab]);
 
-  useEffect(() => {
-    refreshReports(selectedPeriod).catch(console.error);
-  }, [refreshReports, selectedPeriod]);
+  const getEffectivePeriod = useCallback((option: string, start: string, end: string): string => {
+    if (option === 'Custom' || option === 'Rentang Tanggal Kustom') {
+      return `${start} s/d ${end}`;
+    }
+    return option;
+  }, []);
 
-  const handlePeriodChange = async (newPeriod: string) => {
-    setSelectedPeriod(newPeriod);
+  const loadReports = useCallback(async (periodParam: string, notifySuccess = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setIsLoading(true);
+    setReportError(null);
+
     try {
-      await refreshReports(newPeriod);
-      showToast(`Laporan periode ${newPeriod} dimuat dari SQLite.`, 'success');
-    } catch (err) {
-      console.error(err);
-      showToast(`Gagal memuat laporan untuk periode ${newPeriod}.`, 'danger');
+      await refreshReports(periodParam);
+      lastLoadedPeriodRef.current = periodParam;
+      if (notifySuccess) {
+        showToast(`Laporan periode ${periodParam} berhasil dimuat.`, 'success');
+      }
+    } catch (err: any) {
+      console.error('[LaporanPage] Gagal memuat data laporan:', err);
+      const msg = err?.message || 'Gagal memuat laporan dari SQLite.';
+      setReportError(msg);
+      showToast(msg, 'danger');
     } finally {
       setIsLoading(false);
+      isFetchingRef.current = false;
     }
+  }, [refreshReports, showToast]);
+
+  // Initial load saat komponen pertama kali terpasang
+  useEffect(() => {
+    if (selectedPeriodOption === 'Custom' || selectedPeriodOption === 'Rentang Tanggal Kustom') {
+      return;
+    }
+    const periodToLoad = getEffectivePeriod(selectedPeriodOption, customStartDate, customEndDate);
+    if (lastLoadedPeriodRef.current !== periodToLoad) {
+      loadReports(periodToLoad, false);
+    }
+  }, [loadReports, getEffectivePeriod, selectedPeriodOption, customStartDate, customEndDate]);
+
+  const handleSelectPeriodOption = async (option: string) => {
+    setSelectedPeriodOption(option);
+    setDateValidationError(null);
+    setReportError(null);
+
+    if (option !== 'Custom' && option !== 'Rentang Tanggal Kustom') {
+      await loadReports(option, true);
+    }
+  };
+
+  const handleApplyPeriod = async () => {
+    if (selectedPeriodOption === 'Custom' || selectedPeriodOption === 'Rentang Tanggal Kustom') {
+      if (customStartDate > customEndDate) {
+        const errMsg = `Tanggal mulai (${customStartDate}) tidak boleh melewati tanggal akhir (${customEndDate}).`;
+        setDateValidationError(errMsg);
+        showToast(errMsg, 'danger');
+        return;
+      }
+    }
+    setDateValidationError(null);
+    const periodToLoad = getEffectivePeriod(selectedPeriodOption, customStartDate, customEndDate);
+    await loadReports(periodToLoad, true);
+  };
+
+  const handleReset = async () => {
+    setSelectedPeriodOption('Semua Periode');
+    setCustomStartDate(getTodayLocalDate());
+    setCustomEndDate(getTodayLocalDate());
+    setDateValidationError(null);
+    setReportError(null);
+    await loadReports('Semua Periode', true);
   };
 
   const handleRefresh = async () => {
-    setIsLoading(true);
-    try {
-      await refreshReports(selectedPeriod);
-      showToast(`Laporan periode ${selectedPeriod} diperbarui.`, 'success');
-    } catch (err) {
-      console.error(err);
-      showToast('Gagal memperbarui laporan.', 'danger');
-    } finally {
-      setIsLoading(false);
-    }
+    const periodToLoad = getEffectivePeriod(selectedPeriodOption, customStartDate, customEndDate);
+    await loadReports(periodToLoad, true);
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    setIsExporting(true);
     try {
-      let filename = '';
+      const periodLabel = getEffectivePeriod(selectedPeriodOption, customStartDate, customEndDate);
+      let result;
       if (activeTab === 'neraca') {
-        filename = exportNeracaPdf(reports, stationInfo, selectedPeriod);
+        result = await exportNeracaPdf(reports, stationInfo, periodLabel);
       } else if (activeTab === 'laba_rugi') {
-        filename = exportLabaRugiPdf(reports, stationInfo, selectedPeriod);
+        result = await exportLabaRugiPdf(reports, stationInfo, periodLabel);
       } else if (activeTab === 'arus_kas') {
-        filename = exportArusKasPdf(reports, stationInfo, selectedPeriod);
+        result = await exportArusKasPdf(reports, stationInfo, periodLabel);
       } else if (activeTab === 'stok_penjualan') {
-        filename = exportStokPdf(reports, stationInfo, selectedPeriod);
+        result = await exportStokPdf(reports, stationInfo, periodLabel);
       }
-      showToast(`Dokumen PDF berhasil diunduh: ${filename}`, 'success');
-    } catch (err) {
-      console.error(err);
-      showToast('Gagal mengekspor PDF laporan.', 'danger');
+
+      if (result) {
+        if (result.cancelled) {
+          // Dialog SAF dibatalkan oleh pengguna Android: JANGAN tampilkan notifikasi sukses!
+          showToast('Penyimpanan dokumen PDF dibatalkan oleh pengguna.', 'warning');
+        } else if (result.success) {
+          const isNative = (window as any).Capacitor?.isNativePlatform?.() || false;
+          if (isNative) {
+            showToast(`Dokumen PDF berhasil disimpan ke perangkat: ${result.filename}`, 'success');
+          } else {
+            showToast(`Dokumen PDF berhasil diunduh oleh peramban: ${result.filename}`, 'success');
+          }
+        } else {
+          showToast(result.error || 'Gagal mengekspor dokumen PDF.', 'danger');
+        }
+      }
+    } catch (err: any) {
+      console.error('[LaporanPage] Export PDF error:', err);
+      showToast(err?.message || 'Gagal mengekspor PDF laporan.', 'danger');
+    } finally {
+      setIsExporting(false);
     }
   };
 
   const handlePrint = () => {
     try {
+      const periodLabel = getEffectivePeriod(selectedPeriodOption, customStartDate, customEndDate);
       if (activeTab === 'neraca') {
-        printNeracaReport(reports, stationInfo, selectedPeriod);
+        printNeracaReport(reports, stationInfo, periodLabel);
       } else if (activeTab === 'laba_rugi') {
-        printLabaRugiReport(reports, stationInfo, selectedPeriod);
+        printLabaRugiReport(reports, stationInfo, periodLabel);
       } else if (activeTab === 'arus_kas') {
-        printArusKasReport(reports, stationInfo, selectedPeriod);
+        printArusKasReport(reports, stationInfo, periodLabel);
       } else if (activeTab === 'stok_penjualan') {
-        printStokReport(reports, stationInfo, selectedPeriod);
+        printStokReport(reports, stationInfo, periodLabel);
       }
       showToast('Perintah cetak dokumen laporan dikirim.', 'primary');
     } catch (err) {
@@ -126,26 +214,114 @@ export function LaporanPage({
   const totalInvPend = (reports.arusKas?.investasi || []).concat(reports.arusKas?.pendanaan || []).reduce((s, item) => s + item.amount, 0);
   const kasAkhir = (reports.arusKas?.saldoAwal || 0) + totalOps + totalInvPend;
 
-  const renderPeriodSelector = () => (
-    <select
-      className="form-select"
-      style={{ width: '190px', minHeight: '34px', padding: '4px 8px' }}
-      value={selectedPeriod}
-      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handlePeriodChange(e.target.value)}
-      disabled={isLoading}
-    >
-      <option value="31 Agustus 2026">31 Agustus 2026</option>
-      <option value="30 September 2026">30 September 2026</option>
-      <option value="31 Juli 2026">31 Juli 2026</option>
-      <option value="Hari Ini">Hari Ini</option>
-      <option value="Bulan Ini">Bulan Ini</option>
-      <option value="Tahun 2026">Tahun 2026</option>
-      <option value="Semua Periode">Semua Periode</option>
-    </select>
+  const currentPeriodLabel = getEffectivePeriod(selectedPeriodOption, customStartDate, customEndDate);
+  const isCustomRange = selectedPeriodOption === 'Custom' || selectedPeriodOption === 'Rentang Tanggal Kustom';
+  const isDateRangeInvalid = isCustomRange && customStartDate > customEndDate;
+
+  // Komponen Toolbar Filter Periode Lengkap (Tepat 6 Opsi Standar)
+  const renderPeriodToolbar = (showExportButtons = false) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '13px', fontWeight: 600 }}>Periode:</span>
+        <select
+          className="form-select"
+          style={{ width: '175px', minHeight: '34px', padding: '4px 8px' }}
+          value={selectedPeriodOption === 'Rentang Tanggal Kustom' ? 'Custom' : selectedPeriodOption}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleSelectPeriodOption(e.target.value)}
+          disabled={isLoading}
+        >
+          <option value="Semua Periode">Semua Periode</option>
+          <option value="Hari Ini">Hari Ini</option>
+          <option value="7 Hari Terakhir">7 Hari Terakhir</option>
+          <option value="Bulan Ini">Bulan Ini</option>
+          <option value="Tahun Ini">Tahun Ini</option>
+          <option value="Custom">Custom</option>
+        </select>
+
+        {isCustomRange && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <input
+              type="date"
+              className="form-control"
+              style={{ width: '140px', minHeight: '34px', padding: '3px 8px', fontSize: '12.5px' }}
+              value={customStartDate}
+              onChange={(e) => setCustomStartDate(e.target.value)}
+              disabled={isLoading}
+            />
+            <span style={{ fontSize: '12px', color: 'var(--color-muted-text)' }}>s/d</span>
+            <input
+              type="date"
+              className="form-control"
+              style={{ width: '140px', minHeight: '34px', padding: '3px 8px', fontSize: '12.5px' }}
+              value={customEndDate}
+              onChange={(e) => setCustomEndDate(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+        )}
+
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={handleApplyPeriod}
+          disabled={isLoading || isDateRangeInvalid}
+        >
+          {isLoading ? 'Memuat...' : 'Tampilkan'}
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleReset}
+          disabled={isLoading}
+          title="Reset periode ke Semua Periode"
+        >
+          Reset
+        </Button>
+
+        {showExportButtons && (
+          <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+            <Button variant="secondary" size="sm" onClick={handlePrint} disabled={isLoading}>
+              Cetak
+            </Button>
+            <Button variant="secondary" size="sm" onClick={handleExportPDF} disabled={isLoading || isExporting}>
+              {isExporting ? 'Mengekspor...' : 'Export PDF'}
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {(dateValidationError || isDateRangeInvalid) && (
+        <div style={{ fontSize: '12px', color: 'var(--color-danger)', fontWeight: 600 }}>
+          ⚠️ {dateValidationError || `Tanggal mulai (${customStartDate}) tidak boleh melewati tanggal akhir (${customEndDate}).`}
+        </div>
+      )}
+    </div>
   );
 
   return (
     <div>
+      {/* Banner Error Terkelola Jika Query Database Mengalami Masalah */}
+      {reportError && (
+        <div style={{
+          marginBottom: '16px',
+          padding: '10px 14px',
+          backgroundColor: '#FEF2F2',
+          border: '1px solid #FCA5A5',
+          borderRadius: 'var(--border-radius-sm)',
+          color: '#991B1B',
+          fontSize: '12.5px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span>⚠️ {reportError}</span>
+          <Button variant="danger" size="sm" onClick={handleRefresh} disabled={isLoading}>
+            Coba Lagi
+          </Button>
+        </div>
+      )}
+
       {/* Page Header khusus untuk laporan Arus Kas & Stok BBM */}
       {activeTab === 'arus_kas' && (
         <PageHeader
@@ -154,11 +330,11 @@ export function LaporanPage({
           subtitle="Arus kas dari aktivitas operasi, investasi, dan pendanaan"
           actions={
             <div style={{ display: 'flex', gap: '8px' }}>
-              <Button variant="secondary" size="sm" onClick={handlePrint}>
+              <Button variant="secondary" size="sm" onClick={handlePrint} disabled={isLoading}>
                 Cetak
               </Button>
-              <Button variant="secondary" size="sm" onClick={handleExportPDF}>
-                Export PDF
+              <Button variant="secondary" size="sm" onClick={handleExportPDF} disabled={isLoading || isExporting}>
+                {isExporting ? 'Mengekspor...' : 'Export PDF'}
               </Button>
             </div>
           }
@@ -172,11 +348,11 @@ export function LaporanPage({
           subtitle="Rekapitulasi mutasi volume stok, penerimaan DO, dan penjualan tera nozzle"
           actions={
             <div style={{ display: 'flex', gap: '8px' }}>
-              <Button variant="secondary" size="sm" onClick={handlePrint}>
+              <Button variant="secondary" size="sm" onClick={handlePrint} disabled={isLoading}>
                 Cetak
               </Button>
-              <Button variant="secondary" size="sm" onClick={handleExportPDF}>
-                Export PDF
+              <Button variant="secondary" size="sm" onClick={handleExportPDF} disabled={isLoading || isExporting}>
+                {isExporting ? 'Mengekspor...' : 'Export PDF'}
               </Button>
             </div>
           }
@@ -187,22 +363,15 @@ export function LaporanPage({
       {activeTab !== 'neraca' && activeTab !== 'laba_rugi' && (
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
             marginBottom: '16px',
             padding: '10px 14px',
             backgroundColor: 'var(--color-white)',
             border: '1px solid var(--color-border)',
             borderRadius: 'var(--border-radius-sm)',
-            maxWidth: 'fit-content'
+            maxWidth: '100%'
           }}
         >
-          <span style={{ fontSize: '13px', fontWeight: 600 }}>Periode:</span>
-          {renderPeriodSelector()}
-          <Button variant="primary" size="sm" onClick={handleRefresh} disabled={isLoading}>
-            {isLoading ? 'Memuat...' : 'Tampilkan'}
-          </Button>
+          {renderPeriodToolbar(false)}
         </div>
       )}
 
@@ -211,26 +380,7 @@ export function LaporanPage({
         <div className="report-paper-container">
           {/* Simple Toolbar di luar dokumen laporan */}
           <div className="formal-report-toolbar">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600 }}>Periode:</span>
-              {renderPeriodSelector()}
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Memuat...' : 'Tampilkan'}
-              </Button>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <Button variant="secondary" size="sm" onClick={handlePrint}>
-                Cetak
-              </Button>
-              <Button variant="secondary" size="sm" onClick={handleExportPDF}>
-                Export PDF
-              </Button>
-            </div>
+            {renderPeriodToolbar(true)}
           </div>
 
           {/* Lembar Dokumen Laporan Resmi */}
@@ -241,7 +391,7 @@ export function LaporanPage({
                 {reports.neracaKonsolidasi?.title || 'LAPORAN NERACA HARIAN KONSOLIDASI'}
               </div>
               <div className="formal-report-period">
-                {reports.neracaKonsolidasi?.periodDate || selectedPeriod}
+                {reports.neracaKonsolidasi?.periodDate || currentPeriodLabel}
               </div>
               <div className="formal-report-entity">
                 {reports.neracaKonsolidasi?.entityName || stationInfo?.name || 'PT SPBU Mitra Akrual 1954'}
@@ -353,19 +503,13 @@ export function LaporanPage({
               </div>
             )}
 
-            {/* Signature Area */}
+            {/* Signature Area: Satu Blok Tanda Tangan Pimpinan di Kanan Bawah */}
             <div className="formal-report-sign-area">
               <div className="formal-sign-box">
-                <div className="formal-sign-role">Diketahui {reports.neracaKonsolidasi?.signerDate || ''}</div>
+                <div className="formal-sign-role">Diketahui, {reports.neracaKonsolidasi?.signerDate || ''}</div>
                 <div className="formal-sign-line"></div>
-                <div className="formal-sign-name">Direksi / Pimpinan</div>
-                <div className="formal-sign-title">{reports.neracaKonsolidasi?.entityName || stationInfo?.name || 'PT SPBU Mitra Akrual 1954'}</div>
-              </div>
-              <div className="formal-sign-box">
-                <div className="formal-sign-role">Pembukuan</div>
-                <div className="formal-sign-line"></div>
-                <div className="formal-sign-name">Bagian Akuntansi & Pelaporan</div>
-                <div className="formal-sign-title">{reports.neracaKonsolidasi?.location || stationInfo?.address || 'Lubuk Alung'}</div>
+                <div className="formal-sign-name">{stationInfo?.manager || 'Direksi / Pimpinan'}</div>
+                <div className="formal-sign-title">Pimpinan / Direktur SPBU</div>
               </div>
             </div>
           </div>
@@ -377,26 +521,7 @@ export function LaporanPage({
         <div className="report-paper-container">
           {/* Simple Toolbar di luar dokumen laporan */}
           <div className="formal-report-toolbar">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600 }}>Periode:</span>
-              {renderPeriodSelector()}
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Memuat...' : 'Tampilkan'}
-              </Button>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <Button variant="secondary" size="sm" onClick={handlePrint}>
-                Cetak
-              </Button>
-              <Button variant="secondary" size="sm" onClick={handleExportPDF}>
-                Export PDF
-              </Button>
-            </div>
+            {renderPeriodToolbar(true)}
           </div>
 
           {/* Lembar Dokumen Laporan Resmi */}
@@ -407,7 +532,7 @@ export function LaporanPage({
                 {reports.labaRugiKonsolidasi?.title || 'LAPORAN LABA-RUGI KONSOLIDASI HARIAN'}
               </div>
               <div className="formal-report-period">
-                {reports.labaRugiKonsolidasi?.periodDate || selectedPeriod}
+                {reports.labaRugiKonsolidasi?.periodDate || currentPeriodLabel}
               </div>
               <div className="formal-report-entity">
                 {reports.labaRugiKonsolidasi?.entityName || stationInfo?.name || 'PT SPBU Mitra Akrual 1954'}
@@ -479,19 +604,13 @@ export function LaporanPage({
               </table>
             </div>
 
-            {/* Signature Area */}
+            {/* Signature Area: Satu Blok Tanda Tangan Pimpinan di Kanan Bawah */}
             <div className="formal-report-sign-area">
               <div className="formal-sign-box">
-                <div className="formal-sign-role">Diketahui,</div>
+                <div className="formal-sign-role">Diketahui, {reports.labaRugiKonsolidasi?.signerDate || ''}</div>
                 <div className="formal-sign-line"></div>
-                <div className="formal-sign-name">Pimpinan / Direktur SPBU</div>
-                <div className="formal-sign-title">{reports.labaRugiKonsolidasi?.entityName || stationInfo?.name || 'PT SPBU Mitra Akrual 1954'}</div>
-              </div>
-              <div className="formal-sign-box">
-                <div className="formal-sign-role">Pembukuan,</div>
-                <div className="formal-sign-line"></div>
-                <div className="formal-sign-name">Bagian Akuntansi & Pajak</div>
-                <div className="formal-sign-title">{reports.labaRugiKonsolidasi?.location || stationInfo?.address || 'Lubuk Alung'}</div>
+                <div className="formal-sign-name">{stationInfo?.manager || 'Direksi / Pimpinan'}</div>
+                <div className="formal-sign-title">Pimpinan / Direktur SPBU</div>
               </div>
             </div>
           </div>

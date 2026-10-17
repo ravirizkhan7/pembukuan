@@ -66,6 +66,7 @@ export function TransaksiPage({
   const [teraAkhir, setTeraAkhir] = useState<string>('');
   const [nominalInput, setNominalInput] = useState<string>('');
   const [keteranganInput, setKeteranganInput] = useState<string>('');
+  const [linkToShift, setLinkToShift] = useState<boolean>(true);
 
   // F1 Search Modal
   const [showF1Modal, setShowF1Modal] = useState<boolean>(initialF1Param);
@@ -130,11 +131,6 @@ export function TransaksiPage({
 
   // Handler: Proses Kode Transaksi
   const handleProcessCode = (codeToProcess: string) => {
-    if (!activeShift) {
-      showToast('Belum ada shift aktif. Buka shift terlebih dahulu.', 'danger');
-      return;
-    }
-
     const cleanCode = codeToProcess.trim();
     if (!cleanCode) {
       setCodeError('Masukkan kode transaksi.');
@@ -164,12 +160,10 @@ export function TransaksiPage({
           setNominalInput(openRec.outstanding.toString());
         }
       } else if (found.code === '315') {
-        const openPay = payables.find(p => p.status !== 'Paid');
-        if (openPay) {
-          setSelectedPayableId(openPay.id);
-          setSelectedPartnerId(openPay.partnerId);
-          setNominalInput(openPay.outstanding.toString());
-        }
+        // Jangan otomatis memilih tagihan pertama dan jangan mengisi nominal otomatis saat form baru dibuka
+        setSelectedPayableId('');
+        setSelectedPartnerId('');
+        setNominalInput('');
       }
 
       if (found.requiresTera) {
@@ -238,9 +232,33 @@ export function TransaksiPage({
       return;
     }
 
-    if (isPembayaranHutang && !selectedPayableId) {
-      showToast('Pilih tagihan hutang yang ingin dibayar terlebih dahulu.', 'danger');
-      return;
+    if (isPembayaranHutang) {
+      if (!selectedPartnerId) {
+        showToast('Pilih vendor/pemasok terlebih dahulu.', 'danger');
+        return;
+      }
+      if (!selectedPayableId) {
+        showToast('Pilih tagihan hutang yang ingin dibayar terlebih dahulu.', 'danger');
+        return;
+      }
+      const pay = payables.find((x) => x.id === selectedPayableId);
+      if (!pay) {
+        showToast('Tagihan hutang tidak ditemukan.', 'danger');
+        return;
+      }
+      if (pay.status === 'Paid' || pay.outstanding <= 0) {
+        showToast('Tagihan hutang ini sudah lunas (Paid).', 'danger');
+        return;
+      }
+      const nominal = parseFloat(nominalInput) || 0;
+      if (nominal <= 0) {
+        showToast('Nominal pembayaran harus lebih besar dari nol.', 'danger');
+        return;
+      }
+      if (nominal > pay.outstanding) {
+        showToast(`Nominal pembayaran (Rp ${nominal.toLocaleString('id-ID')}) tidak boleh melebihi sisa hutang (Rp ${pay.outstanding.toLocaleString('id-ID')}).`, 'danger');
+        return;
+      }
     }
 
     setStep(3);
@@ -249,10 +267,11 @@ export function TransaksiPage({
   // Simpan Transaksi & Auto-focus kembali ke input kode
   const handleSaveTransaction = async () => {
     if (!activeTemplate) return;
-    if (!activeShift) {
-      showToast('Belum ada shift aktif. Buka shift terlebih dahulu.', 'danger');
-      return;
-    }
+
+    const isShiftLinked = Boolean(activeShift && linkToShift);
+    const txShiftId = isShiftLinked && activeShift ? activeShift.id : undefined;
+    const txShiftName = isShiftLinked && activeShift ? activeShift.name : 'Tanpa Sesi / Administratif';
+    const txCashier = isShiftLinked && activeShift ? activeShift.operator : 'Admin SPBU';
 
     const isPelunasanPiutang = activeTemplate.code === '312' || (activeTemplate.category === 'Pelunasan' && (activeTemplate.creditAccountId === '1-1101' || activeTemplate.creditAccountId === 'ACC-03'));
     const isPembayaranHutang = activeTemplate.code === '315' || (activeTemplate.category === 'Pelunasan' && (activeTemplate.debitAccountId === '2-1001' || activeTemplate.debitAccountId === 'ACC-06'));
@@ -262,9 +281,32 @@ export function TransaksiPage({
       return;
     }
 
-    if (isPembayaranHutang && !selectedPayableId) {
-      showToast('Pilih tagihan hutang yang ingin dibayar.', 'danger');
-      return;
+    if (isPembayaranHutang) {
+      if (!selectedPartnerId) {
+        showToast('Pilih vendor/pemasok terlebih dahulu.', 'danger');
+        return;
+      }
+      if (!selectedPayableId) {
+        showToast('Pilih tagihan hutang yang ingin dibayar.', 'danger');
+        return;
+      }
+      const pay = payables.find((x) => x.id === selectedPayableId);
+      if (!pay) {
+        showToast('Tagihan hutang tidak ditemukan.', 'danger');
+        return;
+      }
+      if (pay.status === 'Paid' || pay.outstanding <= 0) {
+        showToast('Tagihan hutang ini sudah lunas (Paid).', 'danger');
+        return;
+      }
+      if (finalTotal <= 0) {
+        showToast('Nominal pembayaran harus lebih besar dari nol.', 'danger');
+        return;
+      }
+      if (finalTotal > pay.outstanding) {
+        showToast(`Nominal pembayaran (Rp ${finalTotal.toLocaleString('id-ID')}) tidak boleh melebihi sisa hutang (Rp ${pay.outstanding.toLocaleString('id-ID')}).`, 'danger');
+        return;
+      }
     }
 
     const txId = `TX-${Date.now().toString().slice(-6)}`;
@@ -278,8 +320,8 @@ export function TransaksiPage({
       newTera = {
         id: createdTeraId,
         date: getLocalDateString(),
-        shiftId: activeShift.id,
-        shift: activeShift.name,
+        shiftId: txShiftId,
+        shift: txShiftName,
         nozzleId: currentNzl.id,
         nozzleCode: currentNzl.code,
         productId: activeTemplate.productId || currentNzl.productId,
@@ -290,7 +332,7 @@ export function TransaksiPage({
         volume: computedTeraVolume,
         selisih: 0,
         salesAmount: computedTeraTotal,
-        officer: activeShift.operator,
+        officer: txCashier,
         status: 'Valid',
         transactionId: txId
       };
@@ -317,9 +359,9 @@ export function TransaksiPage({
       volume: activeTemplate.requiresTera ? computedTeraVolume : 0,
       unitPrice: unitPrice,
       total: finalTotal,
-      shiftId: activeShift.id,
-      shift: activeShift.name,
-      cashier: activeShift.operator,
+      shiftId: txShiftId,
+      shift: txShiftName,
+      cashier: txCashier,
       status: 'Selesai',
       nozzleId: activeTemplate.requiresTera ? currentNzl?.id : undefined,
       teraId: createdTeraId,
@@ -361,7 +403,7 @@ export function TransaksiPage({
     <div>
       <PageHeader
         title="Transaksi"
-        subtitle={`Alur: Kode Transaksi → Template → Input Data → Review → Simpan • ${activeShift ? activeShift.name : 'Belum Ada Shift'}`}
+        subtitle={`Alur: Kode Transaksi → Template → Input Data → Review → Simpan • ${activeShift ? activeShift.name : 'Mode Administratif (Tanpa Shift)'}`}
         actions={
           <div
             style={{
@@ -388,13 +430,13 @@ export function TransaksiPage({
 
       {/* WORKSTATION CARD */}
       <Card style={{ marginBottom: '24px' }}>
-        {/* Guard prototype behavior jika belum ada shift aktif */}
-        {!activeShift && (
+        {/* Banner Status Sesi Shift / Administratif */}
+        {!activeShift ? (
           <div
             style={{
-              padding: '14px 18px',
-              backgroundColor: '#FEF2F2',
-              border: '1.5px solid #FCA5A5',
+              padding: '12px 16px',
+              backgroundColor: '#F0F9FF',
+              border: '1.5px solid #BAE6FD',
               borderRadius: 'var(--border-radius-sm)',
               marginBottom: '20px',
               display: 'flex',
@@ -402,15 +444,44 @@ export function TransaksiPage({
               gap: '12px'
             }}
           >
-            <span style={{ fontSize: '20px' }}>⚠️</span>
+            <span style={{ fontSize: '20px' }}>ℹ️</span>
             <div>
-              <div style={{ fontWeight: 800, color: '#991B1B', fontSize: '13.5px' }}>
-                Belum ada shift aktif. Buka shift terlebih dahulu.
+              <div style={{ fontWeight: 800, color: '#0369A1', fontSize: '13.5px' }}>
+                Mode Transaksi Administratif (Tanpa Shift Aktif)
               </div>
-              <div style={{ fontSize: '12px', color: '#B91C1C', marginTop: '2px' }}>
-                Transaksi memerlukan sesi shift kerja aktif untuk mencatat relasi shiftId dan serah terima kas kasir. Silakan buka shift pada modul Pegawai → Shift Kerja.
+              <div style={{ fontSize: '12px', color: '#0284C7', marginTop: '2px' }}>
+                Tidak ada shift kerja berjalan. Transaksi akan langsung dibukukan ke jurnal akuntansi sebagai transaksi administratif tanpa mengganggu rekonsiliasi kasir.
               </div>
             </div>
+          </div>
+        ) : (
+          <div
+            style={{
+              padding: '10px 14px',
+              backgroundColor: '#F8FAFC',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--border-radius-sm)',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }} />
+              <span>Shift Aktif: <strong>[{activeShift.id}] {activeShift.name}</strong> (Operator: {activeShift.operator})</span>
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', cursor: 'pointer', margin: 0 }}>
+              <input
+                type="checkbox"
+                checked={linkToShift}
+                onChange={(e) => setLinkToShift(e.target.checked)}
+              />
+              <span style={{ fontWeight: 600, color: linkToShift ? 'var(--color-primary-dark)' : 'var(--color-muted-text)' }}>
+                Tautkan transaksi ke shift ini
+              </span>
+            </label>
           </div>
         )}
 
@@ -438,7 +509,7 @@ export function TransaksiPage({
 
         {/* STEP 1: INPUT KODE TRANSAKSI (COMMAND AREA) */}
         {step === 1 && (
-          <div className="tx-command-box" style={{ opacity: activeShift ? 1 : 0.65 }}>
+          <div className="tx-command-box">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -701,45 +772,158 @@ export function TransaksiPage({
                         />
                       </div>
                     </div>
-                  ) : activeTemplate.code === '315' ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label className="form-label">
-                          Pilih Tagihan Hutang yang Dibayar <span className="required">*</span>
-                        </label>
-                        <select
-                          className="form-select"
-                          value={selectedPayableId}
-                          onChange={(e) => {
-                            const payId = e.target.value;
-                            setSelectedPayableId(payId);
-                            const p = payables.find(x => x.id === payId);
-                            if (p) {
-                              setSelectedPartnerId(p.partnerId);
-                              setNominalInput(p.outstanding.toString());
-                            }
-                          }}
-                          required
-                        >
-                          <option value="">-- Pilih Tagihan Hutang --</option>
-                          {payables.filter(p => p.status !== 'Paid').map(p => (
-                            <option key={p.id} value={p.id}>
-                              [{p.id}] {p.partnerName} — Sisa: Rp {p.outstanding.toLocaleString('id-ID')} ({p.status})
-                            </option>
-                          ))}
-                        </select>
+                  ) : activeTemplate.code === '315' ? (() => {
+                    const selectedVendor = businessPartners.find(p => p.id === selectedPartnerId);
+                    // Filter tagihan milik vendor tersebut dengan sisa utang > 0 dan status Open atau Partial
+                    const vendorPayables = selectedPartnerId
+                      ? payables.filter(
+                          p => (p.partnerId === selectedPartnerId ||
+                                (selectedVendor && (p.partnerId === selectedVendor.code || p.partnerName.toLowerCase() === selectedVendor.name.toLowerCase()))) &&
+                               p.outstanding > 0 &&
+                               (p.status === 'Open' || p.status === 'Partial')
+                        )
+                      : [];
+
+                    const activePayable = payables.find(x => x.id === selectedPayableId);
+
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+                          {/* A. Pilih Vendor/Pemasok */}
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label className="form-label">
+                              Vendor/Pemasok (Pihak yang Menerima Pembayaran) <span className="required">*</span>
+                            </label>
+                            <select
+                              className="form-select"
+                              value={selectedPartnerId}
+                              onChange={(e) => {
+                                const newPartnerId = e.target.value;
+                                setSelectedPartnerId(newPartnerId);
+                                setSelectedPayableId('');
+                                setNominalInput('');
+                              }}
+                              required
+                            >
+                              <option value="">-- Pilih Vendor/Pemasok --</option>
+                              {businessPartners
+                                .filter(p => p.type === 'Vendor' && p.isActive !== false)
+                                .map((p) => {
+                                  const count = payables.filter(
+                                    pay => (pay.partnerId === p.id || pay.partnerId === p.code || pay.partnerName.toLowerCase() === p.name.toLowerCase()) &&
+                                           pay.outstanding > 0 &&
+                                           (pay.status === 'Open' || pay.status === 'Partial')
+                                  ).length;
+                                  return (
+                                    <option key={p.id} value={p.id}>
+                                      [{p.code}] {p.name} {count > 0 ? `(${count} tagihan belum lunas)` : '— (Tidak ada tagihan)'}
+                                    </option>
+                                  );
+                                })}
+                            </select>
+                          </div>
+
+                          {/* B. Pilih Tagihan */}
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label className="form-label">
+                              Pilih Hutang/Tagihan <span className="required">*</span>
+                            </label>
+                            <select
+                              className="form-select"
+                              value={selectedPayableId}
+                              disabled={!selectedPartnerId || vendorPayables.length === 0}
+                              onChange={(e) => {
+                                const payId = e.target.value;
+                                setSelectedPayableId(payId);
+                                const p = payables.find(x => x.id === payId);
+                                if (p) {
+                                  setNominalInput(p.outstanding.toString());
+                                } else {
+                                  setNominalInput('');
+                                }
+                              }}
+                              required
+                            >
+                              <option value="">
+                                {!selectedPartnerId
+                                  ? '-- Pilih vendor/pemasok dahulu --'
+                                  : vendorPayables.length === 0
+                                  ? '-- Tidak ada tagihan belum lunas --'
+                                  : '-- Pilih Hutang/Tagihan --'}
+                              </option>
+                              {vendorPayables.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  [{p.id}] {p.date ? `${p.date} • ` : ''}Awal: Rp {p.amount.toLocaleString('id-ID')} • Sisa: Rp {p.outstanding.toLocaleString('id-ID')} ({p.status})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Pesan jika vendor tidak memiliki tagihan belum lunas */}
+                        {selectedPartnerId && vendorPayables.length === 0 && (
+                          <div
+                            style={{
+                              padding: '10px 14px',
+                              backgroundColor: '#FEF3C7',
+                              border: '1px solid #FCD34D',
+                              borderRadius: 'var(--border-radius-sm)',
+                              color: '#92400E',
+                              fontSize: '12.5px'
+                            }}
+                          >
+                            ⚠️ Vendor <strong>{selectedVendor?.name || 'ini'}</strong> saat ini tidak memiliki tagihan hutang yang belum lunas (seluruh kewajiban telah lunas atau belum ada tagihan).
+                          </div>
+                        )}
+
+                        {/* Ringkasan Tagihan Terpilih */}
+                        {activePayable && (
+                          <div
+                            style={{
+                              padding: '10px 14px',
+                              backgroundColor: '#F8FAFC',
+                              border: '1px solid #E2E8F0',
+                              borderRadius: 'var(--border-radius-sm)',
+                              fontSize: '12.5px'
+                            }}
+                          >
+                            <div style={{ fontWeight: 700, marginBottom: '6px', color: 'var(--color-primary-dark)' }}>
+                              Rincian Tagihan Hutang yang Dipilih:
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
+                              <div>
+                                <span style={{ color: 'var(--color-muted-text)' }}>No. ID / Referensi:</span>{' '}
+                                <strong>{activePayable.id}</strong> {activePayable.transactionId ? `(${activePayable.transactionId})` : ''}
+                              </div>
+                              <div>
+                                <span style={{ color: 'var(--color-muted-text)' }}>Tanggal Tagihan:</span>{' '}
+                                <strong>{activePayable.date || '-'}</strong>
+                              </div>
+                              <div>
+                                <span style={{ color: 'var(--color-muted-text)' }}>Nilai Tagihan Awal:</span>{' '}
+                                <strong>Rp {activePayable.amount.toLocaleString('id-ID')}</strong>
+                              </div>
+                              <div>
+                                <span style={{ color: 'var(--color-muted-text)' }}>Sisa Utang:</span>{' '}
+                                <strong style={{ color: 'var(--color-danger)' }}>Rp {activePayable.outstanding.toLocaleString('id-ID')}</strong>
+                              </div>
+                              <div>
+                                <span style={{ color: 'var(--color-muted-text)' }}>Status Tagihan:</span>{' '}
+                                <Badge variant={activePayable.status === 'Partial' ? 'primary' : 'warning'}>
+                                  {activePayable.status === 'Partial' ? 'Sebagian (Partial)' : 'Belum Lunas (Open)'}
+                                </Badge>
+                              </div>
+                            </div>
+                            {activePayable.notes && (
+                              <div style={{ marginTop: '6px', color: 'var(--color-muted-text)' }}>
+                                Keterangan: {activePayable.notes}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <div className="form-group" style={{ margin: 0 }}>
-                        <label className="form-label">Vendor (Kreditur)</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          value={businessPartners.find(p => p.id === selectedPartnerId)?.name || 'Pilih tagihan di samping'}
-                          disabled
-                        />
-                      </div>
-                    </div>
-                  ) : (
+                    );
+                  })() : (
                     <div className="form-group" style={{ margin: 0 }}>
                       <label className="form-label">
                         {activeTemplate.paymentMethod === 'Piutang' ? 'Pelanggan (Penerima Kredit/Piutang)' : 'Vendor (Pemasok Kredit)'}{' '}
@@ -866,21 +1050,59 @@ export function TransaksiPage({
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {activeTemplate.code === '315' && selectedPayableId && (() => {
+                    const p = payables.find(x => x.id === selectedPayableId);
+                    if (!p) return null;
+                    return (
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '10px 14px',
+                          backgroundColor: '#EFF6FF',
+                          border: '1px solid #BFDBFE',
+                          borderRadius: 'var(--border-radius-sm)',
+                          fontSize: '13px'
+                        }}
+                      >
+                        <span style={{ color: '#1E40AF' }}>
+                          Sisa Utang yang Harus Dibayar: <strong style={{ color: 'var(--color-danger)' }}>Rp {p.outstanding.toLocaleString('id-ID')}</strong> (Maksimum)
+                        </span>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setNominalInput(p.outstanding.toString())}
+                          style={{ padding: '2px 10px', fontSize: '12px' }}
+                        >
+                          Lunasi Penuh
+                        </Button>
+                      </div>
+                    );
+                  })()}
+
                   <div className="form-group" style={{ margin: 0 }}>
                     <label className="form-label">
-                      Nominal Transaksi (Rp) <span className="required">*</span>
+                      {activeTemplate.code === '315' ? 'Nominal Pembayaran (Rp)' : 'Nominal Transaksi (Rp)'}{' '}
+                      <span className="required">*</span>
                     </label>
                     <input
                       ref={nominalRef}
                       type="number"
-                      min="1000"
+                      min="1"
                       className="form-control"
-                      placeholder="Masukkan nominal angka (misal: 250000)"
+                      placeholder={activeTemplate.code === '315' ? 'Masukkan nominal pembayaran (bisa sebagian atau penuh)' : 'Masukkan nominal angka (misal: 250000)'}
                       value={nominalInput}
                       onChange={(e) => setNominalInput(e.target.value)}
                       required
                       style={{ fontSize: '18px', fontWeight: 700, borderColor: 'var(--color-primary)' }}
                     />
+                    {activeTemplate.code === '315' && (
+                      <span style={{ fontSize: '12px', color: 'var(--color-muted-text)', marginTop: '4px', display: 'block' }}>
+                        * Anda dapat mengedit nominal untuk pembayaran sebagian atau klik tombol &quot;Lunasi Penuh&quot;.
+                      </span>
+                    )}
                   </div>
 
                   <div className="form-group" style={{ margin: 0 }}>
@@ -893,6 +1115,50 @@ export function TransaksiPage({
                       onChange={(e) => setKeteranganInput(e.target.value)}
                     />
                   </div>
+                </div>
+              )}
+
+              {/* Tautan Shift atau Transaksi Administratif */}
+              {activeShift ? (
+                <div
+                  style={{
+                    marginTop: '14px',
+                    padding: '10px 14px',
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--border-radius-sm)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}
+                >
+                  <div style={{ fontSize: '12.5px' }}>
+                    <span>Sesi Shift Aktif: <strong>[{activeShift.id}] {activeShift.name}</strong></span>
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', cursor: 'pointer', margin: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={linkToShift}
+                      onChange={(e) => setLinkToShift(e.target.checked)}
+                    />
+                    <span style={{ fontWeight: 600, color: linkToShift ? 'var(--color-primary-dark)' : 'var(--color-muted-text)' }}>
+                      Tautkan ke shift ini
+                    </span>
+                  </label>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    marginTop: '14px',
+                    padding: '10px 14px',
+                    backgroundColor: '#F0F9FF',
+                    border: '1px solid #BAE6FD',
+                    borderRadius: 'var(--border-radius-sm)',
+                    fontSize: '12.5px',
+                    color: '#0369A1'
+                  }}
+                >
+                  ℹ️ Transaksi ini akan dibukukan sebagai <strong>Transaksi Tanpa Sesi / Administratif</strong>.
                 </div>
               )}
 
@@ -949,7 +1215,7 @@ export function TransaksiPage({
                 <div>
                   <span className="text-muted" style={{ fontSize: '12px', fontWeight: 600 }}>Shift Kerja:</span>
                   <div style={{ fontWeight: 700, color: 'var(--color-primary-dark)', marginTop: '2px' }}>
-                    {activeShift ? `[${activeShift.id}] ${activeShift.name}` : '-'}
+                    {activeShift && linkToShift ? `[${activeShift.id}] ${activeShift.name} (${activeShift.operator})` : 'Tanpa Sesi / Administratif'}
                   </div>
                 </div>
 
@@ -986,6 +1252,21 @@ export function TransaksiPage({
                   </div>
                 </div>
               )}
+              {selectedPayableId && (() => {
+                const pay = payables.find(p => p.id === selectedPayableId);
+                if (!pay) return null;
+                const sisaSetelahBayar = Math.max(0, pay.outstanding - finalTotal);
+                return (
+                  <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--color-border-subtle)', fontSize: '12.5px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
+                      <div><span className="text-muted">Tagihan yang Dibayar:</span> <span style={{ fontWeight: 700, fontFamily: 'monospace' }}>{pay.id}</span></div>
+                      <div><span className="text-muted">Sisa Utang Sebelum:</span> <span style={{ fontWeight: 600 }}>Rp {pay.outstanding.toLocaleString('id-ID')}</span></div>
+                      <div><span className="text-muted">Nominal Dibayar:</span> <span style={{ fontWeight: 700, color: 'var(--color-danger)' }}>Rp {finalTotal.toLocaleString('id-ID')}</span></div>
+                      <div><span className="text-muted">Sisa Utang Sesudah:</span> <span style={{ fontWeight: 700, color: sisaSetelahBayar === 0 ? 'var(--color-success)' : 'var(--color-warning)' }}>Rp {sisaSetelahBayar.toLocaleString('id-ID')} ({sisaSetelahBayar === 0 ? 'LUNAS' : 'SEBAGIAN'})</span></div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--color-border-subtle)', fontSize: '12.5px' }}>
                 <span className="text-muted" style={{ display: 'block', marginBottom: '6px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px', fontSize: '11.5px' }}>

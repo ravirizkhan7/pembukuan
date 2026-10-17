@@ -6,7 +6,8 @@ import {
   Account,
   Journal,
   ToastType,
-  PaymentMethod
+  PaymentMethod,
+  BusinessPartner
 } from '../types';
 import { useAppContext } from '../context/AppContext';
 
@@ -37,7 +38,11 @@ export function AkuntansiPage({
     products,
     journals,
     receivables,
-    payables
+    payables,
+    businessPartners,
+    addBusinessPartner,
+    updateBusinessPartner,
+    deleteBusinessPartner
   } = useAppContext();
 
   const [activeTab, setActiveTab] = useState<string>(activeSubTab || 'master_kode');
@@ -253,6 +258,117 @@ export function AkuntansiPage({
     isActive: true
   };
 
+  // ==========================================
+  // STATE: Master Mitra Bisnis (Vendor & Pelanggan)
+  // ==========================================
+  const [isPartnerModalOpen, setIsPartnerModalOpen] = useState<boolean>(false);
+  const [editingPartner, setEditingPartner] = useState<BusinessPartner | null>(null);
+  const [bpCode, setBpCode] = useState<string>('');
+  const [bpName, setBpName] = useState<string>('');
+  const [bpType, setBpType] = useState<'Customer' | 'Vendor'>('Vendor');
+  const [bpPhone, setBpPhone] = useState<string>('');
+  const [bpAddress, setBpAddress] = useState<string>('');
+  const [bpIsActive, setBpIsActive] = useState<boolean>(true);
+  const [partnerTypeFilter, setPartnerTypeFilter] = useState<'Semua' | 'Vendor' | 'Customer'>('Semua');
+  const [partnerSearch, setPartnerSearch] = useState<string>('');
+
+  const openAddPartnerModal = (defaultType: 'Customer' | 'Vendor' = 'Vendor') => {
+    setEditingPartner(null);
+    setBpCode('');
+    setBpName('');
+    setBpType(defaultType);
+    setBpPhone('');
+    setBpAddress('');
+    setBpIsActive(true);
+    setIsPartnerModalOpen(true);
+  };
+
+  const openEditPartnerModal = (partner: BusinessPartner) => {
+    setEditingPartner(partner);
+    setBpCode(partner.code);
+    setBpName(partner.name);
+    setBpType(partner.type);
+    setBpPhone(partner.phone || '');
+    setBpAddress(partner.address || '');
+    setBpIsActive(partner.isActive !== false);
+    setIsPartnerModalOpen(true);
+  };
+
+  const handleSavePartner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bpCode.trim() || !bpName.trim()) {
+      showToast('Kode dan nama mitra wajib diisi.', 'danger');
+      return;
+    }
+
+    try {
+      if (editingPartner) {
+        const dup = businessPartners.some(
+          (p) => p.id !== editingPartner.id && p.code.toLowerCase() === bpCode.trim().toLowerCase()
+        );
+        if (dup) {
+          showToast(`Kode mitra ${bpCode} sudah digunakan oleh mitra lain.`, 'danger');
+          return;
+        }
+
+        await updateBusinessPartner(editingPartner.id, {
+          code: bpCode.trim(),
+          name: bpName.trim(),
+          type: bpType,
+          phone: bpPhone.trim() || undefined,
+          address: bpAddress.trim() || undefined,
+          isActive: bpIsActive
+        });
+        showToast(`Mitra bisnis [${bpCode}] ${bpName} berhasil diperbarui.`, 'success');
+      } else {
+        const dup = businessPartners.some(
+          (p) => p.code.toLowerCase() === bpCode.trim().toLowerCase()
+        );
+        if (dup) {
+          showToast(`Kode mitra ${bpCode} sudah digunakan.`, 'danger');
+          return;
+        }
+
+        await addBusinessPartner({
+          code: bpCode.trim(),
+          name: bpName.trim(),
+          type: bpType,
+          phone: bpPhone.trim() || undefined,
+          address: bpAddress.trim() || undefined,
+          isActive: bpIsActive
+        });
+        showToast(`Mitra bisnis [${bpCode}] ${bpName} berhasil didaftarkan.`, 'success');
+      }
+      setIsPartnerModalOpen(false);
+    } catch (err: any) {
+      showToast(err.message || 'Gagal menyimpan data mitra bisnis.', 'danger');
+    }
+  };
+
+  const handleTogglePartner = async (partner: BusinessPartner) => {
+    try {
+      const nextActive = partner.isActive === false ? true : false;
+      await updateBusinessPartner(partner.id, { isActive: nextActive });
+      showToast(`Mitra [${partner.code}] ${partner.name} ${nextActive ? 'diaktifkan' : 'dinonaktifkan'}.`, 'primary');
+    } catch (err: any) {
+      showToast(err.message || 'Gagal mengubah status mitra.', 'danger');
+    }
+  };
+
+  const handleDeletePartner = async (partner: BusinessPartner) => {
+    if (!window.confirm(`Yakin ingin menghapus mitra [${partner.code}] ${partner.name}?`)) {
+      return;
+    }
+    try {
+      if (deleteBusinessPartner) {
+        await deleteBusinessPartner(partner.id);
+        showToast(`Mitra [${partner.code}] ${partner.name} berhasil dihapus.`, 'success');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Gagal menghapus mitra bisnis.', 'danger');
+    }
+  };
+
   // Header switcher
   const getHeaderInfo = () => {
     switch (activeTab) {
@@ -299,8 +415,16 @@ export function AkuntansiPage({
       case 'buku_bantu':
         return {
           title: 'Buku Pembantu (Piutang & Hutang)',
-          subtitle: 'Monitoring tagihan piutang pelanggan dan kewajiban hutang supplier',
-          actions: null
+          subtitle: 'Monitoring tagihan piutang pelanggan, kewajiban hutang supplier, serta master rekanan',
+          actions: (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => openAddPartnerModal('Vendor')}
+            >
+              + Tambah Mitra Bisnis
+            </Button>
+          )
         };
       default:
         return {
@@ -715,6 +839,17 @@ export function AkuntansiPage({
         const totalReceivable = receivables.reduce((sum, r) => sum + r.outstanding, 0);
         const totalPayable = payables.reduce((sum, p) => sum + p.outstanding, 0);
 
+        const filteredPartners = businessPartners.filter((p) => {
+          const matchesType = partnerTypeFilter === 'Semua' ? true : p.type === partnerTypeFilter;
+          const matchesSearch = partnerSearch.trim() === '' ? true : (
+            p.name.toLowerCase().includes(partnerSearch.toLowerCase()) ||
+            p.code.toLowerCase().includes(partnerSearch.toLowerCase()) ||
+            (p.phone && p.phone.includes(partnerSearch)) ||
+            (p.address && p.address.toLowerCase().includes(partnerSearch.toLowerCase()))
+          );
+          return matchesType && matchesSearch;
+        });
+
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Summary Cards */}
@@ -743,6 +878,158 @@ export function AkuntansiPage({
                 </div>
               </Card>
             </div>
+
+            {/* Bagian: Kelola Mitra Bisnis (Master Vendor & Pelanggan) */}
+            <Card
+              title="Kelola Mitra Bisnis (Master Vendor & Pelanggan)"
+              subtitle="Pendaftaran dan pengelolaan rekanan pemasok (Vendor) dan pelanggan kredit SPBU."
+              actions={
+                <Button variant="primary" size="sm" onClick={() => openAddPartnerModal('Vendor')}>
+                  + Tambah Mitra Bisnis
+                </Button>
+              }
+            >
+              {/* Petunjuk pendaftaran vendor */}
+              <div
+                style={{
+                  padding: '9px 12px',
+                  backgroundColor: 'var(--blue-50)',
+                  border: '1px solid var(--blue-200)',
+                  borderRadius: 'var(--border-radius-sm)',
+                  fontSize: '12px',
+                  color: 'var(--color-primary-dark)',
+                  marginBottom: '14px',
+                  lineHeight: 1.45
+                }}
+              >
+                ℹ️ <strong>Petunjuk Rekanan:</strong> Pemasok BBM, pelumas, dan operasional SPBU didaftarkan dengan tipe <strong>Vendor</strong> agar langsung muncul pada form Transaksi Pembayaran Hutang dan Pembelian. Pelanggan kredit/kupon instansi didaftarkan dengan tipe <strong>Customer</strong>.
+              </div>
+
+              {/* Filter Tabs & Search */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '10px',
+                  marginBottom: '14px'
+                }}
+              >
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {(['Semua', 'Vendor', 'Customer'] as const).map((t) => (
+                    <Button
+                      key={t}
+                      variant={partnerTypeFilter === t ? 'primary' : 'secondary'}
+                      size="sm"
+                      onClick={() => setPartnerTypeFilter(t)}
+                      style={{ fontSize: '12px', padding: '4px 10px' }}
+                    >
+                      {t === 'Semua' ? 'Semua Rekanan' : t === 'Vendor' ? 'Vendor / Pemasok' : 'Pelanggan / Kupon'}
+                    </Button>
+                  ))}
+                </div>
+
+                <div style={{ width: '260px' }}>
+                  <input
+                    type="text"
+                    className="form-control"
+                    style={{ fontSize: '12.5px', padding: '5px 10px' }}
+                    placeholder="Cari kode, nama, telepon..."
+                    value={partnerSearch}
+                    onChange={(e) => setPartnerSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Tabel Mitra Bisnis */}
+              <div className="table-responsive">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '90px' }}>Kode</th>
+                      <th>Nama Rekanan / Perusahaan</th>
+                      <th style={{ width: '130px' }}>Tipe</th>
+                      <th>No. Telepon</th>
+                      <th>Alamat</th>
+                      <th style={{ width: '95px' }}>Status</th>
+                      <th style={{ width: '185px' }}>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredPartners.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} style={{ textAlign: 'center', padding: '24px', color: 'var(--color-muted-text)' }}>
+                          Tidak ada data mitra bisnis yang sesuai.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredPartners.map((p) => (
+                        <tr key={p.id} style={{ opacity: p.isActive === false ? 0.65 : 1 }}>
+                          <td>
+                            <span
+                              style={{
+                                fontFamily: 'monospace',
+                                fontWeight: 700,
+                                backgroundColor: p.type === 'Vendor' ? 'var(--blue-50)' : '#ECFDF5',
+                                color: p.type === 'Vendor' ? 'var(--color-primary-dark)' : '#065F46',
+                                padding: '2px 6px',
+                                borderRadius: '3px',
+                                border: `1px solid ${p.type === 'Vendor' ? 'var(--blue-200)' : '#A7F3D0'}`,
+                                fontSize: '12px'
+                              }}
+                            >
+                              {p.code}
+                            </span>
+                          </td>
+                          <td style={{ fontWeight: 600 }}>{p.name}</td>
+                          <td>
+                            <Badge variant={p.type === 'Vendor' ? 'primary' : 'success'}>
+                              {p.type === 'Vendor' ? 'Vendor / Pemasok' : 'Pelanggan'}
+                            </Badge>
+                          </td>
+                          <td style={{ fontSize: '12.5px' }}>{p.phone || '-'}</td>
+                          <td style={{ fontSize: '12.5px', color: 'var(--color-muted-text)' }}>{p.address || '-'}</td>
+                          <td>
+                            <Badge variant={p.isActive !== false ? 'success' : 'neutral'}>
+                              {p.isActive !== false ? 'Aktif' : 'Nonaktif'}
+                            </Badge>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEditPartnerModal(p)}
+                                style={{ padding: '3px 8px', fontSize: '12px' }}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant={p.isActive !== false ? 'secondary' : 'primary'}
+                                size="sm"
+                                onClick={() => handleTogglePartner(p)}
+                                style={{ padding: '3px 8px', fontSize: '12px' }}
+                              >
+                                {p.isActive !== false ? 'Nonaktifkan' : 'Aktifkan'}
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDeletePartner(p)}
+                                style={{ padding: '3px 8px', fontSize: '12px' }}
+                              >
+                                Hapus
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
 
             {/* Sub-Card 1: Piutang */}
             <Card
@@ -1104,6 +1391,101 @@ export function AkuntansiPage({
             </Button>
             <Button type="submit" variant="primary">
               {editingMasterCode ? 'Simpan Perubahan' : 'Simpan Master Kode'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL TAMBAH / EDIT MITRA BISNIS (VENDOR & PELANGGAN) */}
+      <Modal
+        isOpen={isPartnerModalOpen}
+        onClose={() => setIsPartnerModalOpen(false)}
+        title={editingPartner ? `Edit Mitra Bisnis: ${editingPartner.name}` : 'Tambah Mitra Bisnis Baru'}
+      >
+        <form onSubmit={handleSavePartner}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div className="form-group">
+              <label className="form-label">
+                Tipe Rekanan <span className="required">*</span>
+              </label>
+              <select
+                className="form-select"
+                value={bpType}
+                onChange={(e) => setBpType(e.target.value as 'Customer' | 'Vendor')}
+              >
+                <option value="Vendor">Vendor / Pemasok (Supplier)</option>
+                <option value="Customer">Customer / Pelanggan Kredit</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                Kode Rekanan <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                value={bpCode}
+                onChange={(e) => setBpCode(e.target.value)}
+                placeholder={bpType === 'Vendor' ? 'Contoh: VEN-001' : 'Contoh: CUS-001'}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              Nama Rekanan / Perusahaan <span className="required">*</span>
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              value={bpName}
+              onChange={(e) => setBpName(e.target.value)}
+              placeholder={bpType === 'Vendor' ? 'Contoh: PT Pertamina Patra Niaga' : 'Contoh: PT Sawit Makmur Lestari'}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Nomor Telepon / Kontak</label>
+            <input
+              type="text"
+              className="form-control"
+              value={bpPhone}
+              onChange={(e) => setBpPhone(e.target.value)}
+              placeholder="Contoh: 081234567890"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Alamat Lengkap</label>
+            <textarea
+              className="form-control"
+              rows={2}
+              value={bpAddress}
+              onChange={(e) => setBpAddress(e.target.value)}
+              placeholder="Alamat kantor / gudang rekanan..."
+            />
+          </div>
+
+          <div style={{ margin: '14px 0 6px 0' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={bpIsActive}
+                onChange={(e) => setBpIsActive(e.target.checked)}
+              />
+              <span style={{ fontWeight: 600 }}>Status Aktif (dapat dipilih pada transaksi)</span>
+            </label>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+            <Button variant="secondary" onClick={() => setIsPartnerModalOpen(false)}>
+              Batal
+            </Button>
+            <Button type="submit" variant="primary">
+              {editingPartner ? 'Simpan Perubahan' : 'Simpan Mitra Bisnis'}
             </Button>
           </div>
         </form>

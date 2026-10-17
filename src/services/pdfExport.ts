@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ReportsData, StationInfo } from '../types';
-import { saveOrDownloadFile } from './fileSaver';
+import { saveOrDownloadPdf, SaveFileResult } from './fileSaver';
 
 // Helper formatting angka akuntansi Indonesia
 function formatAccounting(val: number): string {
@@ -16,17 +16,17 @@ function formatAccounting(val: number): string {
 }
 
 function sanitizeFilename(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  return text.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
 }
 
 /**
  * 1. EXPORT LAPORAN NERACA (PDF STANDALONE)
  */
-export function exportNeracaPdf(
+export async function exportNeracaPdf(
   data: ReportsData,
   stationInfo?: StationInfo,
   period: string = '31-Aug-2026'
-) {
+): Promise<SaveFileResult> {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -36,6 +36,7 @@ export function exportNeracaPdf(
   const entityName = data.neracaKonsolidasi?.entityName || stationInfo?.name || 'SPBU 34.12301 Pertamina';
   const location = data.neracaKonsolidasi?.location || stationInfo?.address || 'Lubuk Alung';
   const reportTitle = data.neracaKonsolidasi?.title || 'LAPORAN NERACA HARIAN KONSOLIDASI';
+  const managerName = stationInfo?.manager || 'Direksi / Pimpinan';
 
   // Standalone Document Header
   doc.setFont('helvetica', 'bold');
@@ -48,12 +49,15 @@ export function exportNeracaPdf(
 
   doc.setFontSize(9);
   doc.text(entityName, 105, 27, { align: 'center' });
-  doc.text(location, 105, 31, { align: 'center' });
+  const wrappedLocation = doc.splitTextToSize(location, 150);
+  doc.text(wrappedLocation, 105, 31, { align: 'center' });
+
+  const headerBottomY = 31 + (wrappedLocation.length * 3.5);
 
   // Thin dividing line
   doc.setDrawColor(180, 180, 180);
   doc.setLineWidth(0.4);
-  doc.line(14, 34, 196, 34);
+  doc.line(14, headerBottomY, 196, headerBottomY);
 
   // Table Body Rows
   const rows = (data.neracaKonsolidasi?.rows || []).map((row) => {
@@ -75,7 +79,7 @@ export function exportNeracaPdf(
   });
 
   autoTable(doc, {
-    startY: 37,
+    startY: headerBottomY + 3,
     margin: { left: 14, right: 14 },
     head: [
       [
@@ -135,40 +139,44 @@ export function exportNeracaPdf(
     }
   });
 
-  // Standalone Footer / Tanda Tangan
+  // Standalone Footer / Tanda Tangan: Hanya 1 blok tanda tangan pimpinan di kanan bawah
   const finalY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 12 : 240;
   const pageHeight = doc.internal.pageSize.getHeight();
-  const signY = finalY > pageHeight - 35 ? pageHeight - 35 : finalY;
+  let signY = finalY;
+  if (signY > pageHeight - 32) {
+    doc.addPage();
+    signY = 25;
+  }
 
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Diketahui, ${data.neracaKonsolidasi?.signerDate || ''}`, 160, signY, { align: 'center' });
+
+  // Garis tanda tangan
+  doc.setDrawColor(50, 60, 80);
+  doc.setLineWidth(0.3);
+  doc.line(135, signY + 13, 185, signY + 13);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text(managerName, 160, signY + 17, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(70, 80, 100);
+  doc.text('Pimpinan / Direktur SPBU', 160, signY + 21, { align: 'center' });
+  doc.setTextColor(0, 0, 0);
 
-  // Signer 1: Direksi
-  doc.text(`Diketahui, ${data.neracaKonsolidasi?.signerDate || '01/09/2026'}`, 35, signY);
-  doc.text('Direksi / Pimpinan', 35, signY + 15);
-  doc.setFont('helvetica', 'bold');
-  doc.text(entityName, 35, signY + 19);
-
-  // Signer 2: Pembukuan
-  doc.setFont('helvetica', 'normal');
-  doc.text('Pembukuan,', 145, signY);
-  doc.text('Bagian Akuntansi & Pelaporan', 145, signY + 15);
-  doc.setFont('helvetica', 'bold');
-  doc.text(location, 145, signY + 19);
-
-  const filename = `laporan-neraca-${sanitizeFilename(period)}.pdf`;
-  saveOrDownloadFile(doc.output('blob'), filename);
-  return filename;
+  const filename = `Neraca_${sanitizeFilename(period)}.pdf`;
+  return await saveOrDownloadPdf(doc, filename);
 }
 
 /**
  * 2. EXPORT LAPORAN LABA RUGI (PDF STANDALONE)
  */
-export function exportLabaRugiPdf(
+export async function exportLabaRugiPdf(
   data: ReportsData,
   stationInfo?: StationInfo,
   period: string = '31 Agustus 2026'
-) {
+): Promise<SaveFileResult> {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -178,6 +186,7 @@ export function exportLabaRugiPdf(
   const entityName = data.labaRugiKonsolidasi?.entityName || stationInfo?.name || 'PT SPBU Mitra Akrual 1954';
   const location = data.labaRugiKonsolidasi?.location || stationInfo?.address || 'Lubuk Alung';
   const reportTitle = data.labaRugiKonsolidasi?.title || 'LAPORAN LABA-RUGI KONSOLIDASI HARIAN';
+  const managerName = stationInfo?.manager || 'Direksi / Pimpinan';
 
   // Document Header
   doc.setFont('helvetica', 'bold');
@@ -190,11 +199,14 @@ export function exportLabaRugiPdf(
 
   doc.setFontSize(9);
   doc.text(entityName, 105, 27, { align: 'center' });
-  doc.text(location, 105, 31, { align: 'center' });
+  const wrappedLocation = doc.splitTextToSize(location, 150);
+  doc.text(wrappedLocation, 105, 31, { align: 'center' });
+
+  const headerBottomY = 31 + (wrappedLocation.length * 3.5);
 
   doc.setDrawColor(180, 180, 180);
   doc.setLineWidth(0.4);
-  doc.line(14, 34, 196, 34);
+  doc.line(14, headerBottomY, 196, headerBottomY);
 
   // Rows
   const rows = (data.labaRugiKonsolidasi?.rows || []).map((row) => {
@@ -215,7 +227,7 @@ export function exportLabaRugiPdf(
   });
 
   autoTable(doc, {
-    startY: 37,
+    startY: headerBottomY + 3,
     margin: { left: 14, right: 14 },
     head: [
       [
@@ -274,36 +286,44 @@ export function exportLabaRugiPdf(
     }
   });
 
+  // Standalone Footer / Tanda Tangan: Hanya 1 blok tanda tangan pimpinan di kanan bawah
   const finalY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 12 : 240;
   const pageHeight = doc.internal.pageSize.getHeight();
-  const signY = finalY > pageHeight - 35 ? pageHeight - 35 : finalY;
+  let signY = finalY;
+  if (signY > pageHeight - 32) {
+    doc.addPage();
+    signY = 25;
+  }
 
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Diketahui, ${data.labaRugiKonsolidasi?.signerDate || ''}`, 160, signY, { align: 'center' });
+
+  // Garis tanda tangan
+  doc.setDrawColor(50, 60, 80);
+  doc.setLineWidth(0.3);
+  doc.line(135, signY + 13, 185, signY + 13);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text(managerName, 160, signY + 17, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Diketahui,', 35, signY);
-  doc.text('Pimpinan / Direktur SPBU', 35, signY + 15);
-  doc.setFont('helvetica', 'bold');
-  doc.text(entityName, 35, signY + 19);
+  doc.setTextColor(70, 80, 100);
+  doc.text('Pimpinan / Direktur SPBU', 160, signY + 21, { align: 'center' });
+  doc.setTextColor(0, 0, 0);
 
-  doc.setFont('helvetica', 'normal');
-  doc.text('Pembukuan,', 145, signY);
-  doc.text('Bagian Akuntansi & Pajak', 145, signY + 15);
-  doc.setFont('helvetica', 'bold');
-  doc.text(location, 145, signY + 19);
-
-  const filename = `laporan-laba-rugi-${sanitizeFilename(period)}.pdf`;
-  saveOrDownloadFile(doc.output('blob'), filename);
-  return filename;
+  const filename = `Laba_Rugi_${sanitizeFilename(period)}.pdf`;
+  return await saveOrDownloadPdf(doc, filename);
 }
 
 /**
  * 3. EXPORT LAPORAN ARUS KAS (PDF STANDALONE)
  */
-export function exportArusKasPdf(
+export async function exportArusKasPdf(
   data: ReportsData,
   stationInfo?: StationInfo,
   period: string = 'Agustus 2026'
-) {
+): Promise<SaveFileResult> {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -362,19 +382,18 @@ export function exportArusKasPdf(
     }
   });
 
-  const filename = `laporan-arus-kas-${sanitizeFilename(period)}.pdf`;
-  saveOrDownloadFile(doc.output('blob'), filename);
-  return filename;
+  const filename = `Arus_Kas_${sanitizeFilename(period)}.pdf`;
+  return await saveOrDownloadPdf(doc, filename);
 }
 
 /**
  * 4. EXPORT LAPORAN STOK & PENJUALAN BBM (PDF STANDALONE)
  */
-export function exportStokPdf(
+export async function exportStokPdf(
   data: ReportsData,
   stationInfo?: StationInfo,
   period: string = 'September 2026'
-) {
+): Promise<SaveFileResult> {
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'mm',
@@ -431,7 +450,6 @@ export function exportStokPdf(
     }
   });
 
-  const filename = `laporan-stok-penjualan-${sanitizeFilename(period)}.pdf`;
-  saveOrDownloadFile(doc.output('blob'), filename);
-  return filename;
+  const filename = `Stok_BBM_${sanitizeFilename(period)}.pdf`;
+  return await saveOrDownloadPdf(doc, filename);
 }

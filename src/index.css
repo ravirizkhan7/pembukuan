@@ -873,6 +873,11 @@ p {
   font-size: 12px;
   font-weight: 500;
   color: #475569;
+  max-width: 650px;
+  margin: 0 auto;
+  text-align: center;
+  line-height: 1.45;
+  word-wrap: break-word;
 }
 
 .formal-report-table-wrapper {
@@ -1030,13 +1035,13 @@ p {
 .formal-report-sign-area {
   margin-top: 36px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 0 40px 10px 40px;
 }
 
 .formal-sign-box {
   text-align: center;
-  width: 200px;
+  width: 220px;
 }
 
 .formal-sign-role {

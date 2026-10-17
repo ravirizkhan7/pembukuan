@@ -88,6 +88,11 @@ export function printHtmlDocument(title: string, bodyHtml: string) {
           .report-location {
             font-size: 10px;
             color: #475569;
+            max-width: 500px;
+            margin: 2px auto 0 auto;
+            text-align: center;
+            line-height: 1.4;
+            word-wrap: break-word;
           }
           table.report-table {
             width: 100%;
@@ -132,7 +137,7 @@ export function printHtmlDocument(title: string, bodyHtml: string) {
           }
           .sign-area {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             margin-top: 24px;
             page-break-inside: avoid;
           }
@@ -232,16 +237,10 @@ export function printNeracaReport(data: ReportsData, stationInfo?: StationInfo, 
 
     <div class="sign-area">
       <div class="sign-box">
-        <div style="font-size: 9.5px;">Diketahui, ${data.neracaKonsolidasi?.signerDate || '01/09/26'}</div>
+        <div style="font-size: 9.5px;">Diketahui, ${data.neracaKonsolidasi?.signerDate || ''}</div>
         <div class="sign-line"></div>
-        <div class="sign-name">Direksi / Pimpinan</div>
-        <div class="sign-title">${entityName}</div>
-      </div>
-      <div class="sign-box">
-        <div style="font-size: 9.5px;">Pembukuan</div>
-        <div class="sign-line"></div>
-        <div class="sign-name">Bagian Akuntansi & Pelaporan</div>
-        <div class="sign-title">${location}</div>
+        <div class="sign-name">${stationInfo?.manager || 'Direksi / Pimpinan'}</div>
+        <div class="sign-title">Pimpinan / Direktur SPBU</div>
       </div>
     </div>
   `;
@@ -306,16 +305,10 @@ export function printLabaRugiReport(data: ReportsData, stationInfo?: StationInfo
 
     <div class="sign-area">
       <div class="sign-box">
-        <div style="font-size: 9.5px;">Diketahui,</div>
+        <div style="font-size: 9.5px;">Diketahui, ${data.labaRugiKonsolidasi?.signerDate || ''}</div>
         <div class="sign-line"></div>
-        <div class="sign-name">Pimpinan / Direktur SPBU</div>
-        <div class="sign-title">${entityName}</div>
-      </div>
-      <div class="sign-box">
-        <div style="font-size: 9.5px;">Pembukuan,</div>
-        <div class="sign-line"></div>
-        <div class="sign-name">Bagian Akuntansi & Pajak</div>
-        <div class="sign-title">${location}</div>
+        <div class="sign-name">${stationInfo?.manager || 'Direksi / Pimpinan'}</div>
+        <div class="sign-title">Pimpinan / Direktur SPBU</div>
       </div>
     </div>
   `;

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo, useCallback, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef, ReactNode } from 'react';
 import * as initialMock from '../mock/mockData';
 import {
   Account,
@@ -117,13 +117,14 @@ export interface AppContextType {
 
   // Business Partner
   addBusinessPartner: (bp: Omit<BusinessPartner, 'id'> & { id?: string }) => Promise<BusinessPartner> | BusinessPartner;
+  updateBusinessPartner: (id: string, updates: Partial<Omit<BusinessPartner, 'id'>> & { isActive?: boolean }) => Promise<BusinessPartner>;
   deleteBusinessPartner?: (id: string) => Promise<boolean>;
 
   // Reports Action
   refreshReports: (period?: string) => Promise<ReportsData>;
 
   // Station & Security
-  updateStationInfo: (info: StationInfo) => void;
+  updateStationInfo: (info: StationInfo) => Promise<void> | void;
   changePin: (newPin: string) => void;
   reloadFromDatabase?: () => Promise<void>;
 }
@@ -151,6 +152,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [pendingTera, setPendingTera] = useState<Tera | null>(null);
   const [businessPartners, setBusinessPartners] = useState<BusinessPartner[]>(initialMock.mockBusinessPartners);
   const [stationInfo, setStationInfo] = useState<StationInfo>(initialMock.mockStationInfo);
+  const stationInfoRef = useRef<StationInfo>(stationInfo);
+  useEffect(() => {
+    stationInfoRef.current = stationInfo;
+  }, [stationInfo]);
+
   const [authPin, setAuthPin] = useState<string>(initialMock.initialAuthPin);
   const [reports, setReports] = useState<ReportsData>(initialMock.mockReports);
   const [isDbLoaded, setIsDbLoaded] = useState<boolean>(false);
@@ -181,6 +187,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setPayables(snapshot.payables);
           if (snapshot.reports) {
             setReports(snapshot.reports);
+          }
+          if (snapshot.stationInfo) {
+            setStationInfo(snapshot.stationInfo);
           }
           setIsDbLoaded(true);
         }
@@ -217,21 +226,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (snapshot.reports) {
         setReports(snapshot.reports);
       }
-
-      // Muat ulang profil SPBU jika ada di database SQLite
-      const stationRows = await sqliteService.query<any>('SELECT * FROM station_info LIMIT 1;');
-      if (stationRows && stationRows.length > 0) {
-        setStationInfo((prev) => ({
-          ...prev,
-          id: stationRows[0].id || prev.id,
-          name: stationRows[0].name || prev.name,
-          address: stationRows[0].address || prev.address,
-          manager: stationRows[0].manager || prev.manager,
-          phone: stationRows[0].phone || prev.phone,
-          email: stationRows[0].email || prev.email,
-          status: stationRows[0].status || prev.status,
-          lastBackup: stationRows[0].last_backup || prev.lastBackup
-        }));
+      if (snapshot.stationInfo) {
+        setStationInfo(snapshot.stationInfo);
       }
     } catch (err) {
       console.error('[AppContext] Gagal memuat ulang data dari SQLite:', err);
@@ -678,7 +674,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setPendingTera(null);
 
     // Refresh reports dari SQLite secara asinkron
-    reportRepository.getAllReports(undefined, stationInfo).then((rep) => {
+    reportRepository.getAllReports(undefined, stationInfoRef.current).then((rep) => {
       setReports(rep);
     }).catch(console.error);
 
@@ -686,18 +682,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       success: true,
       journal: postResult.journal
     };
-  }, [pendingTera, teraList, stationInfo]);
+  }, [pendingTera, teraList]);
 
   const refreshReports = useCallback(async (period?: string): Promise<ReportsData> => {
     try {
-      const data = await reportRepository.getAllReports(period, stationInfo);
+      const data = await reportRepository.getAllReports(period, stationInfoRef.current);
       setReports(data);
       return data;
     } catch (err) {
       console.error('[AppContext] Gagal me-refresh laporan:', err);
-      return reports;
+      throw err;
     }
-  }, [stationInfo, reports]);
+  }, []);
 
   // ==========================================
   // F. Business Partner (SQLite Persisted)
@@ -706,14 +702,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const newId = bp.id || `BP-${Date.now().toString().slice(-4)}`;
     const newPartner: BusinessPartner = {
       ...bp,
-      id: newId
+      id: newId,
+      isActive: bp.isActive !== undefined ? bp.isActive : true
     };
     await businessPartnerRepository.create(newPartner);
     setBusinessPartners((prev) => [...prev.filter((p) => p.id !== newPartner.id), newPartner]);
     return newPartner;
   }, []);
 
+  const updateBusinessPartner = useCallback(async (id: string, updates: Partial<Omit<BusinessPartner, 'id'>> & { isActive?: boolean }): Promise<BusinessPartner> => {
+    const updated = await businessPartnerRepository.update(id, updates);
+    setBusinessPartners((prev) => prev.map((p) => (p.id === id ? { ...p, ...updated } : p)));
+    return updated;
+  }, []);
+
   const deleteBusinessPartner = useCallback(async (id: string): Promise<boolean> => {
+    const isRef = await businessPartnerRepository.isReferenced(id);
+    if (isRef) {
+      throw new Error('Mitra bisnis tidak dapat dihapus karena sudah memiliki riwayat transaksi atau tagihan terkait. Anda dapat menonaktifkan statusnya.');
+    }
     const deleted = await businessPartnerRepository.delete(id);
     if (deleted) {
       setBusinessPartners((prev) => prev.filter((p) => p.id !== id));
@@ -786,9 +793,64 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return deleted;
   }, []);
 
-  const updateStationInfo = useCallback((info: StationInfo) => {
+  const updateStationInfo = useCallback(async (info: StationInfo): Promise<void> => {
+    const now = new Date().toISOString();
+    const existingStation = await sqliteService.query<any>('SELECT id FROM station_info LIMIT 1;');
+    if (existingStation && existingStation.length > 0) {
+      const existingId = existingStation[0].id;
+      await sqliteService.run(
+        `UPDATE station_info SET
+           id = ?,
+           name = ?,
+           address = ?,
+           phone = ?,
+           manager = ?,
+           email = ?,
+           status = ?,
+           updated_at = ?
+         WHERE id = ?;`,
+        [
+          info.id,
+          info.name,
+          info.address,
+          info.phone,
+          info.manager,
+          info.email,
+          info.status,
+          now,
+          existingId
+        ]
+      );
+    } else {
+      await sqliteService.run(
+        `INSERT INTO station_info (
+           id, name, address, phone, manager, email, status, last_backup, version, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        [
+          info.id,
+          info.name,
+          info.address,
+          info.phone,
+          info.manager,
+          info.email,
+          info.status,
+          info.lastBackup || null,
+          info.version || '1.0.0',
+          now,
+          now
+        ]
+      );
+    }
+
     setStationInfo(info);
-  }, []);
+    stationInfoRef.current = info;
+
+    try {
+      await refreshReports();
+    } catch (rErr) {
+      console.warn('[AppContext] Refresh reports after updating station info warning:', rErr);
+    }
+  }, [refreshReports]);
 
   const changePin = useCallback((newPin: string) => {
     setAuthPin(newPin);
@@ -844,6 +906,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addTera,
     addTransaction,
     addBusinessPartner,
+    updateBusinessPartner,
     deleteBusinessPartner,
     addPegawai,
     updatePegawai,
@@ -905,6 +968,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addTera,
     addTransaction,
     addBusinessPartner,
+    updateBusinessPartner,
     deleteBusinessPartner,
     addPegawai,
     updatePegawai,

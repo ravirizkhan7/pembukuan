@@ -18,7 +18,8 @@ export class BusinessPartnerRepository extends BaseRepository {
       name: row.name,
       type: row.type as 'Customer' | 'Vendor',
       phone: row.phone ?? undefined,
-      address: row.address ?? undefined
+      address: row.address ?? undefined,
+      isActive: row.is_active === 1 || row.is_active === '1' || row.is_active === true
     };
   }
 
@@ -199,6 +200,26 @@ export class BusinessPartnerRepository extends BaseRepository {
       return updated;
     } catch (err) {
       return this.handleDbError(err, `Gagal memperbarui mitra bisnis dengan ID: ${id}`);
+    }
+  }
+
+  /**
+   * Memeriksa apakah mitra bisnis sudah memiliki relasi di tabel transaksi, piutang, atau hutang
+   */
+  public async isReferenced(id: string): Promise<boolean> {
+    try {
+      const rows = await this.executor.query<any>(
+        `SELECT
+           ((SELECT COUNT(*) FROM transactions WHERE partner_id = ?) +
+            (SELECT COUNT(*) FROM receivables WHERE partner_id = ?) +
+            (SELECT COUNT(*) FROM payables WHERE partner_id = ?)) AS total_refs;`,
+        [id, id, id]
+      );
+      if (rows.length === 0) return false;
+      return Number(rows[0].total_refs || 0) > 0;
+    } catch (err) {
+      console.warn('[BusinessPartnerRepository] Gagal mengecek referensi mitra:', err);
+      return false;
     }
   }
 

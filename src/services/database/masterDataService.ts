@@ -38,9 +38,11 @@ import {
   mockAccounts,
   mockMasterCodes,
   mockBusinessPartners,
-  mockPegawai
+  mockPegawai,
+  mockStationInfo
 } from '../../mock/mockData';
 import type {
+  StationInfo,
   ProductCategory,
   Product,
   Tank,
@@ -88,6 +90,7 @@ export interface MasterDataSnapshot {
   receivables: Receivable[];
   payables: Payable[];
   reports?: ReportsData;
+  stationInfo?: StationInfo;
 }
 
 export class MasterDataService {
@@ -289,6 +292,29 @@ export class MasterDataService {
       summary.pegawaiSeeded = mockPegawai.length;
     }
 
+    // 10. Profil SPBU & Metadata Pimpinan (station_info)
+    const existingStation = await executor.query<any>('SELECT id FROM station_info LIMIT 1;');
+    if (existingStation.length === 0) {
+      const now = new Date().toISOString();
+      await executor.run(
+        `INSERT INTO station_info (id, name, address, phone, manager, email, status, last_backup, version, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        [
+          mockStationInfo.id,
+          mockStationInfo.name,
+          mockStationInfo.address,
+          mockStationInfo.phone,
+          mockStationInfo.manager,
+          mockStationInfo.email,
+          mockStationInfo.status,
+          mockStationInfo.lastBackup || null,
+          mockStationInfo.version,
+          now,
+          now
+        ]
+      );
+    }
+
     return summary;
   }
 
@@ -331,7 +357,8 @@ export class MasterDataService {
       journals,
       receivables,
       payables,
-      reports
+      reports,
+      stationRows
     ] = await Promise.all([
       accRepo.findAll(),
       catRepo.findAll(),
@@ -348,8 +375,25 @@ export class MasterDataService {
       jrnRepo.findAll(),
       recRepo.findAll(),
       payRepo.findAll(),
-      reportRepo.getAllReports()
+      reportRepo.getAllReports(),
+      executor.query<any>('SELECT * FROM station_info LIMIT 1;')
     ]);
+
+    let stationInfo: StationInfo | undefined = undefined;
+    if (stationRows && stationRows.length > 0) {
+      const s = stationRows[0];
+      stationInfo = {
+        id: s.id,
+        name: s.name,
+        address: s.address,
+        phone: s.phone,
+        manager: s.manager,
+        email: s.email,
+        status: s.status,
+        lastBackup: s.last_backup || '',
+        version: s.version || '1.0.0'
+      };
+    }
 
     return {
       accounts,
@@ -367,7 +411,8 @@ export class MasterDataService {
       journals,
       receivables,
       payables,
-      reports
+      reports,
+      stationInfo
     };
   }
 }

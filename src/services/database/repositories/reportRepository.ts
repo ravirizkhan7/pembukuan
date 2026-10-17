@@ -17,22 +17,107 @@ import type {
 /**
  * Helper untuk mengurai parameter periode menjadi rentang tanggal (ISO YYYY-MM-DD)
  */
-export function parsePeriodFilter(periodStr?: string): { startDate?: string; endDate?: string; label: string } {
-  if (!periodStr || periodStr === 'Semua Periode' || periodStr === 'Semua') {
+function formatLocalDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export interface PeriodFilterResult {
+  startDate?: string;
+  endDate?: string;
+  label: string;
+}
+
+/**
+ * Helper untuk mengurai parameter periode menjadi rentang tanggal (ISO YYYY-MM-DD)
+ * Menjamin parsing zona waktu lokal, bebas dari off-by-one UTC error.
+ */
+export function parsePeriodFilter(
+  period?: string | { startDate?: string; endDate?: string; label?: string }
+): PeriodFilterResult {
+  if (!period) {
     return { label: 'Semua Periode' };
   }
-  const clean = periodStr.trim();
+
+  // Jika input berupa objek rentang tanggal
+  if (typeof period === 'object') {
+    const start = period.startDate?.trim();
+    const end = period.endDate?.trim();
+    if (start && end && start > end) {
+      throw new Error(`Tanggal mulai (${start}) tidak boleh melewati tanggal akhir (${end}).`);
+    }
+    return {
+      startDate: start || undefined,
+      endDate: end || undefined,
+      label: period.label || (start && end ? `${start} s/d ${end}` : 'Semua Periode')
+    };
+  }
+
+  const clean = period.trim();
+  if (clean === '' || clean === 'Semua Periode' || clean === 'Semua') {
+    return { label: 'Semua Periode' };
+  }
+
+  const now = new Date();
+  const today = formatLocalDate(now);
+
+  // 1. Hari Ini — dari awal sampai akhir hari ini
   if (clean === 'Hari Ini') {
-    const today = new Date().toISOString().slice(0, 10);
     return { startDate: today, endDate: today, label: 'Hari Ini' };
   }
-  if (clean === 'Bulan Ini') {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = (now.getMonth() + 1).toString().padStart(2, '0');
-    const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
-    return { startDate: `${y}-${m}-01`, endDate: `${y}-${m}-${lastDay}`, label: 'Bulan Ini' };
+
+  // 2. 7 Hari Terakhir — tujuh hari kalender termasuk hari ini (hari ini + 6 hari kalender sebelumnya)
+  if (clean === '7 Hari Terakhir') {
+    const sevenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+    return { startDate: formatLocalDate(sevenDaysAgo), endDate: today, label: '7 Hari Terakhir' };
   }
+
+  // 3. Bulan Ini — tanggal 1 bulan berjalan sampai hari ini
+  if (clean === 'Bulan Ini') {
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { startDate: formatLocalDate(firstDay), endDate: today, label: 'Bulan Ini' };
+  }
+
+  // 4. Tahun Ini — 1 Januari tahun berjalan sampai hari ini
+  if (clean === 'Tahun Ini') {
+    const firstDayYear = new Date(now.getFullYear(), 0, 1);
+    return { startDate: formatLocalDate(firstDayYear), endDate: today, label: 'Tahun Ini' };
+  }
+
+  // 5. Custom / Rentang Tanggal Kustom tanpa rentang eksplisit
+  if (clean === 'Custom' || clean === 'Rentang Tanggal Kustom') {
+    return { startDate: today, endDate: today, label: 'Custom' };
+  }
+
+  // 6. Format Prefix Custom (mis. "Custom:2026-10-01:2026-10-15" atau "Kustom:2026-10-01:2026-10-15")
+  if (clean.startsWith('Custom:') || clean.startsWith('Kustom:')) {
+    const parts = clean.split(':');
+    const start = parts[1]?.trim();
+    const end = parts[2]?.trim();
+    if (start && end && start > end) {
+      throw new Error(`Tanggal mulai (${start}) tidak boleh melewati tanggal akhir (${end}).`);
+    }
+    return {
+      startDate: start || undefined,
+      endDate: end || undefined,
+      label: start && end ? `${start} s/d ${end}` : 'Custom'
+    };
+  }
+
+  // 9. Format Rentang "YYYY-MM-DD s/d YYYY-MM-DD" atau "YYYY-MM-DD - YYYY-MM-DD"
+  const rangeMatch = clean.match(/^(\d{4}-\d{2}-\d{2})\s*(?:s\/d|-)\s*(\d{4}-\d{2}-\d{2})$/i);
+  if (rangeMatch) {
+    const start = rangeMatch[1];
+    const end = rangeMatch[2];
+    if (start > end) {
+      throw new Error(`Tanggal mulai (${start}) tidak boleh melewati tanggal akhir (${end}).`);
+    }
+    return { startDate: start, endDate: end, label: `${start} s/d ${end}` };
+  }
+
+  // Legacy format (Agustus 2026, September 2026, Juli 2026, Tahun 2026)
   if (clean.includes('31-Aug-2026') || clean.includes('Agustus 2026')) {
     return { startDate: '2026-08-01', endDate: '2026-08-31', label: '31 Agustus 2026' };
   }
@@ -45,17 +130,20 @@ export function parsePeriodFilter(periodStr?: string): { startDate?: string; end
   if (clean.includes('Tahun 2026')) {
     return { startDate: '2026-01-01', endDate: '2026-12-31', label: 'Tahun 2026' };
   }
-  // YYYY-MM-DD
+
+  // YYYY-MM-DD (Single day)
   if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
     return { startDate: clean, endDate: clean, label: clean };
   }
-  // YYYY-MM
+
+  // YYYY-MM (Single month)
   if (/^\d{4}-\d{2}$/.test(clean)) {
     const [y, m] = clean.split('-').map(Number);
     const lastDay = new Date(y, m, 0).getDate();
-    return { startDate: `${clean}-01`, endDate: `${clean}-${lastDay}`, label: clean };
+    return { startDate: `${clean}-01`, endDate: `${clean}-${String(lastDay).padStart(2, '0')}`, label: clean };
   }
-  return { label: periodStr };
+
+  return { label: clean };
 }
 
 /**
@@ -92,7 +180,7 @@ export class ReportRepository extends BaseRepository {
              SELECT je.account_id,
                     SUM(CASE WHEN a2.normal_balance = 'Debit' THEN je.debit - je.credit ELSE je.credit - je.debit END) AS saldo_awal
              FROM journal_entries je
-             JOIN journals j ON je.journal_id = j.id AND j.date < ?
+             JOIN journals j ON je.journal_id = j.id AND substr(j.date, 1, 10) < ?
              JOIN accounts a2 ON je.account_id = a2.id
              GROUP BY je.account_id
            ) sub ON a.id = sub.account_id;`,
@@ -107,7 +195,7 @@ export class ReportRepository extends BaseRepository {
       let mutasiDateFilter = '';
       const mutasiParams: any[] = [];
       if (startDate && endDate) {
-        mutasiDateFilter = ` WHERE j.date >= ? AND j.date <= ? `;
+        mutasiDateFilter = ` WHERE substr(j.date, 1, 10) >= ? AND substr(j.date, 1, 10) <= ? `;
         mutasiParams.push(startDate, endDate);
       }
 
@@ -432,7 +520,7 @@ export class ReportRepository extends BaseRepository {
              SELECT je.account_id,
                     SUM(CASE WHEN a2.normal_balance = 'Debit' THEN je.debit - je.credit ELSE je.credit - je.debit END) AS saldo_awal
              FROM journal_entries je
-             JOIN journals j ON je.journal_id = j.id AND j.date < ?
+             JOIN journals j ON je.journal_id = j.id AND substr(j.date, 1, 10) < ?
              JOIN accounts a2 ON je.account_id = a2.id
              GROUP BY je.account_id
            ) sub ON a.id = sub.account_id
@@ -448,7 +536,7 @@ export class ReportRepository extends BaseRepository {
       let mutasiDateFilter = '';
       const mutasiParams: any[] = [];
       if (startDate && endDate) {
-        mutasiDateFilter = ` WHERE j.date >= ? AND j.date <= ? `;
+        mutasiDateFilter = ` WHERE substr(j.date, 1, 10) >= ? AND substr(j.date, 1, 10) <= ? `;
         mutasiParams.push(startDate, endDate);
       }
 
@@ -667,6 +755,7 @@ export class ReportRepository extends BaseRepository {
           periodDate: label,
           entityName: stationInfo?.name || 'PT SPBU Mitra Akrual 1954',
           location: stationInfo?.address || 'Lubuk Alung',
+          signerDate: new Date().toLocaleDateString('id-ID'),
           rows: konsolidasiRows
         }
       };
@@ -691,7 +780,7 @@ export class ReportRepository extends BaseRepository {
                   COALESCE(SUM(je.debit - je.credit), 0) AS saldo_awal
            FROM journal_entries je
            JOIN journals j ON je.journal_id = j.id
-           WHERE je.account_id IN ('1-1001', '1-1002') AND j.date < ?
+           WHERE je.account_id IN ('1-1001', '1-1002') AND substr(j.date, 1, 10) < ?
            GROUP BY je.account_id;`,
           [startDate]
         );
@@ -706,7 +795,7 @@ export class ReportRepository extends BaseRepository {
       let dateFilter = '';
       const params: any[] = [];
       if (startDate && endDate) {
-        dateFilter = ' AND j.date >= ? AND j.date <= ? ';
+        dateFilter = ' AND substr(j.date, 1, 10) >= ? AND substr(j.date, 1, 10) <= ? ';
         params.push(startDate, endDate);
       }
 
@@ -1003,6 +1092,18 @@ export class ReportRepository extends BaseRepository {
          ORDER BY s.id ASC;`
       );
 
+      const nonShiftSummary = await this.executor.query<any>(
+        `SELECT
+           COUNT(t.id) AS tx_count,
+           COALESCE(SUM(t.total), 0) AS actual_total_sales,
+           COALESCE(SUM(CASE WHEN t.payment_method = 'Tunai' THEN t.total ELSE 0 END), 0) AS actual_cash_sales,
+           COALESCE(SUM(CASE WHEN t.payment_method = 'Piutang' THEN t.total ELSE 0 END), 0) AS actual_credit_sales,
+           COALESCE(SUM(CASE WHEN t.payment_method = 'Transfer' THEN t.total ELSE 0 END), 0) AS actual_transfer_sales
+         FROM transactions t
+         WHERE (t.shift_id IS NULL OR t.shift_id = '') AND t.category = 'Penjualan' AND t.status = 'Selesai' ${dateFilter};`,
+        params
+      );
+
       const shifts: ShiftSalesItem[] = shiftRows.map((s) => ({
         shiftId: s.id,
         shiftName: s.name,
@@ -1016,6 +1117,22 @@ export class ReportRepository extends BaseRepository {
         cashHandover: Number(s.cash_handover || 0),
         discrepancy: s.discrepancy != null ? Number(s.discrepancy) : undefined
       }));
+
+      if (nonShiftSummary && nonShiftSummary[0] && Number(nonShiftSummary[0].tx_count || 0) > 0) {
+        shifts.push({
+          shiftId: 'NON-SHIFT',
+          shiftName: 'Transaksi Tanpa Sesi / Administratif',
+          operator: 'Admin SPBU',
+          status: 'Tutup',
+          initialCash: 0,
+          totalSales: Number(nonShiftSummary[0].actual_total_sales || 0),
+          cashSales: Number(nonShiftSummary[0].actual_cash_sales || 0),
+          creditSales: Number(nonShiftSummary[0].actual_credit_sales || 0),
+          transferSales: Number(nonShiftSummary[0].actual_transfer_sales || 0),
+          cashHandover: 0,
+          discrepancy: undefined
+        });
+      }
 
       return {
         period: label,

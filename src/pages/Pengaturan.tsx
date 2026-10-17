@@ -28,7 +28,7 @@ import { useAppContext } from '../context/AppContext';
 
 export interface PengaturanPageProps {
   stationInfo: StationInfo;
-  onUpdateStationInfo: (updated: StationInfo) => void;
+  onUpdateStationInfo: (updated: StationInfo) => Promise<void> | void;
   currentPin: string;
   onChangePin: (newPin: string) => void;
   showToast: (message: string, type?: ToastType) => void;
@@ -76,7 +76,7 @@ export function PengaturanPage({
   const [pinSuccess, setPinSuccess] = useState<string>('');
 
   // HANDLER SIMPAN PROFIL IDENTITAS SPBU
-  const handleSaveProfile = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setProfileError('');
 
@@ -110,8 +110,15 @@ export function PengaturanPage({
       email: email.trim()
     };
 
-    onUpdateStationInfo(updated);
-    showToast('Profil SPBU berhasil disimpan.', 'success');
+    try {
+      await onUpdateStationInfo(updated);
+      showToast('Profil SPBU berhasil disimpan ke database SQLite.', 'success');
+    } catch (err: any) {
+      console.error('[Pengaturan] Gagal menyimpan profil:', err);
+      const errMsg = err?.message || 'Gagal menyimpan profil SPBU ke database SQLite.';
+      setProfileError(errMsg);
+      showToast(errMsg, 'danger');
+    }
   };
 
   // HANDLER UBAH PIN LOGIN

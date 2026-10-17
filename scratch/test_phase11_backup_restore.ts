@@ -55,9 +55,16 @@ async function main() {
 
   const nowIso = new Date().toISOString();
   await sourceExecutor.run(
-    `INSERT INTO station_info (id, name, address, phone, manager, email, version, created_at, updated_at)
-     VALUES ('SPBU-34-12301', 'SPBU Dago Bandung', 'Jl. Ir. H. Juanda No. 123', '08123456789', 'Budi Santoso', 'admin@spbu3412301.com', 'v0.1.0-generic', ?, ?);`,
-    [nowIso, nowIso]
+    `UPDATE station_info SET
+       id = 'SPBU-34-12301',
+       name = 'SPBU Dago Bandung',
+       address = 'Jl. Ir. H. Juanda No. 123',
+       phone = '08123456789',
+       manager = 'Budi Santoso',
+       email = 'admin@spbu3412301.com',
+       version = 'v0.1.0-generic',
+       updated_at = ?;`,
+    [nowIso]
   );
 
   // Ambil referensi master yang valid

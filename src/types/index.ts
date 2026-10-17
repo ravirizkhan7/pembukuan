@@ -143,6 +143,7 @@ export interface BusinessPartner {
   type: 'Customer' | 'Vendor';
   phone?: string;
   address?: string;
+  isActive?: boolean;
 }
 
 export interface Receivable {
@@ -285,6 +286,7 @@ export interface LabaRugiKonsolidasi {
   periodDate: string;
   entityName: string;
   location: string;
+  signerDate?: string;
   rows: LabaRugiRow[];
 }
 
