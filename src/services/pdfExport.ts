@@ -150,7 +150,7 @@ export async function exportNeracaPdf(
 
   doc.setFontSize(8.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Diketahui, ${data.neracaKonsolidasi?.signerDate || ''}`, 160, signY, { align: 'center' });
+  doc.text(data.neracaKonsolidasi?.signerDate || '', 160, signY, { align: 'center' });
 
   // Garis tanda tangan
   doc.setDrawColor(50, 60, 80);
@@ -297,7 +297,7 @@ export async function exportLabaRugiPdf(
 
   doc.setFontSize(8.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Diketahui, ${data.labaRugiKonsolidasi?.signerDate || ''}`, 160, signY, { align: 'center' });
+  doc.text(data.labaRugiKonsolidasi?.signerDate || '', 160, signY, { align: 'center' });
 
   // Garis tanda tangan
   doc.setDrawColor(50, 60, 80);

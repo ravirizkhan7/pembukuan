@@ -4,10 +4,10 @@ import { MIGRATIONS } from './migrations';
 /**
  * Konfigurasi Database SQLite
  * Nama database: 'akrual_spbu'
- * Versi: 4 (Phase 10 — Enforce Safe Cancellation & Reporting Engine)
+ * Versi: 5 (Phase 12 — Pengaturan Kota Laporan & Relational Master CRUD)
  */
 export const DATABASE_NAME = 'akrual_spbu';
-export const DATABASE_VERSION = 4;
+export const DATABASE_VERSION = 5;
 
 /**
  * Migration & Schema Definitions untuk Plugin Capacitor SQLite

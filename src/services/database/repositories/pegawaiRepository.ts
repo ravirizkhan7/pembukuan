@@ -165,12 +165,42 @@ export class PegawaiRepository extends BaseRepository {
   }
 
   /**
+   * Memeriksa apakah pegawai sudah memiliki relasi di riwayat absensi, sesi shift, atau transaksi kasir
+   */
+  public async isReferenced(id: string): Promise<boolean> {
+    try {
+      const existing = await this.findById(id);
+      const name = existing?.name || '';
+      const rows = await this.executor.query<any>(
+        `SELECT
+           ((SELECT COUNT(*) FROM attendances WHERE employee_id = ? OR employee_id = ?) +
+            (SELECT COUNT(*) FROM shifts WHERE operator = ? OR operator = ?) +
+            (SELECT COUNT(*) FROM shift_sessions WHERE operator = ? OR operator = ?) +
+            (SELECT COUNT(*) FROM transactions WHERE cashier = ? OR cashier = ?)) AS total_refs;`,
+        [id, name, id, name, id, name, id, name]
+      );
+      if (rows.length === 0) return false;
+      return Number(rows[0].total_refs || 0) > 0;
+    } catch (err) {
+      console.warn('[PegawaiRepository] Gagal mengecek referensi pegawai:', err);
+      return false;
+    }
+  }
+
+  /**
    * Menghapus pegawai (memperhatikan constraint relasional riwayat absensi)
    */
   public async delete(id: string): Promise<boolean> {
     const existing = await this.findById(id);
     if (!existing) {
       return false;
+    }
+
+    const isRef = await this.isReferenced(id);
+    if (isRef) {
+      throw new Error(
+        `Pegawai [${existing.name}] tidak dapat dihapus karena memiliki riwayat absensi, penugasan shift, atau pencatatan transaksi kasir. Silakan gunakan opsi Nonaktifkan.`
+      );
     }
 
     try {

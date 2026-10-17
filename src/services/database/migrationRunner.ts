@@ -35,6 +35,7 @@ export interface MigrationExpectedObjects {
   tables: string[];
   indices: string[];
   triggers: string[];
+  columns?: { table: string; column: string }[];
 }
 
 export const EXPECTED_MIGRATION_OBJECTS: Record<number, MigrationExpectedObjects> = {
@@ -127,16 +128,25 @@ export const EXPECTED_MIGRATION_OBJECTS: Record<number, MigrationExpectedObjects
     tables: [],
     indices: [],
     triggers: ['trg_transactions_prevent_cancel_if_posted']
+  },
+  5: {
+    version: 5,
+    name: '005_add_city_to_station_info',
+    tables: [],
+    indices: [],
+    triggers: [],
+    columns: [{ table: 'station_info', column: 'city' }]
   }
 };
 
 /**
- * Mengambil daftar objek fisik (tabel, indeks, trigger) yang ada di SQLite saat ini
+ * Mengambil daftar objek fisik (tabel, indeks, trigger, dan kolom) yang ada di SQLite saat ini
  */
 export async function getPhysicalSchemaObjects(executor: SqlExecutor): Promise<{
   tables: Set<string>;
   indices: Set<string>;
   triggers: Set<string>;
+  columns: Set<string>;
 }> {
   const masterRows = await executor.query<{ type: string; name: string }>(
     "SELECT type, name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%';"
@@ -149,7 +159,20 @@ export async function getPhysicalSchemaObjects(executor: SqlExecutor): Promise<{
     else if (row.type === 'index') indices.add(row.name);
     else if (row.type === 'trigger') triggers.add(row.name);
   }
-  return { tables, indices, triggers };
+
+  const columns = new Set<string>();
+  if (tables.has('station_info')) {
+    try {
+      const colRows = await executor.query<{ name: string }>('PRAGMA table_info(station_info);');
+      for (const col of colRows) {
+        columns.add(`station_info.${col.name}`);
+      }
+    } catch {
+      // Abaikan jika pragma table_info tidak didukung oleh mock environment
+    }
+  }
+
+  return { tables, indices, triggers, columns };
 }
 
 /**
@@ -159,7 +182,8 @@ export function checkVersionSchemaObjects(
   version: number,
   tables: Set<string>,
   indices: Set<string>,
-  triggers: Set<string>
+  triggers: Set<string>,
+  columns?: Set<string>
 ): {
   isComplete: boolean;
   foundCount: number;
@@ -167,6 +191,7 @@ export function checkVersionSchemaObjects(
   missingTables: string[];
   missingIndices: string[];
   missingTriggers: string[];
+  missingColumns: string[];
   missingDescription: string;
 } {
   const exp = EXPECTED_MIGRATION_OBJECTS[version];
@@ -178,20 +203,26 @@ export function checkVersionSchemaObjects(
       missingTables: [],
       missingIndices: [],
       missingTriggers: [],
+      missingColumns: [],
       missingDescription: ''
     };
   }
   const missingTables = exp.tables.filter((t) => !tables.has(t));
   const missingIndices = exp.indices.filter((i) => !indices.has(i));
   const missingTriggers = exp.triggers.filter((tr) => !triggers.has(tr));
-  const totalCount = exp.tables.length + exp.indices.length + exp.triggers.length;
-  const missingCount = missingTables.length + missingIndices.length + missingTriggers.length;
+  const missingColumns = (exp.columns || [])
+    .filter((c) => !columns || !columns.has(`${c.table}.${c.column}`))
+    .map((c) => `${c.table}.${c.column}`);
+
+  const totalCount = exp.tables.length + exp.indices.length + exp.triggers.length + (exp.columns?.length || 0);
+  const missingCount = missingTables.length + missingIndices.length + missingTriggers.length + missingColumns.length;
   const foundCount = totalCount - missingCount;
 
   const parts: string[] = [];
   if (missingTables.length > 0) parts.push(`Tabel: [${missingTables.join(', ')}]`);
   if (missingIndices.length > 0) parts.push(`Indeks: [${missingIndices.join(', ')}]`);
   if (missingTriggers.length > 0) parts.push(`Trigger: [${missingTriggers.join(', ')}]`);
+  if (missingColumns.length > 0) parts.push(`Kolom: [${missingColumns.join(', ')}]`);
 
   return {
     isComplete: missingCount === 0,
@@ -200,6 +231,7 @@ export function checkVersionSchemaObjects(
     missingTables,
     missingIndices,
     missingTriggers,
+    missingColumns,
     missingDescription: parts.join('; ')
   };
 }
@@ -237,14 +269,14 @@ export class MigrationRunner {
       const now = new Date().toISOString();
       const sortedMigrations = [...migrationsList].sort((a, b) => a.version - b.version);
 
-      // Periksa setiap versi migrasi yang didukung (v1 - v4)
+      // Periksa setiap versi migrasi yang didukung (v1 - v5)
       for (const m of sortedMigrations) {
         const v = m.version;
-        const check = checkVersionSchemaObjects(v, physical.tables, physical.indices, physical.triggers);
+        const check = checkVersionSchemaObjects(v, physical.tables, physical.indices, physical.triggers, physical.columns);
 
         if (appliedVersions.has(v)) {
           // KASUS A: Versi ini tercatat di schema_migrations.
-          // Pastikan SELURUH tabel, indeks, dan trigger wajib versi ini benar-benar ada!
+          // Pastikan SELURUH tabel, indeks, trigger, dan kolom wajib versi ini benar-benar ada!
           if (!check.isComplete) {
             console.warn(
               `[MigrationRunner] Versi v${v} (${m.name}) tercatat di schema_migrations, namun objek fisik belum lengkap: ${check.missingDescription}. Mencoba pemulihan aman...`
@@ -257,17 +289,26 @@ export class MigrationRunner {
                   const remaining = str.slice(offset + match.length).trim();
                   return remaining.length === 0 ? ';' : '; ';
                 });
-                if (executor.execute) {
-                  await executor.execute(normalizedStmt);
-                } else {
-                  await executor.run(normalizedStmt);
+                try {
+                  if (executor.execute) {
+                    await executor.execute(normalizedStmt);
+                  } else {
+                    await executor.run(normalizedStmt);
+                  }
+                } catch (recErr: any) {
+                  const errMsg = String(recErr?.message || recErr);
+                  if (errMsg.includes('duplicate column name') || errMsg.includes('already exists')) {
+                    console.warn(`[MigrationRunner] Kolom sudah ada saat pemulihan: ${errMsg}`);
+                  } else {
+                    throw recErr;
+                  }
                 }
               }
             }
 
             // Periksa ulang setelah pemulihan
             physical = await getPhysicalSchemaObjects(executor);
-            const recheck = checkVersionSchemaObjects(v, physical.tables, physical.indices, physical.triggers);
+            const recheck = checkVersionSchemaObjects(v, physical.tables, physical.indices, physical.triggers, physical.columns);
             if (!recheck.isComplete) {
               throw new Error(
                 `Database parsial terdeteksi pada migrasi v${v} (${m.name}). Objek fisik wajib hilang: ${recheck.missingDescription}. Pemulihan tidak dapat dilakukan dengan aman. Inisialisasi dihentikan.`
@@ -277,7 +318,7 @@ export class MigrationRunner {
         } else {
           // KASUS B: Versi ini BELUM tercatat di schema_migrations.
           if (check.isComplete) {
-            // KASUS B1: SELURUH tabel, indeks, dan trigger wajib versi ini LENGKAP 100% di SQLite!
+            // KASUS B1: SELURUH tabel, indeks, trigger, dan kolom wajib versi ini LENGKAP 100% di SQLite!
             // Ini membuktikan versi tersebut sudah terbentuk secara fisik (misal dari upgrade Capacitor atau restore).
             // Aman untuk merekonstruksi catatan migrasi:
             await executor.run(
@@ -290,9 +331,7 @@ export class MigrationRunner {
             );
           } else if (check.foundCount > 0) {
             // KASUS B2: DATABASE PARSIAL!
-            // Hanya sebagian objek yang ditemukan (misal hanya station_info, tapi tabel/trigger lain hilang).
-            // JANGAN menganggap satu objek cukup untuk menandai versi selesai!
-            // JANGAN tambahkan ke appliedVersions!
+            // Hanya sebagian objek yang ditemukan.
             console.warn(
               `[MigrationRunner] Database parsial terdeteksi pada migrasi v${v} (${m.name}): ${check.foundCount}/${check.totalCount} objek fisik ditemukan. Objek belum lengkap: ${check.missingDescription}. Membutuhkan eksekusi pemulihan skema.`
             );
@@ -318,21 +357,31 @@ export class MigrationRunner {
                 return remaining.length === 0 ? ';' : '; ';
               });
 
-              if (executor.execute) {
-                await executor.execute(normalizedStmt);
-              } else {
-                await executor.run(normalizedStmt);
+              try {
+                if (executor.execute) {
+                  await executor.execute(normalizedStmt);
+                } else {
+                  await executor.run(normalizedStmt);
+                }
+              } catch (execErr: any) {
+                const errMsg = String(execErr?.message || execErr);
+                if (errMsg.includes('duplicate column name') || errMsg.includes('already exists')) {
+                  console.warn(`[MigrationRunner] Kolom sudah ada di SQLite, migrasi v${migration.version} melanjutkan: ${errMsg}`);
+                } else {
+                  throw execErr;
+                }
               }
             }
           }
 
-          // Verifikasi fisik ketat pasca-eksekusi: pastikan SELURUH tabel, indeks, dan trigger wajib benar-benar terbentuk!
+          // Verifikasi fisik ketat pasca-eksekusi: pastikan SELURUH tabel, indeks, trigger, dan kolom wajib benar-benar terbentuk!
           physical = await getPhysicalSchemaObjects(executor);
           const postCheck = checkVersionSchemaObjects(
             migration.version,
             physical.tables,
             physical.indices,
-            physical.triggers
+            physical.triggers,
+            physical.columns
           );
 
           if (!postCheck.isComplete) {
@@ -373,7 +422,8 @@ export class MigrationRunner {
             m.version,
             physical.tables,
             physical.indices,
-            physical.triggers
+            physical.triggers,
+            physical.columns
           );
           if (!finalCheck.isComplete) {
             throw new Error(

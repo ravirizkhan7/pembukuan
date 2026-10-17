@@ -65,6 +65,7 @@ export interface AppContextType {
   addPegawai: (pegawai: Omit<Pegawai, 'id'> & { id?: string }) => Promise<Pegawai> | Pegawai;
   updatePegawai: (pegawai: Pegawai) => Promise<void> | void;
   togglePegawaiStatus: (id: string) => Promise<void> | void;
+  deletePegawai?: (id: string) => Promise<boolean>;
 
   // Attendance Actions
   addAttendance: (attendance: Omit<Attendance, 'id'> & { id?: string }) => Promise<Attendance> | Attendance;
@@ -764,6 +765,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const deletePegawai = useCallback(async (id: string): Promise<boolean> => {
+    const deleted = await pegawaiRepository.delete(id);
+    if (deleted) {
+      setPegawaiList((prev) => prev.filter((p) => p.id !== id));
+    }
+    return deleted;
+  }, []);
+
   // ==========================================
   // H. Absensi & Kehadiran Pegawai (SQLite Persisted)
   // ==========================================
@@ -803,6 +812,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
            id = ?,
            name = ?,
            address = ?,
+           city = ?,
            phone = ?,
            manager = ?,
            email = ?,
@@ -813,6 +823,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           info.id,
           info.name,
           info.address,
+          info.city && info.city.trim() !== '' ? info.city.trim() : null,
           info.phone,
           info.manager,
           info.email,
@@ -824,12 +835,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } else {
       await sqliteService.run(
         `INSERT INTO station_info (
-           id, name, address, phone, manager, email, status, last_backup, version, created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+           id, name, address, city, phone, manager, email, status, last_backup, version, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         [
           info.id,
           info.name,
           info.address,
+          info.city && info.city.trim() !== '' ? info.city.trim() : null,
           info.phone,
           info.manager,
           info.email,
@@ -911,6 +923,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addPegawai,
     updatePegawai,
     togglePegawaiStatus,
+    deletePegawai,
     addAttendance,
     updateAttendance,
     deleteAttendance,
@@ -973,6 +986,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addPegawai,
     updatePegawai,
     togglePegawaiStatus,
+    deletePegawai,
     addAttendance,
     updateAttendance,
     deleteAttendance,

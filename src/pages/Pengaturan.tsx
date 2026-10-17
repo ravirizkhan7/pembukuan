@@ -45,6 +45,7 @@ export function PengaturanPage({
   const [regNumber, setRegNumber] = useState<string>(stationInfo.id);
   const [stationName, setStationName] = useState<string>(stationInfo.name);
   const [address, setAddress] = useState<string>(stationInfo.address);
+  const [city, setCity] = useState<string>(stationInfo.city || '');
   const [manager, setManager] = useState<string>(stationInfo.manager);
   const [phone, setPhone] = useState<string>(stationInfo.phone);
   const [email, setEmail] = useState<string>(stationInfo.email || '');
@@ -56,6 +57,7 @@ export function PengaturanPage({
     setRegNumber(stationInfo.id);
     setStationName(stationInfo.name);
     setAddress(stationInfo.address);
+    setCity(stationInfo.city || '');
     setManager(stationInfo.manager);
     setPhone(stationInfo.phone);
     setEmail(stationInfo.email || '');
@@ -105,6 +107,7 @@ export function PengaturanPage({
       id: regNumber.trim(),
       name: stationName.trim(),
       address: address.trim(),
+      city: city.trim() || undefined,
       manager: manager.trim(),
       phone: phone.trim(),
       email: email.trim()
@@ -311,6 +314,23 @@ export function PengaturanPage({
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAddress(e.target.value)}
                   placeholder="Alamat lengkap lokasi SPBU..."
                 />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="spbu-city">
+                  Kota / Kabupaten
+                </label>
+                <input
+                  id="spbu-city"
+                  type="text"
+                  className="form-control"
+                  value={city}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCity(e.target.value)}
+                  placeholder="Contoh: Pariaman"
+                />
+                <span className="text-muted" style={{ fontSize: '11px', marginTop: '3px', display: 'block' }}>
+                  Kota penerbitan laporan resmi untuk format tanda tangan pimpinan (contoh: Pariaman, 31 Januari 2026)
+                </span>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>

@@ -68,17 +68,19 @@ export class ProductCategoryRepository extends BaseRepository {
   /**
    * Menambahkan kategori produk baru
    */
-  public async create(data: ProductCategory): Promise<ProductCategory> {
+  public async create(data: Partial<ProductCategory> & { name: string }): Promise<ProductCategory> {
     const timestamp = this.now();
+    const id = data.id || `PCAT-${Date.now()}`;
+    const status = data.status || 'Aktif';
     try {
       await this.executor.run(
         `INSERT INTO product_categories (id, name, status, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?);`,
-        [data.id, data.name, data.status, timestamp, timestamp]
+        [id, data.name, status, timestamp, timestamp]
       );
-      const created = await this.findById(data.id);
+      const created = await this.findById(id);
       if (!created) {
-        throw new Error(`Kategori produk dengan ID ${data.id} tidak ditemukan setelah disimpan`);
+        throw new Error(`Kategori produk dengan ID ${id} tidak ditemukan setelah disimpan`);
       }
       return created;
     } catch (err) {
@@ -134,12 +136,36 @@ export class ProductCategoryRepository extends BaseRepository {
   }
 
   /**
+   * Memeriksa apakah kategori produk masih memiliki produk yang mengacu padanya
+   */
+  public async isReferenced(id: string): Promise<boolean> {
+    try {
+      const rows = await this.executor.query<any>(
+        'SELECT COUNT(*) AS total_refs FROM products WHERE category_id = ?;',
+        [id]
+      );
+      if (rows.length === 0) return false;
+      return Number(rows[0].total_refs || 0) > 0;
+    } catch (err) {
+      console.warn('[ProductCategoryRepository] Gagal mengecek referensi kategori:', err);
+      return false;
+    }
+  }
+
+  /**
    * Menghapus kategori produk secara aman (menghormati constraint relasional)
    */
   public async delete(id: string): Promise<boolean> {
     const existing = await this.findById(id);
     if (!existing) {
       return false;
+    }
+
+    const isRef = await this.isReferenced(id);
+    if (isRef) {
+      throw new Error(
+        `Kategori [${existing.name}] tidak dapat dihapus karena masih digunakan oleh produk. Pindahkan atau hapus produk di dalamnya terlebih dahulu.`
+      );
     }
 
     try {

@@ -24,6 +24,57 @@ function formatLocalDate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+export const INDONESIAN_MONTHS = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
+export function formatCityTitleCase(city?: string): string {
+  if (!city || !city.trim()) return '';
+  return city
+    .trim()
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+export function formatIndonesianDate(dateStr?: string | Date): string {
+  let d: Date;
+  if (!dateStr) {
+    d = new Date();
+  } else if (typeof dateStr === 'string') {
+    const parts = dateStr.slice(0, 10).split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      d = new Date(year, month, day);
+    } else {
+      d = new Date(dateStr);
+    }
+  } else {
+    d = dateStr;
+  }
+
+  if (isNaN(d.getTime())) {
+    d = new Date();
+  }
+
+  const day = d.getDate();
+  const month = INDONESIAN_MONTHS[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day} ${month} ${year}`;
+}
+
+export function formatSignerLocationDate(city?: string, dateStr?: string | Date): string {
+  const formattedDate = formatIndonesianDate(dateStr);
+  const formattedCity = formatCityTitleCase(city);
+  if (formattedCity) {
+    return `${formattedCity}, ${formattedDate}`;
+  }
+  return formattedDate;
+}
+
 export interface PeriodFilterResult {
   startDate?: string;
   endDate?: string;
@@ -162,6 +213,31 @@ export class ReportRepository extends BaseRepository {
     super(executor);
   }
 
+  private async resolveStationInfo(stationInfo?: StationInfo): Promise<StationInfo | undefined> {
+    if (stationInfo) return stationInfo;
+    try {
+      const sRows = await this.executor.query<any>('SELECT * FROM station_info LIMIT 1;');
+      if (sRows && sRows.length > 0) {
+        const s = sRows[0];
+        return {
+          id: s.id,
+          name: s.name,
+          address: s.address,
+          city: s.city || undefined,
+          phone: s.phone,
+          manager: s.manager,
+          email: s.email,
+          status: s.status,
+          lastBackup: s.last_backup,
+          version: s.version
+        };
+      }
+    } catch {
+      // fallback
+    }
+    return undefined;
+  }
+
   /**
    * Mengambil Laporan Neraca Konsolidasi Harian berbasis Jurnal SQLite
    */
@@ -169,6 +245,7 @@ export class ReportRepository extends BaseRepository {
     const { startDate, endDate, label } = parsePeriodFilter(period);
 
     try {
+      stationInfo = await this.resolveStationInfo(stationInfo);
       // 1. Ambil saldo awal (jika rentang tanggal ditentukan)
       const saldoAwalMap = new Map<string, number>();
       if (startDate) {
@@ -479,12 +556,15 @@ export class ReportRepository extends BaseRepository {
         saldoAkhir: selisihAkhir
       });
 
+      const effectiveEndDate = endDate || formatLocalDate(new Date());
+      const signerLocationDate = formatSignerLocationDate(stationInfo?.city, effectiveEndDate);
+
       return {
         title: 'LAPORAN NERACA HARIAN KONSOLIDASI',
         periodDate: label,
         entityName: stationInfo?.name || 'PT SPBU Mitra Akrual 1954',
         location: stationInfo?.address || 'Lubuk Alung',
-        signerDate: new Date().toLocaleDateString('id-ID'),
+        signerDate: signerLocationDate,
         totalAset: totalAsetAkhir,
         totalKewajibanDanEkuitas: grandTotalPasivaAkhir,
         selisihKeseimbangan: selisihAkhir,
@@ -509,6 +589,7 @@ export class ReportRepository extends BaseRepository {
     const { startDate, endDate, label } = parsePeriodFilter(period);
 
     try {
+      stationInfo = await this.resolveStationInfo(stationInfo);
       // Saldo kemarin / saldo awal
       const saldoKemarinMap = new Map<string, number>();
       if (startDate) {
@@ -743,6 +824,9 @@ export class ReportRepository extends BaseRepository {
         isGrandTotal: true
       });
 
+      const effectiveEndDate = endDate || formatLocalDate(new Date());
+      const signerLocationDate = formatSignerLocationDate(stationInfo?.city, effectiveEndDate);
+
       return {
         simple: {
           period: label,
@@ -755,7 +839,7 @@ export class ReportRepository extends BaseRepository {
           periodDate: label,
           entityName: stationInfo?.name || 'PT SPBU Mitra Akrual 1954',
           location: stationInfo?.address || 'Lubuk Alung',
-          signerDate: new Date().toLocaleDateString('id-ID'),
+          signerDate: signerLocationDate,
           rows: konsolidasiRows
         }
       };

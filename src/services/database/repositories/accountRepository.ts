@@ -203,12 +203,40 @@ export class AccountRepository extends BaseRepository {
   }
 
   /**
+   * Memeriksa apakah akun COA sudah memiliki entri jurnal atau digunakan pada pemetaan master kode
+   */
+  public async isReferenced(id: string): Promise<boolean> {
+    try {
+      const existing = await this.findById(id);
+      const code = existing?.code || '';
+      const rows = await this.executor.query<any>(
+        `SELECT
+           ((SELECT COUNT(*) FROM journal_entries WHERE account_id = ? OR account_id = ?) +
+            (SELECT COUNT(*) FROM master_codes WHERE debit_account_id = ? OR debit_account_id = ? OR credit_account_id = ? OR credit_account_id = ?)) AS total_refs;`,
+        [id, code, id, code, id, code]
+      );
+      if (rows.length === 0) return false;
+      return Number(rows[0].total_refs || 0) > 0;
+    } catch (err) {
+      console.warn('[AccountRepository] Gagal mengecek referensi akun:', err);
+      return false;
+    }
+  }
+
+  /**
    * Menghapus akun secara aman (menghormati constraint relasional)
    */
   public async delete(id: string): Promise<boolean> {
     const existing = await this.findById(id);
     if (!existing) {
       return false;
+    }
+
+    const isRef = await this.isReferenced(id);
+    if (isRef) {
+      throw new Error(
+        `Akun [${existing.code}] ${existing.name} tidak dapat dihapus karena memiliki riwayat entri jurnal atau digunakan oleh Master Kode. Silakan gunakan opsi Nonaktifkan.`
+      );
     }
 
     try {

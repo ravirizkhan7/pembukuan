@@ -28,25 +28,30 @@ export function OperasionalPage({
     addProduct,
     updateProduct,
     toggleProductStatus,
+    deleteProduct,
     productCategories,
     addProductCategory,
     updateProductCategory,
     toggleProductCategoryStatus,
+    deleteProductCategory,
     tanks,
     addTank,
     updateTank,
     toggleTankStatus,
+    deleteTank,
     nozzles,
     addNozzle,
     updateNozzle,
     toggleNozzleStatus,
+    deleteNozzle,
     shifts,
     activeShift,
     bukaShift,
     tutupShift,
     teraList,
     addTera,
-    transactions
+    transactions,
+    masterCodes
   } = useAppContext();
 
   const [activeTab, setActiveTab] = useState<string>(activeSubTab || 'tera');
@@ -281,6 +286,24 @@ export function OperasionalPage({
     showToast(`Produk [${prod.code}] ${next}.`, 'primary');
   };
 
+  const handleDeleteProduct = async (prod: Product) => {
+    if (
+      !window.confirm(
+        `Yakin ingin menghapus Produk [${prod.code}] ${prod.name} secara permanen? Tindakan ini hanya dapat dilakukan jika produk belum direferensikan tangki, nozzle, tera, transaksi, atau Master Kode.`
+      )
+    ) {
+      return;
+    }
+    try {
+      if (deleteProduct) {
+        await deleteProduct(prod.id);
+        showToast(`Produk [${prod.code}] ${prod.name} berhasil dihapus.`, 'success');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Gagal menghapus produk.', 'danger');
+    }
+  };
+
   // ==========================================
   // STATE: Kategori Produk CRUD
   // ==========================================
@@ -323,6 +346,24 @@ export function OperasionalPage({
       });
       showToast(`Kategori [${catName}] berhasil ditambahkan.`, 'success');
       setCatName('');
+    }
+  };
+
+  const handleDeleteCategory = async (cat: ProductCategory) => {
+    if (
+      !window.confirm(
+        `Yakin ingin menghapus Kategori [${cat.name}] secara permanen? Tindakan ini hanya dapat dilakukan jika tidak ada produk yang mengacu pada kategori tersebut.`
+      )
+    ) {
+      return;
+    }
+    try {
+      if (deleteProductCategory) {
+        await deleteProductCategory(cat.id);
+        showToast(`Kategori [${cat.name}] berhasil dihapus.`, 'success');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Gagal menghapus kategori.', 'danger');
     }
   };
 
@@ -414,6 +455,24 @@ export function OperasionalPage({
     toggleTankStatus(t.id);
     const next = t.status === 'Aktif' || t.status === 'Aman' ? 'dinonaktifkan' : 'diaktifkan';
     showToast(`Tanki [${t.name}] ${next}.`, 'primary');
+  };
+
+  const handleDeleteTank = async (t: Tank) => {
+    if (
+      !window.confirm(
+        `Yakin ingin menghapus Tangki [${t.name}] secara permanen? Tindakan ini hanya dapat dilakukan jika tangki belum memiliki relasi nozzle dispenser atau produk.`
+      )
+    ) {
+      return;
+    }
+    try {
+      if (deleteTank) {
+        await deleteTank(t.id);
+        showToast(`Tangki [${t.name}] berhasil dihapus.`, 'success');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Gagal menghapus tangki.', 'danger');
+    }
   };
 
   // ==========================================
@@ -524,6 +583,24 @@ export function OperasionalPage({
     toggleNozzleStatus(nz.id);
     const next = nz.status === 'Aktif' ? 'dialihkan ke Maintenance' : 'diaktifkan kembali';
     showToast(`Nozzle [${nz.code}] ${next}.`, 'primary');
+  };
+
+  const handleDeleteNozzle = async (nz: Nozzle) => {
+    if (
+      !window.confirm(
+        `Yakin ingin menghapus Nozzle [${nz.code}] secara permanen? Tindakan ini hanya dapat dilakukan jika nozzle belum memiliki histori tera atau transaksi.`
+      )
+    ) {
+      return;
+    }
+    try {
+      if (deleteNozzle) {
+        await deleteNozzle(nz.id);
+        showToast(`Nozzle [${nz.code}] berhasil dihapus.`, 'success');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Gagal menghapus nozzle.', 'danger');
+    }
   };
 
   // Header switcher
@@ -728,6 +805,7 @@ export function OperasionalPage({
                   const pct = Math.round((t.currentStock / t.capacity) * 100);
                   const isLow = pct < 35;
                   const prod = products.find((p) => p.id === t.productId);
+                  const isTankReferenced = nozzles.some((n) => n.tankId === t.id) || products.some((p) => p.tankId === t.id);
                   return (
                     <tr key={t.id} style={{ opacity: t.status === 'Nonaktif' ? 0.65 : 1 }}>
                       <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{t.id}</td>
@@ -769,6 +847,16 @@ export function OperasionalPage({
                           >
                             {t.status === 'Aktif' || t.status === 'Aman' ? 'Nonaktifkan' : 'Aktifkan'}
                           </Button>
+                          {!isTankReferenced && (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDeleteTank(t)}
+                              style={{ padding: '3px 8px', fontSize: '12px' }}
+                            >
+                              Hapus
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -798,47 +886,62 @@ export function OperasionalPage({
                 </tr>
               </thead>
               <tbody>
-                {nozzles.map((nz) => (
-                  <tr key={nz.id} style={{ opacity: nz.status === 'Nonaktif' ? 0.65 : 1 }}>
-                    <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--color-muted-text)' }}>{nz.id}</td>
-                    <td style={{ fontWeight: 700, fontFamily: 'monospace' }}>{nz.code}</td>
-                    <td>{nz.island}</td>
-                    <td style={{ fontWeight: 600 }}>{nz.productName}</td>
-                    <td>
-                      <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--color-primary-dark)' }}>
-                        {nz.tankId}
-                      </span>
-                    </td>
-                    <td className="table-num" style={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                      {nz.currentMeter.toLocaleString('id-ID', { minimumFractionDigits: 1 })}
-                    </td>
-                    <td>
-                      <Badge variant={nz.status === 'Aktif' ? 'success' : nz.status === 'Maintenance' ? 'warning' : 'neutral'}>
-                        {nz.status}
-                      </Badge>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditNozzleModal(nz)}
-                          style={{ padding: '3px 8px', fontSize: '12px' }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant={nz.status === 'Aktif' ? 'secondary' : 'primary'}
-                          size="sm"
-                          onClick={() => handleToggleNozzle(nz)}
-                          style={{ padding: '3px 8px', fontSize: '12px' }}
-                        >
-                          {nz.status === 'Aktif' ? 'Maintenance' : 'Aktifkan'}
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {nozzles.map((nz) => {
+                  const isNozzleReferenced =
+                    teraList.some((tr) => tr.nozzleId === nz.id) ||
+                    transactions.some((t) => t.nozzleId === nz.id);
+                  return (
+                    <tr key={nz.id} style={{ opacity: nz.status === 'Nonaktif' ? 0.65 : 1 }}>
+                      <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--color-muted-text)' }}>{nz.id}</td>
+                      <td style={{ fontWeight: 700, fontFamily: 'monospace' }}>{nz.code}</td>
+                      <td>{nz.island}</td>
+                      <td style={{ fontWeight: 600 }}>{nz.productName}</td>
+                      <td>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--color-primary-dark)' }}>
+                          {nz.tankId}
+                        </span>
+                      </td>
+                      <td className="table-num" style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                        {nz.currentMeter.toLocaleString('id-ID', { minimumFractionDigits: 1 })}
+                      </td>
+                      <td>
+                        <Badge variant={nz.status === 'Aktif' ? 'success' : nz.status === 'Maintenance' ? 'warning' : 'neutral'}>
+                          {nz.status}
+                        </Badge>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditNozzleModal(nz)}
+                            style={{ padding: '3px 8px', fontSize: '12px' }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant={nz.status === 'Aktif' ? 'secondary' : 'primary'}
+                            size="sm"
+                            onClick={() => handleToggleNozzle(nz)}
+                            style={{ padding: '3px 8px', fontSize: '12px' }}
+                          >
+                            {nz.status === 'Aktif' ? 'Maintenance' : 'Aktifkan'}
+                          </Button>
+                          {!isNozzleReferenced && (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDeleteNozzle(nz)}
+                              style={{ padding: '3px 8px', fontSize: '12px' }}
+                            >
+                              Hapus
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -960,6 +1063,12 @@ export function OperasionalPage({
                   const margin = p.sellPrice - p.buyPrice;
                   const tank = tanks.find((t) => t.id === p.tankId || t.productId === p.id);
                   const cat = productCategories.find((c) => c.id === p.categoryId);
+                  const isProductReferenced =
+                    tanks.some((t) => t.productId === p.id || t.id === p.tankId) ||
+                    nozzles.some((n) => n.productId === p.id) ||
+                    teraList.some((tr) => tr.productId === p.id) ||
+                    transactions.some((tx) => tx.productId === p.id) ||
+                    (masterCodes && masterCodes.some((mc) => mc.productId === p.id));
                   return (
                     <tr key={p.id} style={{ opacity: p.status === 'Aktif' ? 1 : 0.65 }}>
                       <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--color-muted-text)' }}>
@@ -1016,6 +1125,16 @@ export function OperasionalPage({
                           >
                             {p.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan'}
                           </Button>
+                          {!isProductReferenced && (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDeleteProduct(p)}
+                              style={{ padding: '3px 8px', fontSize: '12px' }}
+                            >
+                              Hapus
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1513,40 +1632,53 @@ export function OperasionalPage({
                 </tr>
               </thead>
               <tbody>
-                {productCategories.map((c) => (
-                  <tr key={c.id}>
-                    <td style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 600 }}>{c.id}</td>
-                    <td style={{ fontWeight: 600 }}>{c.name}</td>
-                    <td>
-                      <Badge variant={c.status === 'Aktif' ? 'success' : 'neutral'}>
-                        {c.status}
-                      </Badge>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditCategory(c)}
-                          style={{ padding: '2px 8px', fontSize: '12px' }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant={c.status === 'Aktif' ? 'secondary' : 'primary'}
-                          size="sm"
-                          onClick={() => {
-                            toggleProductCategoryStatus(c.id);
-                            showToast(`Kategori [${c.name}] status diubah.`, 'primary');
-                          }}
-                          style={{ padding: '2px 8px', fontSize: '12px' }}
-                        >
-                          {c.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan'}
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {productCategories.map((c) => {
+                  const isCategoryReferenced = products.some((p) => p.categoryId === c.id);
+                  return (
+                    <tr key={c.id}>
+                      <td style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 600 }}>{c.id}</td>
+                      <td style={{ fontWeight: 600 }}>{c.name}</td>
+                      <td>
+                        <Badge variant={c.status === 'Aktif' ? 'success' : 'neutral'}>
+                          {c.status}
+                        </Badge>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditCategory(c)}
+                            style={{ padding: '2px 8px', fontSize: '12px' }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant={c.status === 'Aktif' ? 'secondary' : 'primary'}
+                            size="sm"
+                            onClick={() => {
+                              toggleProductCategoryStatus(c.id);
+                              showToast(`Kategori [${c.name}] status diubah.`, 'primary');
+                            }}
+                            style={{ padding: '2px 8px', fontSize: '12px' }}
+                          >
+                            {c.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan'}
+                          </Button>
+                          {!isCategoryReferenced && (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDeleteCategory(c)}
+                              style={{ padding: '2px 8px', fontSize: '12px' }}
+                            >
+                              Hapus
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

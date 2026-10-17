@@ -188,12 +188,36 @@ export class TankRepository extends BaseRepository {
   }
 
   /**
+   * Memeriksa apakah tangki masih memiliki relasi ke nozzle dispenser
+   */
+  public async isReferenced(id: string): Promise<boolean> {
+    try {
+      const rows = await this.executor.query<any>(
+        'SELECT COUNT(*) AS total_refs FROM nozzles WHERE tank_id = ?;',
+        [id]
+      );
+      if (rows.length === 0) return false;
+      return Number(rows[0].total_refs || 0) > 0;
+    } catch (err) {
+      console.warn('[TankRepository] Gagal mengecek referensi tangki:', err);
+      return false;
+    }
+  }
+
+  /**
    * Menghapus tanki secara aman (menghormati constraint relasional)
    */
   public async delete(id: string): Promise<boolean> {
     const existing = await this.findById(id);
     if (!existing) {
       return false;
+    }
+
+    const isRef = await this.isReferenced(id);
+    if (isRef) {
+      throw new Error(
+        `Tangki [${existing.name}] tidak dapat dihapus karena masih terhubung ke nozzle dispenser. Putuskan atau pindahkan nozzle terlebih dahulu.`
+      );
     }
 
     try {

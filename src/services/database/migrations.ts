@@ -526,5 +526,13 @@ export const MIGRATIONS: MigrationDefinition[] = [
         SELECT RAISE(ABORT, 'Transaksi yang sudah diposting ke jurnal akuntansi tidak dapat dibatalkan secara langsung tanpa prosedur pembalikan');
       END;`
     ]
+  },
+  {
+    version: 5,
+    name: '005_add_city_to_station_info',
+    statements: [
+      // Tambahkan kolom city pada station_info untuk pengaturan kota tanda tangan laporan
+      `ALTER TABLE station_info ADD COLUMN city TEXT;`
+    ]
   }
 ];

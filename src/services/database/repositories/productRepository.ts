@@ -208,12 +208,41 @@ export class ProductRepository extends BaseRepository {
   }
 
   /**
+   * Memeriksa apakah produk sudah memiliki relasi di tangki, nozzle, tera, transaksi, atau master kode
+   */
+  public async isReferenced(id: string): Promise<boolean> {
+    try {
+      const rows = await this.executor.query<any>(
+        `SELECT
+           ((SELECT COUNT(*) FROM tanks WHERE product_id = ?) +
+            (SELECT COUNT(*) FROM nozzles WHERE product_id = ?) +
+            (SELECT COUNT(*) FROM tera WHERE product_id = ?) +
+            (SELECT COUNT(*) FROM transactions WHERE product_id = ?) +
+            (SELECT COUNT(*) FROM master_codes WHERE product_id = ?)) AS total_refs;`,
+        [id, id, id, id, id]
+      );
+      if (rows.length === 0) return false;
+      return Number(rows[0].total_refs || 0) > 0;
+    } catch (err) {
+      console.warn('[ProductRepository] Gagal mengecek referensi produk:', err);
+      return false;
+    }
+  }
+
+  /**
    * Menghapus produk secara aman (menghormati constraint relasional)
    */
   public async delete(id: string): Promise<boolean> {
     const existing = await this.findById(id);
     if (!existing) {
       return false;
+    }
+
+    const isRef = await this.isReferenced(id);
+    if (isRef) {
+      throw new Error(
+        `Produk [${existing.code}] ${existing.name} tidak dapat dihapus karena masih terhubung ke tangki, nozzle, tera, transaksi, atau master kode. Silakan gunakan opsi Nonaktifkan.`
+      );
     }
 
     try {

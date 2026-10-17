@@ -237,7 +237,7 @@ export function printNeracaReport(data: ReportsData, stationInfo?: StationInfo, 
 
     <div class="sign-area">
       <div class="sign-box">
-        <div style="font-size: 9.5px;">Diketahui, ${data.neracaKonsolidasi?.signerDate || ''}</div>
+        <div style="font-size: 9.5px;">${data.neracaKonsolidasi?.signerDate || ''}</div>
         <div class="sign-line"></div>
         <div class="sign-name">${stationInfo?.manager || 'Direksi / Pimpinan'}</div>
         <div class="sign-title">Pimpinan / Direktur SPBU</div>
@@ -305,7 +305,7 @@ export function printLabaRugiReport(data: ReportsData, stationInfo?: StationInfo
 
     <div class="sign-area">
       <div class="sign-box">
-        <div style="font-size: 9.5px;">Diketahui, ${data.labaRugiKonsolidasi?.signerDate || ''}</div>
+        <div style="font-size: 9.5px;">${data.labaRugiKonsolidasi?.signerDate || ''}</div>
         <div class="sign-line"></div>
         <div class="sign-name">${stationInfo?.manager || 'Direksi / Pimpinan'}</div>
         <div class="sign-title">Pimpinan / Direktur SPBU</div>

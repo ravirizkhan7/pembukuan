@@ -147,7 +147,7 @@ export class MasterCodeRepository extends BaseRepository {
           data.debitAccountId,
           data.creditAccountId,
           data.description ?? null,
-          data.paymentMethod,
+          data.paymentMethod ?? 'Tunai',
           isActive,
           timestamp,
           timestamp
@@ -253,12 +253,40 @@ export class MasterCodeRepository extends BaseRepository {
   }
 
   /**
+   * Memeriksa apakah master kode sudah memiliki relasi di tabel transaksi
+   */
+  public async isReferenced(id: string): Promise<boolean> {
+    try {
+      const existing = await this.findById(id);
+      const code = existing?.code || '';
+      const rows = await this.executor.query<any>(
+        `SELECT COUNT(*) AS total_refs
+         FROM transactions
+         WHERE master_code_id = ? OR code = ?;`,
+        [id, code]
+      );
+      if (rows.length === 0) return false;
+      return Number(rows[0].total_refs || 0) > 0;
+    } catch (err) {
+      console.warn('[MasterCodeRepository] Gagal mengecek referensi master kode:', err);
+      return false;
+    }
+  }
+
+  /**
    * Menghapus master kode secara aman (menghormati constraint relasional)
    */
   public async delete(id: string): Promise<boolean> {
     const existing = await this.findById(id);
     if (!existing) {
       return false;
+    }
+
+    const isRef = await this.isReferenced(id);
+    if (isRef) {
+      throw new Error(
+        `Master kode [${existing.code}] ${existing.name} tidak dapat dihapus karena sudah memiliki riwayat transaksi terkait. Anda hanya dapat menonaktifkannya.`
+      );
     }
 
     try {

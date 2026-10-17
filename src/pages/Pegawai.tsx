@@ -42,6 +42,7 @@ export function PegawaiPage({
     addPegawai,
     updatePegawai,
     togglePegawaiStatus,
+    deletePegawai,
     shifts,
     activeShift,
     bukaShift,
@@ -132,6 +133,24 @@ export function PegawaiPage({
       showToast(`Status pegawai [${p.name}] ${nextStatus}.`, 'primary');
     } catch (err: any) {
       showToast(err?.message || 'Gagal mengubah status pegawai.', 'danger');
+    }
+  };
+
+  const handleDeletePegawai = async (p: Pegawai) => {
+    if (
+      !window.confirm(
+        `Yakin ingin menghapus data Pegawai [${p.id} - ${p.name}] secara permanen? Tindakan ini hanya dapat dilakukan jika pegawai belum memiliki riwayat absensi, shift kerja, atau transaksi operasional.`
+      )
+    ) {
+      return;
+    }
+    try {
+      if (deletePegawai) {
+        await deletePegawai(p.id);
+        showToast(`Pegawai [${p.id} - ${p.name}] berhasil dihapus.`, 'success');
+      }
+    } catch (err: any) {
+      showToast(err?.message || 'Gagal menghapus pegawai.', 'danger');
     }
   };
 
@@ -628,6 +647,10 @@ export function PegawaiPage({
                 <tbody>
                   {pegawaiList.map((p) => {
                     const assignedShift = shifts.find((s) => s.id === p.shiftId);
+                    const isPegawaiReferenced =
+                      attendances.some((a) => a.employeeId === p.id || a.employeeName === p.name) ||
+                      shifts.some((s) => s.operator === p.name || s.operator === p.id) ||
+                      transactions.some((t) => t.cashier === p.name);
                     return (
                       <tr key={p.id} style={{ opacity: p.status === 'Aktif' ? 1 : 0.65 }}>
                         <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue-900)' }}>
@@ -721,6 +744,17 @@ export function PegawaiPage({
                                 </>
                               )}
                             </Button>
+                            {!isPegawaiReferenced && (
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDeletePegawai(p)}
+                                style={{ padding: '4px 8px', fontSize: '12px' }}
+                                id={`btn-delete-pegawai-${p.id}`}
+                              >
+                                Hapus
+                              </Button>
+                            )}
                           </div>
                         </td>
                       </tr>

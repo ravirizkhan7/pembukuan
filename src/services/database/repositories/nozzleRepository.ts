@@ -219,12 +219,38 @@ export class NozzleRepository extends BaseRepository {
   }
 
   /**
+   * Memeriksa apakah nozzle memiliki relasi ke riwayat tera atau transaksi
+   */
+  public async isReferenced(id: string): Promise<boolean> {
+    try {
+      const rows = await this.executor.query<any>(
+        `SELECT
+           ((SELECT COUNT(*) FROM tera WHERE nozzle_id = ?) +
+            (SELECT COUNT(*) FROM transactions WHERE nozzle_id = ?)) AS total_refs;`,
+        [id, id]
+      );
+      if (rows.length === 0) return false;
+      return Number(rows[0].total_refs || 0) > 0;
+    } catch (err) {
+      console.warn('[NozzleRepository] Gagal mengecek referensi nozzle:', err);
+      return false;
+    }
+  }
+
+  /**
    * Menghapus nozzle secara aman (menghormati constraint relasional)
    */
   public async delete(id: string): Promise<boolean> {
     const existing = await this.findById(id);
     if (!existing) {
       return false;
+    }
+
+    const isRef = await this.isReferenced(id);
+    if (isRef) {
+      throw new Error(
+        `Nozzle [${existing.code}] tidak dapat dihapus karena sudah memiliki riwayat kalibrasi tera atau transaksi penjualan dispenser. Silakan gunakan opsi Nonaktifkan.`
+      );
     }
 
     try {

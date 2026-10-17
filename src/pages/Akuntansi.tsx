@@ -31,10 +31,12 @@ export function AkuntansiPage({
     addAccount,
     updateAccount,
     toggleAccountStatus,
+    deleteAccount,
     masterCodes,
     addMasterCode,
     updateMasterCode,
     toggleMasterCodeStatus,
+    deleteMasterCode,
     products,
     journals,
     receivables,
@@ -42,7 +44,8 @@ export function AkuntansiPage({
     businessPartners,
     addBusinessPartner,
     updateBusinessPartner,
-    deleteBusinessPartner
+    deleteBusinessPartner,
+    transactions
   } = useAppContext();
 
   const [activeTab, setActiveTab] = useState<string>(activeSubTab || 'master_kode');
@@ -130,6 +133,24 @@ export function AkuntansiPage({
     toggleAccountStatus(acc.id);
     const nextStatus = acc.isActive ? 'dinonaktifkan' : 'diaktifkan';
     showToast(`Akun [${acc.code}] ${acc.name} ${nextStatus}.`, 'primary');
+  };
+
+  const handleDeleteAccount = async (acc: Account) => {
+    if (
+      !window.confirm(
+        `Yakin ingin menghapus Akun [${acc.code}] ${acc.name} secara permanen? Tindakan ini hanya dapat dilakukan karena akun ini belum memiliki entri jurnal dan tidak digunakan pada Master Kode.`
+      )
+    ) {
+      return;
+    }
+    try {
+      if (deleteAccount) {
+        await deleteAccount(acc.id);
+        showToast(`Akun [${acc.code}] ${acc.name} berhasil dihapus.`, 'success');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Gagal menghapus akun.', 'danger');
+    }
   };
 
   // ==========================================
@@ -242,6 +263,24 @@ export function AkuntansiPage({
     toggleMasterCodeStatus(mc.id);
     const nextStatus = mc.isActive ? 'dinonaktifkan' : 'diaktifkan';
     showToast(`Master Kode #${mc.code} ${nextStatus}.`, 'primary');
+  };
+
+  const handleDeleteMasterCode = async (mc: MasterCode) => {
+    if (
+      !window.confirm(
+        `Yakin ingin menghapus Master Kode #${mc.code} (${mc.name}) secara permanen? Tindakan ini hanya dapat dilakukan karena kode ini belum pernah digunakan pada transaksi operasional.`
+      )
+    ) {
+      return;
+    }
+    try {
+      if (deleteMasterCode) {
+        await deleteMasterCode(mc.id);
+        showToast(`Master Kode #${mc.code} berhasil dihapus.`, 'success');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Gagal menghapus Master Kode.', 'danger');
+    }
   };
 
   // ==========================================
@@ -469,6 +508,7 @@ export function AkuntansiPage({
                 {masterCodes.map((m) => {
                   const debitAcc = accounts.find(a => a.id === m.debitAccountId);
                   const creditAcc = accounts.find(a => a.id === m.creditAccountId);
+                  const isUsed = transactions.some((t) => t.masterCodeId === m.id || t.code === m.code);
                   return (
                     <tr key={m.id} style={{ opacity: m.isActive ? 1 : 0.65 }}>
                       <td>
@@ -539,6 +579,16 @@ export function AkuntansiPage({
                           >
                             {m.isActive ? 'Nonaktifkan' : 'Aktifkan'}
                           </Button>
+                          {!isUsed && (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDeleteMasterCode(m)}
+                              style={{ padding: '3px 8px', fontSize: '12px' }}
+                            >
+                              Hapus
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -567,66 +617,81 @@ export function AkuntansiPage({
                 </tr>
               </thead>
               <tbody>
-                {accounts.map((acc) => (
-                  <tr key={acc.id} style={{ opacity: acc.isActive ? 1 : 0.65 }}>
-                    <td>
-                      <span
-                        style={{
-                          fontFamily: 'monospace',
-                          fontWeight: 700,
-                          backgroundColor: 'var(--blue-50)',
-                          color: 'var(--color-primary-dark)',
-                          padding: '2px 6px',
-                          borderRadius: '3px',
-                          border: '1px solid var(--blue-200)',
-                          fontSize: '12px'
-                        }}
-                      >
-                        {acc.code}
-                      </span>
-                    </td>
-                    <td style={{ fontWeight: 600 }}>{acc.name}</td>
-                    <td style={{ fontSize: '12.5px' }}>{acc.category}</td>
-                    <td style={{ fontSize: '12.5px' }}>
-                      <span
-                        style={{
-                          fontWeight: 600,
-                          color: acc.normalBalance === 'Debit' ? '#1D4ED8' : '#B45309'
-                        }}
-                      >
-                        {acc.normalBalance}
-                      </span>
-                    </td>
-                    <td className="table-num" style={{ fontWeight: 700 }}>
-                      Rp {acc.balance.toLocaleString('id-ID')}
-                    </td>
-                    <td>
-                      <Badge variant={acc.isActive ? 'success' : 'neutral'}>
-                        {acc.isActive ? 'Aktif' : 'Nonaktif'}
-                      </Badge>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditAccountModal(acc)}
-                          style={{ padding: '3px 8px', fontSize: '12px' }}
+                {accounts.map((acc) => {
+                  const isAccountReferenced =
+                    journals.some((j) => j.entries.some((e) => e.accountId === acc.id || e.accountCode === acc.code)) ||
+                    masterCodes.some((mc) => mc.debitAccountId === acc.id || mc.creditAccountId === acc.id);
+                  return (
+                    <tr key={acc.id} style={{ opacity: acc.isActive ? 1 : 0.65 }}>
+                      <td>
+                        <span
+                          style={{
+                            fontFamily: 'monospace',
+                            fontWeight: 700,
+                            backgroundColor: 'var(--blue-50)',
+                            color: 'var(--color-primary-dark)',
+                            padding: '2px 6px',
+                            borderRadius: '3px',
+                            border: '1px solid var(--blue-200)',
+                            fontSize: '12px'
+                          }}
                         >
-                          Edit
-                        </Button>
-                        <Button
-                          variant={acc.isActive ? 'secondary' : 'primary'}
-                          size="sm"
-                          onClick={() => handleToggleAccount(acc)}
-                          style={{ padding: '3px 8px', fontSize: '12px' }}
+                          {acc.code}
+                        </span>
+                      </td>
+                      <td style={{ fontWeight: 600 }}>{acc.name}</td>
+                      <td style={{ fontSize: '12.5px' }}>{acc.category}</td>
+                      <td style={{ fontSize: '12.5px' }}>
+                        <span
+                          style={{
+                            fontWeight: 600,
+                            color: acc.normalBalance === 'Debit' ? '#1D4ED8' : '#B45309'
+                          }}
                         >
-                          {acc.isActive ? 'Nonaktifkan' : 'Aktifkan'}
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {acc.normalBalance}
+                        </span>
+                      </td>
+                      <td className="table-num" style={{ fontWeight: 700 }}>
+                        Rp {acc.balance.toLocaleString('id-ID')}
+                      </td>
+                      <td>
+                        <Badge variant={acc.isActive ? 'success' : 'neutral'}>
+                          {acc.isActive ? 'Aktif' : 'Nonaktif'}
+                        </Badge>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditAccountModal(acc)}
+                            style={{ padding: '3px 8px', fontSize: '12px' }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant={acc.isActive ? 'secondary' : 'primary'}
+                            size="sm"
+                            onClick={() => handleToggleAccount(acc)}
+                            style={{ padding: '3px 8px', fontSize: '12px' }}
+                          >
+                            {acc.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                          </Button>
+                          {!isAccountReferenced && (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDeleteAccount(acc)}
+                              style={{ padding: '3px 8px', fontSize: '12px' }}
+                            >
+                              Hapus
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -964,67 +1029,75 @@ export function AkuntansiPage({
                         </td>
                       </tr>
                     ) : (
-                      filteredPartners.map((p) => (
-                        <tr key={p.id} style={{ opacity: p.isActive === false ? 0.65 : 1 }}>
-                          <td>
-                            <span
-                              style={{
-                                fontFamily: 'monospace',
-                                fontWeight: 700,
-                                backgroundColor: p.type === 'Vendor' ? 'var(--blue-50)' : '#ECFDF5',
-                                color: p.type === 'Vendor' ? 'var(--color-primary-dark)' : '#065F46',
-                                padding: '2px 6px',
-                                borderRadius: '3px',
-                                border: `1px solid ${p.type === 'Vendor' ? 'var(--blue-200)' : '#A7F3D0'}`,
-                                fontSize: '12px'
-                              }}
-                            >
-                              {p.code}
-                            </span>
-                          </td>
-                          <td style={{ fontWeight: 600 }}>{p.name}</td>
-                          <td>
-                            <Badge variant={p.type === 'Vendor' ? 'primary' : 'success'}>
-                              {p.type === 'Vendor' ? 'Vendor / Pemasok' : 'Pelanggan'}
-                            </Badge>
-                          </td>
-                          <td style={{ fontSize: '12.5px' }}>{p.phone || '-'}</td>
-                          <td style={{ fontSize: '12.5px', color: 'var(--color-muted-text)' }}>{p.address || '-'}</td>
-                          <td>
-                            <Badge variant={p.isActive !== false ? 'success' : 'neutral'}>
-                              {p.isActive !== false ? 'Aktif' : 'Nonaktif'}
-                            </Badge>
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openEditPartnerModal(p)}
-                                style={{ padding: '3px 8px', fontSize: '12px' }}
+                      filteredPartners.map((p) => {
+                        const isPartnerReferenced =
+                          transactions.some((t) => (t as any).partnerId === p.id) ||
+                          receivables.some((r) => r.partnerId === p.id) ||
+                          payables.some((py) => py.partnerId === p.id);
+                        return (
+                          <tr key={p.id} style={{ opacity: p.isActive === false ? 0.65 : 1 }}>
+                            <td>
+                              <span
+                                style={{
+                                  fontFamily: 'monospace',
+                                  fontWeight: 700,
+                                  backgroundColor: p.type === 'Vendor' ? 'var(--blue-50)' : '#ECFDF5',
+                                  color: p.type === 'Vendor' ? 'var(--color-primary-dark)' : '#065F46',
+                                  padding: '2px 6px',
+                                  borderRadius: '3px',
+                                  border: `1px solid ${p.type === 'Vendor' ? 'var(--blue-200)' : '#A7F3D0'}`,
+                                  fontSize: '12px'
+                                }}
                               >
-                                Edit
-                              </Button>
-                              <Button
-                                variant={p.isActive !== false ? 'secondary' : 'primary'}
-                                size="sm"
-                                onClick={() => handleTogglePartner(p)}
-                                style={{ padding: '3px 8px', fontSize: '12px' }}
-                              >
-                                {p.isActive !== false ? 'Nonaktifkan' : 'Aktifkan'}
-                              </Button>
-                              <Button
-                                variant="danger"
-                                size="sm"
-                                onClick={() => handleDeletePartner(p)}
-                                style={{ padding: '3px 8px', fontSize: '12px' }}
-                              >
-                                Hapus
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
+                                {p.code}
+                              </span>
+                            </td>
+                            <td style={{ fontWeight: 600 }}>{p.name}</td>
+                            <td>
+                              <Badge variant={p.type === 'Vendor' ? 'primary' : 'success'}>
+                                {p.type === 'Vendor' ? 'Vendor / Pemasok' : 'Pelanggan'}
+                              </Badge>
+                            </td>
+                            <td style={{ fontSize: '12.5px' }}>{p.phone || '-'}</td>
+                            <td style={{ fontSize: '12.5px', color: 'var(--color-muted-text)' }}>{p.address || '-'}</td>
+                            <td>
+                              <Badge variant={p.isActive !== false ? 'success' : 'neutral'}>
+                                {p.isActive !== false ? 'Aktif' : 'Nonaktif'}
+                              </Badge>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openEditPartnerModal(p)}
+                                  style={{ padding: '3px 8px', fontSize: '12px' }}
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant={p.isActive !== false ? 'secondary' : 'primary'}
+                                  size="sm"
+                                  onClick={() => handleTogglePartner(p)}
+                                  style={{ padding: '3px 8px', fontSize: '12px' }}
+                                >
+                                  {p.isActive !== false ? 'Nonaktifkan' : 'Aktifkan'}
+                                </Button>
+                                {!isPartnerReferenced && (
+                                  <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() => handleDeletePartner(p)}
+                                    style={{ padding: '3px 8px', fontSize: '12px' }}
+                                  >
+                                    Hapus
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

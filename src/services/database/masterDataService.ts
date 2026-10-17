@@ -297,12 +297,13 @@ export class MasterDataService {
     if (existingStation.length === 0) {
       const now = new Date().toISOString();
       await executor.run(
-        `INSERT INTO station_info (id, name, address, phone, manager, email, status, last_backup, version, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+        `INSERT INTO station_info (id, name, address, city, phone, manager, email, status, last_backup, version, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         [
           mockStationInfo.id,
           mockStationInfo.name,
           mockStationInfo.address,
+          null,
           mockStationInfo.phone,
           mockStationInfo.manager,
           mockStationInfo.email,
@@ -386,6 +387,7 @@ export class MasterDataService {
         id: s.id,
         name: s.name,
         address: s.address,
+        city: s.city || undefined,
         phone: s.phone,
         manager: s.manager,
         email: s.email,

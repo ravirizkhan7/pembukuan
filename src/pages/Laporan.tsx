@@ -506,7 +506,7 @@ export function LaporanPage({
             {/* Signature Area: Satu Blok Tanda Tangan Pimpinan di Kanan Bawah */}
             <div className="formal-report-sign-area">
               <div className="formal-sign-box">
-                <div className="formal-sign-role">Diketahui, {reports.neracaKonsolidasi?.signerDate || ''}</div>
+                <div className="formal-sign-role">{reports.neracaKonsolidasi?.signerDate || ''}</div>
                 <div className="formal-sign-line"></div>
                 <div className="formal-sign-name">{stationInfo?.manager || 'Direksi / Pimpinan'}</div>
                 <div className="formal-sign-title">Pimpinan / Direktur SPBU</div>
@@ -607,7 +607,7 @@ export function LaporanPage({
             {/* Signature Area: Satu Blok Tanda Tangan Pimpinan di Kanan Bawah */}
             <div className="formal-report-sign-area">
               <div className="formal-sign-box">
-                <div className="formal-sign-role">Diketahui, {reports.labaRugiKonsolidasi?.signerDate || ''}</div>
+                <div className="formal-sign-role">{reports.labaRugiKonsolidasi?.signerDate || ''}</div>
                 <div className="formal-sign-line"></div>
                 <div className="formal-sign-name">{stationInfo?.manager || 'Direksi / Pimpinan'}</div>
                 <div className="formal-sign-title">Pimpinan / Direktur SPBU</div>
