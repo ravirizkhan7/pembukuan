@@ -58,6 +58,8 @@ export class JournalRepository extends BaseRepository {
         transCode: j.trans_code || undefined,
         description: j.description,
         isBalanced: j.is_balanced === 1,
+        isReversal: j.is_reversal === 1,
+        reversesJournalId: j.reverses_journal_id || undefined,
         entries: entriesByJournalId.get(j.id) || []
       }));
     } catch (err) {
@@ -107,6 +109,8 @@ export class JournalRepository extends BaseRepository {
         transCode: j.trans_code || undefined,
         description: j.description,
         isBalanced: j.is_balanced === 1,
+        isReversal: j.is_reversal === 1,
+        reversesJournalId: j.reverses_journal_id || undefined,
         entries
       };
     } catch (err) {
@@ -144,7 +148,7 @@ export class JournalRepository extends BaseRepository {
            id, date, transaction_id, evidence_no, trans_code,
            description, is_balanced, is_reversal, reverses_journal_id,
            created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?);`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         [
           data.id,
           data.date,
@@ -153,6 +157,8 @@ export class JournalRepository extends BaseRepository {
           data.transCode || null,
           data.description,
           isBalanced,
+          data.isReversal ? 1 : 0,
+          data.reversesJournalId || null,
           timestamp,
           timestamp
         ]

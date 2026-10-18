@@ -295,25 +295,47 @@ export class MasterDataService {
     // 10. Profil SPBU & Metadata Pimpinan (station_info)
     const existingStation = await executor.query<any>('SELECT id FROM station_info LIMIT 1;');
     if (existingStation.length === 0) {
+      const cols = await executor.query<{ name: string }>('PRAGMA table_info(station_info);');
+      const hasCity = cols.some((c) => c.name === 'city');
       const now = new Date().toISOString();
-      await executor.run(
-        `INSERT INTO station_info (id, name, address, city, phone, manager, email, status, last_backup, version, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-        [
-          mockStationInfo.id,
-          mockStationInfo.name,
-          mockStationInfo.address,
-          null,
-          mockStationInfo.phone,
-          mockStationInfo.manager,
-          mockStationInfo.email,
-          mockStationInfo.status,
-          mockStationInfo.lastBackup || null,
-          mockStationInfo.version,
-          now,
-          now
-        ]
-      );
+      if (hasCity) {
+        await executor.run(
+          `INSERT INTO station_info (id, name, address, city, phone, manager, email, status, last_backup, version, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+          [
+            mockStationInfo.id,
+            mockStationInfo.name,
+            mockStationInfo.address,
+            mockStationInfo.city || null,
+            mockStationInfo.phone,
+            mockStationInfo.manager,
+            mockStationInfo.email,
+            mockStationInfo.status,
+            mockStationInfo.lastBackup || null,
+            mockStationInfo.version,
+            now,
+            now
+          ]
+        );
+      } else {
+        await executor.run(
+          `INSERT INTO station_info (id, name, address, phone, manager, email, status, last_backup, version, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+          [
+            mockStationInfo.id,
+            mockStationInfo.name,
+            mockStationInfo.address,
+            mockStationInfo.phone,
+            mockStationInfo.manager,
+            mockStationInfo.email,
+            mockStationInfo.status,
+            mockStationInfo.lastBackup || null,
+            mockStationInfo.version,
+            now,
+            now
+          ]
+        );
+      }
     }
 
     return summary;

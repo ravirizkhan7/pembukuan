@@ -97,7 +97,8 @@ export const TOPOLOGICAL_TABLES = [
   'journal_entries',
   'receivables',
   'payables',
-  'shift_sessions'
+  'shift_sessions',
+  'transaction_corrections'
 ] as const;
 
 export const REVERSE_TOPOLOGICAL_TABLES = [...TOPOLOGICAL_TABLES].reverse();
@@ -605,9 +606,9 @@ export class BackupRestoreService {
     }
 
     // Kebijakan Keselamatan Versi:
-    // Aplikasi saat ini berjalan pada skema v4.
+    // Aplikasi saat ini berjalan pada skema v6.
     // Hanya menerima arsip cadangan yang memiliki versi skema sama persis (schemaVersion === DATABASE_VERSION).
-    // Menolak backup dari versi lama (v3 ke bawah) maupun versi baru (v5 ke atas)
+    // Menolak backup dari versi lama (v5 ke bawah) maupun versi baru (v7 ke atas)
     // sampai tersedia jalur kompatibilitas migrasi yang benar-benar teruji.
     if (meta.schemaVersion !== DATABASE_VERSION) {
       if (meta.schemaVersion < DATABASE_VERSION) {

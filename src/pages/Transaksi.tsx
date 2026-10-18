@@ -37,7 +37,8 @@ export function TransaksiPage({
     stationInfo,
     businessPartners,
     receivables,
-    payables
+    payables,
+    correctTransaction
   } = useAppContext();
 
   const queryParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
@@ -75,6 +76,16 @@ export function TransaksiPage({
   // Search filter for recent transactions
   const [historySearch, setHistorySearch] = useState<string>('');
 
+  // Correction Modal States
+  const [showCorrectionModal, setShowCorrectionModal] = useState<boolean>(false);
+  const [correctingTx, setCorrectingTx] = useState<Transaction | null>(null);
+  const [correctionReason, setCorrectionReason] = useState<string>('');
+  const [replacementNominal, setReplacementNominal] = useState<string>('');
+  const [replacementKeterangan, setReplacementKeterangan] = useState<string>('');
+  const [replacementCode, setReplacementCode] = useState<string>('');
+  const [replacementPartnerId, setReplacementPartnerId] = useState<string>('');
+  const [isSubmittingCorrection, setIsSubmittingCorrection] = useState<boolean>(false);
+
   // Input refs for auto-focus
   const codeInputRef = useRef<HTMLInputElement>(null);
   const teraAkhirRef = useRef<HTMLInputElement>(null);
@@ -103,6 +114,115 @@ export function TransaksiPage({
     setSelectedPartnerId('');
     setSelectedReceivableId('');
     setSelectedPayableId('');
+  };
+
+  // Koreksi Transaksi Helpers & Handlers
+  const checkCorrectionEligibility = (tx: Transaction): { eligible: boolean; reason?: string } => {
+    if (tx.status !== 'Selesai') {
+      return { eligible: false, reason: `Status transaksi bukan Selesai (status: ${tx.status}).` };
+    }
+    if (tx.isCorrected) {
+      return { eligible: false, reason: 'Transaksi ini sudah pernah dikoreksi sebelumnya.' };
+    }
+    if (tx.nozzleId || tx.teraId) {
+      return { eligible: false, reason: 'Koreksi transaksi dengan tera nozzle belum didukung untuk menjaga konsistensi fisik meteran pompa.' };
+    }
+    if (tx.category === 'Pelunasan' || tx.relatedReceivableId || tx.relatedPayableId) {
+      return { eligible: false, reason: 'Transaksi pelunasan piutang/hutang tidak dapat dikoreksi langsung karena telah memengaruhi saldo tagihan lain.' };
+    }
+    if (tx.shiftId) {
+      if (!activeShift || activeShift.id !== tx.shiftId) {
+        return { eligible: false, reason: 'Transaksi berasal dari sesi shift yang sudah ditutup atau tidak aktif. Transaksi pada shift tertutup terkunci.' };
+      }
+    }
+    if (tx.paymentMethod === 'Piutang') {
+      const rec = receivables.find(r => r.transactionId === tx.id);
+      if (rec && (rec.status !== 'Open' || rec.outstanding < rec.amount)) {
+        return { eligible: false, reason: 'Faktur piutang sudah memiliki pembayaran sebagian atau pelunasan.' };
+      }
+    }
+    if (tx.paymentMethod === 'Hutang') {
+      const pay = payables.find(p => p.transactionId === tx.id);
+      if (pay && (pay.status !== 'Open' || pay.outstanding < pay.amount)) {
+        return { eligible: false, reason: 'Faktur hutang sudah memiliki pembayaran sebagian atau pelunasan.' };
+      }
+    }
+    return { eligible: true };
+  };
+
+  const handleOpenCorrection = (tx: Transaction) => {
+    const eligibility = checkCorrectionEligibility(tx);
+    if (!eligibility.eligible) {
+      showToast(eligibility.reason || 'Transaksi ini tidak memenuhi syarat untuk dikoreksi.', 'danger');
+      return;
+    }
+
+    setCorrectingTx(tx);
+    setCorrectionReason('');
+    setReplacementNominal(tx.total.toString());
+    setReplacementKeterangan(tx.name);
+    setReplacementCode(tx.code);
+    setReplacementPartnerId(tx.partnerId || '');
+    setShowCorrectionModal(true);
+  };
+
+  const handleSubmitCorrection = async () => {
+    if (!correctingTx) return;
+    if (!correctionReason.trim()) {
+      showToast('Wajib mengisi alasan koreksi transaksi.', 'danger');
+      return;
+    }
+
+    const cleanNominal = parseInt(replacementNominal.replace(/[^0-9]/g, ''), 10);
+    if (!cleanNominal || cleanNominal <= 0) {
+      showToast('Nominal transaksi pengganti harus lebih besar dari 0.', 'danger');
+      return;
+    }
+
+    const repTemplate = masterCodes.find(m => m.code === replacementCode) || null;
+    if (!repTemplate) {
+      showToast(`Kode transaksi "${replacementCode}" tidak ditemukan atau tidak aktif.`, 'danger');
+      return;
+    }
+
+    setIsSubmittingCorrection(true);
+    try {
+      const replacementTxData: Transaction = {
+        ...correctingTx,
+        id: '',
+        code: repTemplate.code,
+        name: replacementKeterangan.trim() || repTemplate.name,
+        category: repTemplate.category,
+        total: cleanNominal,
+        amount: cleanNominal,
+        partnerId: replacementPartnerId || correctingTx.partnerId,
+        paymentMethod: repTemplate.paymentMethod,
+        date: correctingTx.date,
+        shiftId: correctingTx.shiftId,
+        shift: correctingTx.shift,
+        cashier: correctingTx.cashier,
+        status: 'Selesai'
+      };
+
+      const result = await correctTransaction({
+        originalTransactionId: correctingTx.id,
+        reason: correctionReason.trim(),
+        replacementData: replacementTxData,
+        user: stationInfo?.manager || 'Admin SPBU'
+      });
+
+      if (!result.success) {
+        showToast(result.error || 'Gagal mengoreksi transaksi.', 'danger');
+      } else {
+        showToast('Koreksi transaksi berhasil. Jurnal pembalik telah dibukukan dan transaksi pengganti diterbitkan.', 'success');
+        setShowCorrectionModal(false);
+        setCorrectingTx(null);
+      }
+    } catch (err: any) {
+      showToast(`Error: ${err?.message || String(err)}`, 'danger');
+    } finally {
+      setIsSubmittingCorrection(false);
+    }
   };
 
   // Global Keyboard Shortcuts (F1, Escape)
@@ -1334,12 +1454,13 @@ export function TransaksiPage({
                 <th className="table-num">Volume</th>
                 <th className="table-num">Nominal</th>
                 <th>Status</th>
+                <th style={{ textAlign: 'center' }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
               {filteredHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '28px', color: 'var(--color-muted-text)' }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: '28px', color: 'var(--color-muted-text)' }}>
                     Belum ada transaksi ditemukan.
                   </td>
                 </tr>
@@ -1371,9 +1492,44 @@ export function TransaksiPage({
                       Rp {tx.total.toLocaleString('id-ID')}
                     </td>
                     <td>
-                      <Badge variant={tx.status === 'Selesai' ? 'success' : 'neutral'}>
-                        {tx.status}
-                      </Badge>
+                      {tx.isCorrected ? (
+                        <span title={`Dibatalkan & Dibalik: ${tx.cancelReason || '-'}`}>
+                          <Badge variant="danger">
+                            Terkoreksi
+                          </Badge>
+                        </span>
+                      ) : tx.status === 'Batal' ? (
+                        <Badge variant="neutral">Batal</Badge>
+                      ) : (
+                        <Badge variant="success">Selesai</Badge>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      {tx.isCorrected || tx.status === 'Batal' ? (
+                        <span style={{ fontSize: '11px', color: 'var(--color-muted-text)' }}>-</span>
+                      ) : (
+                        (() => {
+                          const elig = checkCorrectionEligibility(tx);
+                          return (
+                            <Button
+                              size="sm"
+                              variant={elig.eligible ? 'outline-primary' : 'secondary'}
+                              onClick={() => handleOpenCorrection(tx)}
+                              style={{
+                                fontSize: '11.5px',
+                                padding: '2px 8px',
+                                borderColor: elig.eligible ? 'var(--blue-400)' : 'var(--color-border)',
+                                color: elig.eligible ? 'var(--color-primary-dark)' : 'var(--color-muted-text)',
+                                cursor: 'pointer',
+                                opacity: elig.eligible ? 1 : 0.65
+                              }}
+                              title={elig.eligible ? 'Koreksi transaksi secara akuntansi' : elig.reason}
+                            >
+                              {elig.eligible ? 'Koreksi' : 'Terkunci'}
+                            </Button>
+                          );
+                        })()
+                      )}
                     </td>
                   </tr>
                 ))
@@ -1382,6 +1538,244 @@ export function TransaksiPage({
           </table>
         </div>
       </Card>
+
+      {/* MODAL KOREKSI TRANSAKSI ADMINISTRATIF */}
+      <Modal
+        isOpen={showCorrectionModal && correctingTx !== null}
+        onClose={() => {
+          if (!isSubmittingCorrection) {
+            setShowCorrectionModal(false);
+            setCorrectingTx(null);
+          }
+        }}
+        title={`Koreksi Transaksi Akuntansi [${correctingTx?.code || ''}]`}
+      >
+        {correctingTx && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* 1. Ringkasan Transaksi Asal */}
+            <div
+              style={{
+                backgroundColor: 'var(--slate-50)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--border-radius-sm)',
+                padding: '12px 14px',
+                fontSize: '12.5px'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontWeight: 700, color: 'var(--color-dark-text)' }}>
+                  Ringkasan Transaksi Asal (Akan Dibalik)
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'monospace',
+                    fontWeight: 700,
+                    backgroundColor: 'var(--blue-100)',
+                    color: 'var(--color-primary-dark)',
+                    padding: '2px 6px',
+                    borderRadius: '3px'
+                  }}
+                >
+                  {correctingTx.id}
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px 12px' }}>
+                <div>
+                  <span style={{ color: 'var(--color-muted-text)' }}>Kode / Nama:</span>{' '}
+                  <strong>{correctingTx.code} - {correctingTx.name}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--color-muted-text)' }}>Kategori:</span>{' '}
+                  <strong>{correctingTx.category}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--color-muted-text)' }}>Tanggal:</span>{' '}
+                  <strong>{correctingTx.date}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--color-muted-text)' }}>Nominal Asal:</span>{' '}
+                  <strong style={{ color: 'var(--color-primary-dark)' }}>
+                    Rp {correctingTx.total.toLocaleString('id-ID')}
+                  </strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--color-muted-text)' }}>Metode Bayar:</span>{' '}
+                  <strong>{correctingTx.paymentMethod || 'Tunai'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--color-muted-text)' }}>Sesi Shift:</span>{' '}
+                  <strong>{correctingTx.shift || 'Tanpa Sesi / Administratif'}</strong>
+                </div>
+                {correctingTx.partnerName && (
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <span style={{ color: 'var(--color-muted-text)' }}>Mitra:</span>{' '}
+                    <strong>{correctingTx.partnerName}</strong>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 2. Alasan Koreksi */}
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+                Alasan Koreksi <span style={{ color: 'var(--color-danger)' }}>*</span>
+              </label>
+              <textarea
+                className="form-control"
+                placeholder="Contoh: Salah input nominal belanja ATK kantor, seharusnya Rp 250.000..."
+                value={correctionReason}
+                onChange={(e) => setCorrectionReason(e.target.value)}
+                rows={2}
+                disabled={isSubmittingCorrection}
+                style={{ fontSize: '13px' }}
+                autoFocus
+              />
+            </div>
+
+            {/* 3. Form Transaksi Pengganti */}
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                border: '1px solid var(--blue-200)',
+                borderRadius: 'var(--border-radius-sm)',
+                padding: '12px 14px'
+              }}
+            >
+              <div style={{ fontWeight: 700, color: 'var(--color-primary-dark)', marginBottom: '10px', fontSize: '13px' }}>
+                Data Transaksi Pengganti (Nilai yang Benar)
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
+                    Kode Transaksi Pengganti
+                  </label>
+                  <select
+                    className="form-control"
+                    value={replacementCode}
+                    onChange={(e) => {
+                      setReplacementCode(e.target.value);
+                      const mc = masterCodes.find(m => m.code === e.target.value);
+                      if (mc) {
+                        setReplacementKeterangan(mc.name);
+                      }
+                    }}
+                    disabled={isSubmittingCorrection}
+                    style={{ fontSize: '13px' }}
+                  >
+                    {masterCodes
+                      .filter((m) => m.isActive && !m.requiresTera && m.category !== 'Pelunasan')
+                      .map((mc) => (
+                        <option key={mc.id} value={mc.code}>
+                          #{mc.code} - {mc.name} ({mc.category} / {mc.paymentMethod})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
+                    Keterangan / Nama Transaksi
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={replacementKeterangan}
+                    onChange={(e) => setReplacementKeterangan(e.target.value)}
+                    disabled={isSubmittingCorrection}
+                    style={{ fontSize: '13px' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
+                    Nominal Baru (Rp) <span style={{ color: 'var(--color-danger)' }}>*</span>
+                  </label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    value={replacementNominal}
+                    onChange={(e) => setReplacementNominal(e.target.value)}
+                    disabled={isSubmittingCorrection}
+                    min="1"
+                    style={{ fontSize: '14px', fontWeight: 700 }}
+                  />
+                </div>
+
+                {/* Mitra Bisnis jika Piutang atau Hutang */}
+                {(() => {
+                  const repMc = masterCodes.find(m => m.code === replacementCode);
+                  if (repMc?.paymentMethod === 'Piutang' || repMc?.paymentMethod === 'Hutang') {
+                    const filteredPartners = businessPartners.filter(p =>
+                      repMc.paymentMethod === 'Piutang' ? p.type === 'Customer' : p.type === 'Vendor'
+                    );
+                    return (
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
+                          Mitra Bisnis ({repMc.paymentMethod === 'Piutang' ? 'Pelanggan' : 'Vendor'})
+                        </label>
+                        <select
+                          className="form-control"
+                          value={replacementPartnerId}
+                          onChange={(e) => setReplacementPartnerId(e.target.value)}
+                          disabled={isSubmittingCorrection}
+                          style={{ fontSize: '13px' }}
+                        >
+                          <option value="">-- Pilih Mitra --</option>
+                          {filteredPartners.map((bp) => (
+                            <option key={bp.id} value={bp.id}>
+                              {bp.code} - {bp.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+            </div>
+
+            {/* 4. Konfirmasi dan Peringatan Akuntansi */}
+            <div
+              style={{
+                backgroundColor: 'var(--amber-50, #fffbeb)',
+                border: '1px solid var(--amber-200, #fde68a)',
+                borderRadius: 'var(--border-radius-sm)',
+                padding: '10px 12px',
+                fontSize: '11.5px',
+                color: '#92400e',
+                lineHeight: 1.5
+              }}
+            >
+              <strong>Ketentuan Audit & Akuntansi:</strong> Transaksi asal ({correctingTx.id}) tidak akan dihapus melainkan ditandai sebagai Terkoreksi/Batal. Sistem akan secara otomatis menerbitkan Jurnal Pembalik (Reversal) untuk menetralkan saldo buku besar, lalu memposting transaksi pengganti dalam satu transaksi database atomik.
+            </div>
+
+            {/* 5. Action Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' }}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setShowCorrectionModal(false);
+                  setCorrectingTx(null);
+                }}
+                disabled={isSubmittingCorrection}
+              >
+                Batal [Esc]
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleSubmitCorrection}
+                disabled={isSubmittingCorrection || !correctionReason.trim()}
+              >
+                {isSubmittingCorrection ? 'Memproses Koreksi...' : 'Simpan & Proses Koreksi'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* MODAL F1 SEARCH */}
       <Modal

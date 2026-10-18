@@ -11,6 +11,7 @@ import {
 } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { getLocalDateString, getLocalDateTimeString } from '../services/appSettings';
+import { CORE_PRODUCT_IDS, CORE_CATEGORY_IDS, CORE_TANK_IDS, CORE_NOZZLE_IDS } from '../services/database';
 
 export interface OperasionalPageProps {
   mockData?: any;
@@ -805,7 +806,16 @@ export function OperasionalPage({
                   const pct = Math.round((t.currentStock / t.capacity) * 100);
                   const isLow = pct < 35;
                   const prod = products.find((p) => p.id === t.productId);
+                  const isCoreTank = CORE_TANK_IDS.has(t.id);
                   const isTankReferenced = nozzles.some((n) => n.tankId === t.id) || products.some((p) => p.tankId === t.id);
+                  const canDeleteTank = !isCoreTank && !isTankReferenced;
+                  let tankDeleteTooltip = 'Hapus tanki';
+                  if (isCoreTank) {
+                    tankDeleteTooltip = 'Tangki pendam utama SPBU tidak dapat dihapus.';
+                  } else if (isTankReferenced) {
+                    tankDeleteTooltip = 'Tangki tidak dapat dihapus karena masih terhubung ke nozzle dispenser atau produk.';
+                  }
+
                   return (
                     <tr key={t.id} style={{ opacity: t.status === 'Nonaktif' ? 0.65 : 1 }}>
                       <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{t.id}</td>
@@ -836,6 +846,7 @@ export function OperasionalPage({
                             size="sm"
                             onClick={() => openEditTankModal(t)}
                             style={{ padding: '3px 8px', fontSize: '12px' }}
+                            title="Edit tanki"
                           >
                             Edit
                           </Button>
@@ -844,19 +855,25 @@ export function OperasionalPage({
                             size="sm"
                             onClick={() => handleToggleTank(t)}
                             style={{ padding: '3px 8px', fontSize: '12px' }}
+                            title={t.status === 'Aktif' || t.status === 'Aman' ? 'Nonaktifkan tanki' : 'Aktifkan tanki'}
                           >
                             {t.status === 'Aktif' || t.status === 'Aman' ? 'Nonaktifkan' : 'Aktifkan'}
                           </Button>
-                          {!isTankReferenced && (
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDeleteTank(t)}
-                              style={{ padding: '3px 8px', fontSize: '12px' }}
-                            >
-                              Hapus
-                            </Button>
-                          )}
+                          <Button
+                            variant={canDeleteTank ? 'danger' : 'secondary'}
+                            size="sm"
+                            disabled={!canDeleteTank}
+                            onClick={canDeleteTank ? () => handleDeleteTank(t) : undefined}
+                            style={{
+                              padding: '3px 8px',
+                              fontSize: '12px',
+                              opacity: canDeleteTank ? 1 : 0.45,
+                              cursor: canDeleteTank ? 'pointer' : 'not-allowed'
+                            }}
+                            title={tankDeleteTooltip}
+                          >
+                            Hapus
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -887,9 +904,18 @@ export function OperasionalPage({
               </thead>
               <tbody>
                 {nozzles.map((nz) => {
+                  const isCoreNozzle = CORE_NOZZLE_IDS.has(nz.id) || CORE_NOZZLE_IDS.has(nz.code);
                   const isNozzleReferenced =
                     teraList.some((tr) => tr.nozzleId === nz.id) ||
                     transactions.some((t) => t.nozzleId === nz.id);
+                  const canDeleteNozzle = !isCoreNozzle && !isNozzleReferenced;
+                  let nozzleDeleteTooltip = 'Hapus nozzle';
+                  if (isCoreNozzle) {
+                    nozzleDeleteTooltip = 'Nozzle dispenser baku SPBU tidak dapat dihapus.';
+                  } else if (isNozzleReferenced) {
+                    nozzleDeleteTooltip = 'Nozzle tidak dapat dihapus karena sudah memiliki riwayat kalibrasi tera atau transaksi.';
+                  }
+
                   return (
                     <tr key={nz.id} style={{ opacity: nz.status === 'Nonaktif' ? 0.65 : 1 }}>
                       <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--color-muted-text)' }}>{nz.id}</td>
@@ -916,6 +942,7 @@ export function OperasionalPage({
                             size="sm"
                             onClick={() => openEditNozzleModal(nz)}
                             style={{ padding: '3px 8px', fontSize: '12px' }}
+                            title="Edit nozzle"
                           >
                             Edit
                           </Button>
@@ -924,19 +951,25 @@ export function OperasionalPage({
                             size="sm"
                             onClick={() => handleToggleNozzle(nz)}
                             style={{ padding: '3px 8px', fontSize: '12px' }}
+                            title={nz.status === 'Aktif' ? 'Alihkan status ke Maintenance' : 'Aktifkan nozzle'}
                           >
                             {nz.status === 'Aktif' ? 'Maintenance' : 'Aktifkan'}
                           </Button>
-                          {!isNozzleReferenced && (
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDeleteNozzle(nz)}
-                              style={{ padding: '3px 8px', fontSize: '12px' }}
-                            >
-                              Hapus
-                            </Button>
-                          )}
+                          <Button
+                            variant={canDeleteNozzle ? 'danger' : 'secondary'}
+                            size="sm"
+                            disabled={!canDeleteNozzle}
+                            onClick={canDeleteNozzle ? () => handleDeleteNozzle(nz) : undefined}
+                            style={{
+                              padding: '3px 8px',
+                              fontSize: '12px',
+                              opacity: canDeleteNozzle ? 1 : 0.45,
+                              cursor: canDeleteNozzle ? 'pointer' : 'not-allowed'
+                            }}
+                            title={nozzleDeleteTooltip}
+                          >
+                            Hapus
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -1063,12 +1096,21 @@ export function OperasionalPage({
                   const margin = p.sellPrice - p.buyPrice;
                   const tank = tanks.find((t) => t.id === p.tankId || t.productId === p.id);
                   const cat = productCategories.find((c) => c.id === p.categoryId);
+                  const isCoreProduct = CORE_PRODUCT_IDS.has(p.id) || CORE_PRODUCT_IDS.has(p.code);
                   const isProductReferenced =
                     tanks.some((t) => t.productId === p.id || t.id === p.tankId) ||
                     nozzles.some((n) => n.productId === p.id) ||
                     teraList.some((tr) => tr.productId === p.id) ||
                     transactions.some((tx) => tx.productId === p.id) ||
                     (masterCodes && masterCodes.some((mc) => mc.productId === p.id));
+                  const canDeleteProduct = !isCoreProduct && !isProductReferenced;
+                  let productDeleteTooltip = 'Hapus produk';
+                  if (isCoreProduct) {
+                    productDeleteTooltip = 'Produk BBM baku SPBU tidak dapat dihapus.';
+                  } else if (isProductReferenced) {
+                    productDeleteTooltip = 'Produk tidak dapat dihapus karena sudah terhubung ke tangki, nozzle, transaksi, atau master code.';
+                  }
+
                   return (
                     <tr key={p.id} style={{ opacity: p.status === 'Aktif' ? 1 : 0.65 }}>
                       <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--color-muted-text)' }}>
@@ -1125,16 +1167,21 @@ export function OperasionalPage({
                           >
                             {p.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan'}
                           </Button>
-                          {!isProductReferenced && (
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDeleteProduct(p)}
-                              style={{ padding: '3px 8px', fontSize: '12px' }}
-                            >
-                              Hapus
-                            </Button>
-                          )}
+                          <Button
+                            variant={canDeleteProduct ? 'danger' : 'secondary'}
+                            size="sm"
+                            disabled={!canDeleteProduct}
+                            onClick={canDeleteProduct ? () => handleDeleteProduct(p) : undefined}
+                            style={{
+                              padding: '3px 8px',
+                              fontSize: '12px',
+                              opacity: canDeleteProduct ? 1 : 0.45,
+                              cursor: canDeleteProduct ? 'pointer' : 'not-allowed'
+                            }}
+                            title={productDeleteTooltip}
+                          >
+                            Hapus
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -1633,7 +1680,16 @@ export function OperasionalPage({
               </thead>
               <tbody>
                 {productCategories.map((c) => {
+                  const isCoreCat = CORE_CATEGORY_IDS.has(c.id);
                   const isCategoryReferenced = products.some((p) => p.categoryId === c.id);
+                  const canDeleteCategory = !isCoreCat && !isCategoryReferenced;
+                  let catDeleteTooltip = 'Hapus kategori';
+                  if (isCoreCat) {
+                    catDeleteTooltip = 'Kategori produk bawaan sistem tidak dapat dihapus.';
+                  } else if (isCategoryReferenced) {
+                    catDeleteTooltip = 'Kategori tidak dapat dihapus karena masih digunakan oleh produk.';
+                  }
+
                   return (
                     <tr key={c.id}>
                       <td style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 600 }}>{c.id}</td>
@@ -1664,16 +1720,21 @@ export function OperasionalPage({
                           >
                             {c.status === 'Aktif' ? 'Nonaktifkan' : 'Aktifkan'}
                           </Button>
-                          {!isCategoryReferenced && (
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDeleteCategory(c)}
-                              style={{ padding: '2px 8px', fontSize: '12px' }}
-                            >
-                              Hapus
-                            </Button>
-                          )}
+                          <Button
+                            variant={canDeleteCategory ? 'danger' : 'secondary'}
+                            size="sm"
+                            disabled={!canDeleteCategory}
+                            onClick={canDeleteCategory ? () => handleDeleteCategory(c) : undefined}
+                            style={{
+                              padding: '2px 8px',
+                              fontSize: '12px',
+                              opacity: canDeleteCategory ? 1 : 0.45,
+                              cursor: canDeleteCategory ? 'pointer' : 'not-allowed'
+                            }}
+                            title={catDeleteTooltip}
+                          >
+                            Hapus
+                          </Button>
                         </div>
                       </td>
                     </tr>

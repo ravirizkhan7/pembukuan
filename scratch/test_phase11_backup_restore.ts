@@ -41,16 +41,19 @@ async function main() {
   });
 
   // -------------------------------------------------------------------------
-  // 1. SETUP SOURCE DATABASE DENGAN MIGRATIONS AKTUAL (v1 s.d. v4)
+  // 1. SETUP SOURCE DATABASE: SIMULASI MIGRASI v4 KE v5 & INTEGRITAS PROFIL
   // -------------------------------------------------------------------------
-  console.log('1. MENYIAPKAN DATABASE SUMBER (MIGRATIONS v1-v4 & DATA OPERASIONAL)...');
+  console.log('1. MENYIAPKAN DATABASE SUMBER: MIGRASI v4 KE v5 DENGAN DATA PROFIL...');
   const sourceDb = new SQL.Database();
   const sourceExecutor = createDbExecutor(sourceDb);
 
-  const migRes = await MigrationRunner.runMigrations(sourceExecutor, MIGRATIONS);
-  console.log(`   -> Migrasi berhasil: Versi ${migRes.currentVersion}`);
+  // 1a. Migrasikan v1 s.d. v4 terlebih dahulu
+  const v4Migrations = MIGRATIONS.slice(0, 4);
+  const migV4Res = await MigrationRunner.runMigrations(sourceExecutor, v4Migrations);
+  console.log(`   -> Migrasi basis v4 berhasil: Versi ${migV4Res.currentVersion}`);
+  if (migV4Res.currentVersion !== 4) throw new Error('Basis harus versi 4');
 
-  // Inisialisasi master data resmi (categories, products, tanks, nozzles, COA, shifts, pegawai)
+  // 1b. Inisialisasi master data resmi & simpan profil SPBU pada skema v4 (belum ada kolom city)
   await MasterDataService.initializeMasterData(sourceExecutor);
 
   const nowIso = new Date().toISOString();
@@ -66,6 +69,39 @@ async function main() {
        updated_at = ?;`,
     [nowIso]
   );
+
+  const v4ProfileBefore = await sourceExecutor.query<any>('SELECT * FROM station_info WHERE id = ?;', ['SPBU-34-12301']);
+  if (!v4ProfileBefore[0] || v4ProfileBefore[0].name !== 'SPBU Dago Bandung') {
+    throw new Error('Gagal menyiapkan profil awal di skema v4');
+  }
+
+  // 1c. Migrasikan dari v4 ke v6 (MIGRATIONS lengkap)
+  console.log('   -> Menjalankan migrasi v5 & v6 (penambahan kolom city & audit koreksi)...');
+  const migV6Res = await MigrationRunner.runMigrations(sourceExecutor, MIGRATIONS);
+  console.log(`   -> Migrasi selesai: Versi ${migV6Res.currentVersion}, appliedCount=${migV6Res.appliedCount}`);
+  if (migV6Res.currentVersion !== 6) throw new Error('Database harus mencapai versi 6');
+
+  // 1d. Verifikasi profil lama tetap utuh 100% pasca migrasi v5
+  const v5ProfileAfter = await sourceExecutor.query<any>('SELECT * FROM station_info WHERE id = ?;', ['SPBU-34-12301']);
+  const p = v5ProfileAfter[0];
+  if (!p) throw new Error('Data profil stasiun hilang setelah migrasi v5!');
+  if (p.name !== 'SPBU Dago Bandung' || p.address !== 'Jl. Ir. H. Juanda No. 123' || p.manager !== 'Budi Santoso') {
+    throw new Error('Data profil stasiun lama mengalami perubahan atau korupsi setelah migrasi v5!');
+  }
+  // Kolom city harus sudah ada secara fisik
+  if (!('city' in p)) {
+    throw new Error('Kolom fisik city tidak ditemukan pada tabel station_info pasca migrasi v5!');
+  }
+  console.log('   -> PASS: Migrasi v4 ke v5 berhasil, profil lama tetap utuh dan kolom city tersedia.');
+
+  // 1e. Isi kota ke profil SPBU
+  await sourceExecutor.run(
+    `UPDATE station_info SET city = 'Pariaman', updated_at = ? WHERE id = 'SPBU-34-12301';`,
+    [nowIso]
+  );
+  const updatedProfile = await sourceExecutor.query<any>('SELECT city FROM station_info WHERE id = ?;', ['SPBU-34-12301']);
+  if (updatedProfile[0]?.city !== 'Pariaman') throw new Error('Gagal mengupdate kota pada station_info');
+  console.log(`   -> Kota berhasil diatur pada database aktif: "${updatedProfile[0]?.city}"`);
 
   // Ambil referensi master yang valid
   const pegawaiRows = await sourceExecutor.query<any>('SELECT id, shift_id FROM pegawai LIMIT 1;');
@@ -189,9 +225,16 @@ async function main() {
   console.log(`   -> Checksum: ${backup.metadata.checksum}`);
 
   if (backup.metadata.appId !== 'spbu-pembukuan-offline') throw new Error('AppId mismatch');
-  if (backup.metadata.schemaVersion !== 4) throw new Error('Schema version mismatch');
+  if (backup.metadata.schemaVersion !== 6) throw new Error(`Schema version mismatch: expected 6, got ${backup.metadata.schemaVersion}`);
   if (backup.metadata.totalRecords <= 0) throw new Error('Total records should be > 0');
   if (Object.keys(backup.data).length < 15) throw new Error('Expected at least 15 tables in backup');
+
+  // Verifikasi field city tercantum dalam payload data backup
+  const stationInfoInBackup = backup.data.station_info?.[0];
+  if (!stationInfoInBackup || stationInfoInBackup.city !== 'Pariaman') {
+    throw new Error(`Field city tidak tercantum atau salah dalam payload backup: ${stationInfoInBackup?.city}`);
+  }
+  console.log(`   -> PASS: Field city ('${stationInfoInBackup.city}') terverifikasi ada dalam payload backup.`);
   console.log('   -> PASS: Metadata dan seluruh tabel penting berhasil diekspor.\n');
 
   // -------------------------------------------------------------------------
@@ -218,22 +261,22 @@ async function main() {
     throw new Error('Gagal menolak App ID asing!');
   }
 
-  // 3c-1. Penolakan Backup dengan Versi Skema Lebih Lama (v3 vs v4)
+  // 3c-1. Penolakan Backup dengan Versi Skema Lebih Lama (v5 vs v6 aktif)
   const lowerSchemaFile = JSON.parse(jsonString);
-  lowerSchemaFile.metadata.schemaVersion = 3; // App saat ini v4
+  lowerSchemaFile.metadata.schemaVersion = 5; // Backup v5 pada aplikasi aktif v6
   const valLowerSchema = BackupRestoreService.validateBackup(lowerSchemaFile);
   if (!valLowerSchema.valid && valLowerSchema.error?.includes('lebih lama')) {
-    console.log('   -> PASS: Berkas dengan versi skema lebih lama (v3 vs v4) ditolak secara aman sebelum database disentuh.');
+    console.log('   -> PASS: Berkas dengan versi skema lebih lama (v5 vs v6) ditolak secara aman sebelum database disentuh.');
   } else {
-    throw new Error('Gagal menolak versi skema v3 yang lebih lama!');
+    throw new Error('Gagal menolak versi skema v5 yang lebih lama!');
   }
 
-  // 3c-2. Penolakan Backup dengan Versi Skema Lebih Tinggi (v5 vs v4)
+  // 3c-2. Penolakan Backup dengan Versi Skema Lebih Tinggi (v7 vs v6 aktif)
   const higherSchemaFile = JSON.parse(jsonString);
-  higherSchemaFile.metadata.schemaVersion = 5; // App saat ini v4
+  higherSchemaFile.metadata.schemaVersion = 7; // Backup v7 pada aplikasi aktif v6
   const valHigherSchema = BackupRestoreService.validateBackup(higherSchemaFile);
   if (!valHigherSchema.valid && valHigherSchema.error?.includes('lebih tinggi')) {
-    console.log('   -> PASS: Berkas dengan versi skema lebih tinggi (v5 vs v4) ditolak secara aman (no auto-downgrade).');
+    console.log('   -> PASS: Berkas dengan versi skema lebih tinggi (v7 vs v6) ditolak secara aman (no auto-downgrade).');
   } else {
     throw new Error('Gagal menolak versi skema yang lebih tinggi!');
   }
@@ -351,6 +394,13 @@ async function main() {
   }
   console.log(`   -> Pegawai & Absensi: ${tgtPegawai.length} pegawai dan ${tgtAtt.length} absensi terverifikasi identik.`);
 
+  // Verifikasi profil stasiun & kota pasca-restore
+  const tgtStation = await targetExecutor.query<any>('SELECT name, city, manager FROM station_info WHERE id = ?;', ['SPBU-34-12301']);
+  if (tgtStation[0]?.city !== 'Pariaman' || tgtStation[0]?.name !== 'SPBU Dago Bandung' || tgtStation[0]?.manager !== 'Budi Santoso') {
+    throw new Error('Data profil stasiun (nama, kota, pimpinan) tidak cocok setelah restore!');
+  }
+  console.log(`   -> Profil SPBU Terpulihkan: Nama="${tgtStation[0]?.name}", Kota="${tgtStation[0]?.city}", Pimpinan="${tgtStation[0]?.manager}".`);
+
   console.log('   -> PASS: Audit paritas 1:1 data sebelum vs sesudah restore sukses penuh.\n');
 
   // -------------------------------------------------------------------------
@@ -361,14 +411,14 @@ async function main() {
     'SELECT version, name, applied_at FROM schema_migrations ORDER BY version ASC;'
   );
   console.log(`   -> Riwayat Migrasi Aktif: ${appliedAfterRestore.map((a) => `v${a.version} (${a.name})`).join(', ')}`);
-  if (appliedAfterRestore.length !== 4) {
-    throw new Error(`Jumlah catatan migrasi tidak sesuai (diharapkan 4, ditemukan ${appliedAfterRestore.length})`);
+  if (appliedAfterRestore.length !== 6) {
+    throw new Error(`Jumlah catatan migrasi tidak sesuai (diharapkan 6, ditemukan ${appliedAfterRestore.length})`);
   }
   const appMetaVer = await targetExecutor.query<any>("SELECT value FROM app_metadata WHERE key = 'schema_version';");
-  if (appMetaVer[0]?.value !== '4') {
+  if (appMetaVer[0]?.value !== '6') {
     throw new Error(`Versi skema app_metadata tidak sesuai: ${appMetaVer[0]?.value}`);
   }
-  console.log('   -> PASS: schema_migrations dan app_metadata tetap utuh, valid, dan konsisten (v4).\n');
+  console.log('   -> PASS: schema_migrations dan app_metadata tetap utuh, valid, dan konsisten (v6).\n');
 
   // -------------------------------------------------------------------------
   // 5c. SIMULASI PENUTUPAN & PEMBUKAAN ULANG DATABASE (APP RESTART & IDEMPOTENCY)
@@ -382,7 +432,7 @@ async function main() {
   console.log(
     `   -> Hasil Inisialisasi Ulang: alreadyUpToDate=${initResult.alreadyUpToDate}, appliedCount=${initResult.appliedCount}, currentVersion=v${initResult.currentVersion}`
   );
-  if (!initResult.alreadyUpToDate || initResult.appliedCount !== 0 || initResult.currentVersion !== 4) {
+  if (!initResult.alreadyUpToDate || initResult.appliedCount !== 0 || initResult.currentVersion !== 6) {
     throw new Error('Inisialisasi ulang gagal atau migrasi diaplikasikan ulang secara keliru!');
   }
 

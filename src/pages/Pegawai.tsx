@@ -651,6 +651,14 @@ export function PegawaiPage({
                       attendances.some((a) => a.employeeId === p.id || a.employeeName === p.name) ||
                       shifts.some((s) => s.operator === p.name || s.operator === p.id) ||
                       transactions.some((t) => t.cashier === p.name);
+                    const isOnActiveShift =
+                      activeShift &&
+                      (activeShift.operator === p.name || activeShift.operator === p.id);
+                    const canDeletePegawai = !isPegawaiReferenced;
+                    const pegawaiDeleteTooltip = isPegawaiReferenced
+                      ? 'Pegawai tidak dapat dihapus karena sudah memiliki riwayat shift, absensi, atau transaksi.'
+                      : 'Hapus pegawai';
+
                     return (
                       <tr key={p.id} style={{ opacity: p.status === 'Aktif' ? 1 : 0.65 }}>
                         <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--blue-900)' }}>
@@ -724,13 +732,23 @@ export function PegawaiPage({
                             <Button
                               variant={p.status === 'Aktif' ? 'ghost' : 'outline-primary'}
                               size="sm"
-                              onClick={() => handleTogglePegawai(p)}
+                              disabled={p.status === 'Aktif' && !!isOnActiveShift}
+                              onClick={p.status === 'Aktif' && isOnActiveShift ? undefined : () => handleTogglePegawai(p)}
                               style={{
                                 padding: '4px 8px',
                                 fontSize: '12px',
-                                color: p.status === 'Aktif' ? 'var(--color-danger)' : undefined
+                                color: p.status === 'Aktif' ? 'var(--color-danger)' : undefined,
+                                opacity: p.status === 'Aktif' && isOnActiveShift ? 0.45 : 1,
+                                cursor: p.status === 'Aktif' && isOnActiveShift ? 'not-allowed' : 'pointer'
                               }}
                               id={`btn-toggle-pegawai-${p.id}`}
+                              title={
+                                p.status === 'Aktif' && isOnActiveShift
+                                  ? `Pegawai [${p.name}] sedang bertugas pada shift aktif. Tutup shift terlebih dahulu.`
+                                  : p.status === 'Aktif'
+                                  ? 'Nonaktifkan pegawai'
+                                  : 'Aktifkan pegawai'
+                              }
                             >
                               {p.status === 'Aktif' ? (
                                 <>
@@ -744,17 +762,22 @@ export function PegawaiPage({
                                 </>
                               )}
                             </Button>
-                            {!isPegawaiReferenced && (
-                              <Button
-                                variant="danger"
-                                size="sm"
-                                onClick={() => handleDeletePegawai(p)}
-                                style={{ padding: '4px 8px', fontSize: '12px' }}
-                                id={`btn-delete-pegawai-${p.id}`}
-                              >
-                                Hapus
-                              </Button>
-                            )}
+                            <Button
+                              variant={canDeletePegawai ? 'danger' : 'secondary'}
+                              size="sm"
+                              disabled={!canDeletePegawai}
+                              onClick={canDeletePegawai ? () => handleDeletePegawai(p) : undefined}
+                              style={{
+                                padding: '4px 8px',
+                                fontSize: '12px',
+                                opacity: canDeletePegawai ? 1 : 0.45,
+                                cursor: canDeletePegawai ? 'pointer' : 'not-allowed'
+                              }}
+                              id={`btn-delete-pegawai-${p.id}`}
+                              title={pegawaiDeleteTooltip}
+                            >
+                              Hapus
+                            </Button>
                           </div>
                         </td>
                       </tr>

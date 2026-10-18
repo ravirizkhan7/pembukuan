@@ -20,3 +20,4 @@ export * from './journalRepository';
 export * from './receivableRepository';
 export * from './payableRepository';
 export * from './reportRepository';
+export * from './transactionCorrectionRepository';

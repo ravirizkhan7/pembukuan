@@ -153,7 +153,21 @@ export class ProductCategoryRepository extends BaseRepository {
   }
 
   /**
-   * Menghapus kategori produk secara aman (menghormati constraint relasional)
+   * Kategori produk standar sistem SPBU yang tidak boleh dihapus
+   */
+  public static readonly CORE_CATEGORY_IDS = new Set([
+    'PCAT-001', 'PCAT-002', 'PCAT-003', 'PCAT-004'
+  ]);
+
+  /**
+   * Memeriksa apakah kategori merupakan kategori standar sistem SPBU
+   */
+  public isCore(id: string): boolean {
+    return ProductCategoryRepository.CORE_CATEGORY_IDS.has(id);
+  }
+
+  /**
+   * Menghapus kategori produk secara aman (menghormati data inti dan constraint relasional)
    */
   public async delete(id: string): Promise<boolean> {
     const existing = await this.findById(id);
@@ -161,6 +175,14 @@ export class ProductCategoryRepository extends BaseRepository {
       return false;
     }
 
+    // 1. Lindungi kategori produk standar sistem SPBU
+    if (this.isCore(existing.id)) {
+      throw new Error(
+        `Kategori produk [${existing.name}] merupakan kategori bawaan sistem SPBU dan tidak dapat dihapus. Silakan gunakan opsi Nonaktifkan.`
+      );
+    }
+
+    // 2. Lindungi kategori yang masih digunakan oleh produk
     const isRef = await this.isReferenced(id);
     if (isRef) {
       throw new Error(
@@ -181,3 +203,4 @@ export class ProductCategoryRepository extends BaseRepository {
 }
 
 export const productCategoryRepository = new ProductCategoryRepository();
+export const CORE_CATEGORY_IDS = ProductCategoryRepository.CORE_CATEGORY_IDS;

@@ -175,6 +175,17 @@ export class AccountRepository extends BaseRepository {
       params.push(data.balance);
     }
     if (data.isActive !== undefined) {
+      if (data.isActive === false && existing.isActive) {
+        const activeMcRows = await this.executor.query<any>(
+          `SELECT COUNT(*) AS total_active FROM master_codes WHERE is_active = 1 AND (debit_account_id = ? OR debit_account_id = ? OR credit_account_id = ? OR credit_account_id = ?);`,
+          [id, existing.code, id, existing.code]
+        );
+        if (Number(activeMcRows[0]?.total_active || 0) > 0) {
+          throw new Error(
+            `Akun [${existing.code}] ${existing.name} tidak dapat dinonaktifkan karena sedang digunakan oleh pemetaan Master Kode aktif. Nonaktifkan atau ubah Master Kode terkait terlebih dahulu.`
+          );
+        }
+      }
       updates.push('is_active = ?');
       params.push(data.isActive ? 1 : 0);
     }
@@ -203,6 +214,22 @@ export class AccountRepository extends BaseRepository {
   }
 
   /**
+   * Daftar kode akun standar/inti SPBU yang tidak boleh dihapus dari sistem
+   */
+  public static readonly CORE_ACCOUNT_CODES = new Set([
+    '1-1001', '1-1002', '1-1101', '1-1201', '1-1202', '1-1203', '1-1204',
+    '1-1501', '1-1502', '2-1001', '2-1002', '3-1001', '3-2001', '4-1001',
+    '4-1002', '4-1003', '5-1001', '6-1001', '6-1002', '6-1003'
+  ]);
+
+  /**
+   * Memeriksa apakah akun merupakan akun baku sistem SPBU
+   */
+  public isCore(idOrCode: string): boolean {
+    return AccountRepository.CORE_ACCOUNT_CODES.has(idOrCode);
+  }
+
+  /**
    * Memeriksa apakah akun COA sudah memiliki entri jurnal atau digunakan pada pemetaan master kode
    */
   public async isReferenced(id: string): Promise<boolean> {
@@ -224,7 +251,7 @@ export class AccountRepository extends BaseRepository {
   }
 
   /**
-   * Menghapus akun secara aman (menghormati constraint relasional)
+   * Menghapus akun secara aman (menghormati data inti dan constraint relasional)
    */
   public async delete(id: string): Promise<boolean> {
     const existing = await this.findById(id);
@@ -232,6 +259,21 @@ export class AccountRepository extends BaseRepository {
       return false;
     }
 
+    // 1. Lindungi akun inti bawaan sistem SPBU
+    if (this.isCore(existing.code) || this.isCore(existing.id)) {
+      throw new Error(
+        `Akun [${existing.code}] ${existing.name} merupakan akun baku sistem SPBU dan tidak dapat dihapus. Silakan gunakan opsi Nonaktifkan jika tidak digunakan.`
+      );
+    }
+
+    // 2. Lindungi akun dengan saldo aktif
+    if (existing.balance !== 0) {
+      throw new Error(
+        `Akun [${existing.code}] ${existing.name} tidak dapat dihapus karena masih memiliki saldo aktif sebesar Rp ${existing.balance.toLocaleString('id-ID')}. Saldo akun harus 0 sebelum dihapus.`
+      );
+    }
+
+    // 3. Lindungi akun yang direferensikan jurnal atau master kode
     const isRef = await this.isReferenced(id);
     if (isRef) {
       throw new Error(
@@ -252,3 +294,4 @@ export class AccountRepository extends BaseRepository {
 }
 
 export const accountRepository = new AccountRepository();
+export const CORE_ACCOUNT_CODES = AccountRepository.CORE_ACCOUNT_CODES;

@@ -60,6 +60,7 @@ export interface AppContextType {
   authPin: string;
   reports: ReportsData;
   isDbLoaded?: boolean;
+  dbError?: string | null;
 
   // Master Pegawai CRUD
   addPegawai: (pegawai: Omit<Pegawai, 'id'> & { id?: string }) => Promise<Pegawai> | Pegawai;
@@ -115,6 +116,17 @@ export interface AppContextType {
   // Tera & Transaction Actions
   addTera: (tera: Tera) => Promise<void> | void;
   addTransaction: (tx: Transaction, tera?: Tera) => Promise<{ success: boolean; error?: string; journal?: Journal }>;
+  correctTransaction: (params: {
+    originalTransactionId: string;
+    reason: string;
+    replacementData: Transaction;
+    user?: string;
+  }) => Promise<{
+    success: boolean;
+    error?: string;
+    originalTransaction?: Transaction;
+    replacementTransaction?: Transaction;
+  }>;
 
   // Business Partner
   addBusinessPartner: (bp: Omit<BusinessPartner, 'id'> & { id?: string }) => Promise<BusinessPartner> | BusinessPartner;
@@ -132,9 +144,55 @@ export interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const emptyInitialReports: ReportsData = {
+  neracaKonsolidasi: {
+    title: 'LAPORAN NERACA HARIAN KONSOLIDASI',
+    periodDate: '',
+    entityName: '',
+    location: '',
+    signerDate: '',
+    rows: []
+  },
+  labaRugi: {
+    period: '',
+    revenues: [],
+    cogs: [],
+    operationalExpenses: []
+  },
+  labaRugiKonsolidasi: {
+    title: 'LAPORAN LABA RUGI KONSOLIDASI',
+    periodDate: '',
+    entityName: '',
+    location: '',
+    signerDate: '',
+    rows: []
+  },
+  arusKas: {
+    period: '',
+    operasional: [],
+    investasi: [],
+    pendanaan: [],
+    saldoAwal: 0
+  },
+  stokPenjualan: [],
+  salesAndShiftRecap: {
+    period: '',
+    totalGrossSales: 0,
+    cashSales: 0,
+    creditSales: 0,
+    transferSales: 0,
+    byPaymentMethod: [],
+    byProduct: [],
+    shifts: []
+  }
+};
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [productCategories, setProductCategories] = useState<ProductCategory[]>(initialMock.mockProductCategories);
-  const [accounts, setAccounts] = useState<Account[]>(initialMock.mockAccounts);
+  // Inisialisasi akun dengan saldo 0 agar tidak ada kedipan angka saldo mock sebelum SQLite dimuat
+  const [accounts, setAccounts] = useState<Account[]>(() =>
+    initialMock.mockAccounts.map((a) => ({ ...a, balance: 0 }))
+  );
   const [products, setProducts] = useState<Product[]>(initialMock.mockProducts);
   const [tanks, setTanks] = useState<Tank[]>(initialMock.mockTanks);
   const [nozzles, setNozzles] = useState<Nozzle[]>(initialMock.mockNozzles);
@@ -159,8 +217,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [stationInfo]);
 
   const [authPin, setAuthPin] = useState<string>(initialMock.initialAuthPin);
-  const [reports, setReports] = useState<ReportsData>(initialMock.mockReports);
+  const [reports, setReports] = useState<ReportsData>(emptyInitialReports);
   const [isDbLoaded, setIsDbLoaded] = useState<boolean>(false);
+  const [dbError, setDbError] = useState<string | null>(null);
 
   // Inisialisasi SQLite database dan load master data secara persisten
   useEffect(() => {
@@ -194,8 +253,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
           setIsDbLoaded(true);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn('[AppContext] Inisialisasi database SQLite atau master data warning:', err);
+        if (isMounted) {
+          setDbError(err?.message || 'Gagal memuat database SQLite');
+        }
       }
     }
 
@@ -685,6 +747,69 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, [pendingTera, teraList]);
 
+  const correctTransaction = useCallback(async (params: {
+    originalTransactionId: string;
+    reason: string;
+    replacementData: Transaction;
+    user?: string;
+  }): Promise<{
+    success: boolean;
+    error?: string;
+    originalTransaction?: Transaction;
+    replacementTransaction?: Transaction;
+  }> => {
+    const res = await accountingService.correctTransaction(params);
+    if (!res.success) {
+      return {
+        success: false,
+        error: res.error
+      };
+    }
+
+    if (res.originalTransaction) {
+      setTransactions((prev) =>
+        prev.map((t) => (t.id === res.originalTransaction!.id ? res.originalTransaction! : t))
+      );
+    }
+    if (res.replacementTransaction) {
+      setTransactions((prev) => [
+        res.replacementTransaction!,
+        ...prev.filter((t) => t.id !== res.replacementTransaction!.id && t.id !== res.originalTransaction?.id),
+        ...(res.originalTransaction ? [res.originalTransaction] : [])
+      ]);
+    }
+    if (res.reversalJournal && res.replacementJournal) {
+      setJournals((prev) => [
+        res.replacementJournal!,
+        res.reversalJournal!,
+        ...prev.filter((j) => j.id !== res.replacementJournal!.id && j.id !== res.reversalJournal!.id)
+      ]);
+    }
+    if (res.updatedAccounts) {
+      setAccounts(res.updatedAccounts);
+    }
+    if (res.updatedReceivables) {
+      setReceivables(res.updatedReceivables);
+    }
+    if (res.updatedPayables) {
+      setPayables(res.updatedPayables);
+    }
+    if (res.updatedShifts) {
+      setShifts(res.updatedShifts);
+    }
+
+    // Refresh reports dari SQLite
+    reportRepository.getAllReports(undefined, stationInfoRef.current).then((rep) => {
+      setReports(rep);
+    }).catch(console.error);
+
+    return {
+      success: true,
+      originalTransaction: res.originalTransaction,
+      replacementTransaction: res.replacementTransaction
+    };
+  }, []);
+
   const refreshReports = useCallback(async (period?: string): Promise<ReportsData> => {
     try {
       const data = await reportRepository.getAllReports(period, stationInfoRef.current);
@@ -889,6 +1014,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     authPin,
     reports,
     isDbLoaded,
+    dbError,
     addProductCategory,
     updateProductCategory,
     toggleProductCategoryStatus,
@@ -917,6 +1043,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     tutupShift,
     addTera,
     addTransaction,
+    correctTransaction,
     addBusinessPartner,
     updateBusinessPartner,
     deleteBusinessPartner,
@@ -952,6 +1079,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     authPin,
     reports,
     isDbLoaded,
+    dbError,
     addProductCategory,
     updateProductCategory,
     toggleProductCategoryStatus,
@@ -980,6 +1108,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     tutupShift,
     addTera,
     addTransaction,
+    correctTransaction,
     addBusinessPartner,
     updateBusinessPartner,
     deleteBusinessPartner,

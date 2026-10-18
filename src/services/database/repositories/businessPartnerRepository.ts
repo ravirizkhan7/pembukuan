@@ -120,7 +120,7 @@ export class BusinessPartnerRepository extends BaseRepository {
          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         [
           data.id,
-          data.code,
+          data.code ?? data.id,
           data.name,
           data.type,
           data.phone ?? null,
@@ -224,12 +224,41 @@ export class BusinessPartnerRepository extends BaseRepository {
   }
 
   /**
-   * Menghapus mitra bisnis secara aman (menghormati constraint relasional)
+   * Mitra bisnis inti sistem SPBU (Vendor utama Pertamina) yang tidak boleh dihapus
+   */
+  public static readonly CORE_PARTNER_IDS = new Set([
+    'VEN-001'
+  ]);
+
+  /**
+   * Memeriksa apakah mitra bisnis merupakan mitra inti sistem SPBU
+   */
+  public isCore(idOrCode: string): boolean {
+    return BusinessPartnerRepository.CORE_PARTNER_IDS.has(idOrCode);
+  }
+
+  /**
+   * Menghapus mitra bisnis secara aman (menghormati data inti dan constraint relasional)
    */
   public async delete(id: string): Promise<boolean> {
     const existing = await this.findById(id);
     if (!existing) {
       return false;
+    }
+
+    // 1. Lindungi mitra bisnis inti sistem SPBU
+    if (this.isCore(existing.id) || this.isCore(existing.code)) {
+      throw new Error(
+        `Mitra bisnis [${existing.name}] (${existing.code}) merupakan mitra vendor utama sistem SPBU dan tidak dapat dihapus. Silakan gunakan opsi Nonaktifkan.`
+      );
+    }
+
+    // 2. Lindungi mitra bisnis yang memiliki riwayat transaksi, piutang, atau hutang
+    const isRef = await this.isReferenced(id);
+    if (isRef) {
+      throw new Error(
+        `Mitra bisnis [${existing.name}] (${existing.code}) tidak dapat dihapus karena memiliki riwayat transaksi, piutang, atau hutang operasional. Silakan gunakan opsi Nonaktifkan.`
+      );
     }
 
     try {
@@ -245,3 +274,4 @@ export class BusinessPartnerRepository extends BaseRepository {
 }
 
 export const businessPartnerRepository = new BusinessPartnerRepository();
+export const CORE_PARTNER_IDS = BusinessPartnerRepository.CORE_PARTNER_IDS;

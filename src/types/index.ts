@@ -217,6 +217,8 @@ export interface Journal {
   description: string;
   entries: JournalEntry[];
   isBalanced?: boolean;
+  isReversal?: boolean;
+  reversesJournalId?: string;
 }
 
 export interface Transaction {
@@ -247,6 +249,20 @@ export interface Transaction {
   transactionId?: string;
   relatedReceivableId?: string;
   relatedPayableId?: string;
+  isCorrected?: boolean;
+  correctionId?: string;
+  cancelledAt?: string;
+  cancelReason?: string;
+}
+
+export interface TransactionCorrection {
+  id: string;
+  originalTransactionId: string;
+  reversalJournalId: string;
+  replacementTransactionId?: string;
+  reason: string;
+  correctedBy?: string;
+  createdAt: string;
 }
 
 export interface FinancialItem {

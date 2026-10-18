@@ -209,7 +209,7 @@ export function PengaturanPage({
       }
       AppMetadataService.runDiagnostics()
         .then((resDiag) => setDbDiag(resDiag))
-        .catch(() => {});
+        .catch(() => { });
 
       setRestoreModalOpen(false);
       setPendingBackupFile(null);
@@ -336,7 +336,7 @@ export function PengaturanPage({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div className="form-group">
                   <label className="form-label" htmlFor="spbu-manager">
-                    Penanggung Jawab
+                    Pimpinan / Direktur
                   </label>
                   <input
                     id="spbu-manager"
@@ -344,7 +344,7 @@ export function PengaturanPage({
                     className="form-control"
                     value={manager}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setManager(e.target.value)}
-                    placeholder="Nama Manajer / Pengawas"
+                    placeholder="Nama Pimpinan / Direktur"
                   />
                 </div>
 

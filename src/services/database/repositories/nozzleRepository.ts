@@ -238,7 +238,22 @@ export class NozzleRepository extends BaseRepository {
   }
 
   /**
-   * Menghapus nozzle secara aman (menghormati constraint relasional)
+   * Nozzle dispenser baku sistem SPBU yang tidak boleh dihapus
+   */
+  public static readonly CORE_NOZZLE_IDS = new Set([
+    'NZL-01', 'NZL-02', 'NZL-03', 'NZL-04', 'NZL-05', 'NZL-06', 'NZL-07', 'NZL-08',
+    'NZ-01', 'NZ-02', 'NZ-03', 'NZ-04', 'NZ-05', 'NZ-06', 'NZ-07', 'NZ-08'
+  ]);
+
+  /**
+   * Memeriksa apakah nozzle merupakan konfigurasi dispenser baku SPBU
+   */
+  public isCore(idOrCode: string): boolean {
+    return NozzleRepository.CORE_NOZZLE_IDS.has(idOrCode);
+  }
+
+  /**
+   * Menghapus nozzle secara aman (menghormati data inti dan constraint relasional)
    */
   public async delete(id: string): Promise<boolean> {
     const existing = await this.findById(id);
@@ -246,6 +261,14 @@ export class NozzleRepository extends BaseRepository {
       return false;
     }
 
+    // 1. Lindungi nozzle dispenser baku sistem SPBU
+    if (this.isCore(existing.id) || this.isCore(existing.code)) {
+      throw new Error(
+        `Nozzle dispenser [${existing.code}] merupakan konfigurasi dispenser baku SPBU dan tidak dapat dihapus. Silakan gunakan opsi Nonaktifkan.`
+      );
+    }
+
+    // 2. Lindungi nozzle yang sudah memiliki riwayat kalibrasi tera atau transaksi
     const isRef = await this.isReferenced(id);
     if (isRef) {
       throw new Error(
@@ -266,3 +289,4 @@ export class NozzleRepository extends BaseRepository {
 }
 
 export const nozzleRepository = new NozzleRepository();
+export const CORE_NOZZLE_IDS = NozzleRepository.CORE_NOZZLE_IDS;

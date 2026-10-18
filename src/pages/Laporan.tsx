@@ -40,7 +40,7 @@ export function LaporanPage({
   activeSubTab = 'neraca',
   showToast
 }: LaporanPageProps) {
-  const { reports, stationInfo, refreshReports } = useAppContext();
+  const { reports, stationInfo, refreshReports, isDbLoaded, dbError } = useAppContext();
   const [activeTab, setActiveTab] = useState<string>(activeSubTab || 'neraca');
 
   // Filter Periode State (Tepat 6 Pilihan Standar)
@@ -91,8 +91,9 @@ export function LaporanPage({
     }
   }, [refreshReports, showToast]);
 
-  // Initial load saat komponen pertama kali terpasang
+  // Initial load saat komponen pertama kali terpasang atau saat database selesai dimuat
   useEffect(() => {
+    if (isDbLoaded === false) return;
     if (selectedPeriodOption === 'Custom' || selectedPeriodOption === 'Rentang Tanggal Kustom') {
       return;
     }
@@ -100,7 +101,7 @@ export function LaporanPage({
     if (lastLoadedPeriodRef.current !== periodToLoad) {
       loadReports(periodToLoad, false);
     }
-  }, [loadReports, getEffectivePeriod, selectedPeriodOption, customStartDate, customEndDate]);
+  }, [loadReports, getEffectivePeriod, selectedPeriodOption, customStartDate, customEndDate, isDbLoaded]);
 
   const handleSelectPeriodOption = async (option: string) => {
     setSelectedPeriodOption(option);
@@ -302,7 +303,7 @@ export function LaporanPage({
   return (
     <div>
       {/* Banner Error Terkelola Jika Query Database Mengalami Masalah */}
-      {reportError && (
+      {(reportError || dbError) && (
         <div style={{
           marginBottom: '16px',
           padding: '10px 14px',
@@ -315,10 +316,26 @@ export function LaporanPage({
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <span>⚠️ {reportError}</span>
+          <span>⚠️ {reportError || dbError}</span>
           <Button variant="danger" size="sm" onClick={handleRefresh} disabled={isLoading}>
             Coba Lagi
           </Button>
+        </div>
+      )}
+
+      {isDbLoaded === false && (
+        <div style={{
+          marginBottom: '16px',
+          padding: '16px',
+          textAlign: 'center',
+          backgroundColor: 'var(--blue-50)',
+          border: '1px solid var(--blue-200)',
+          borderRadius: 'var(--border-radius-sm)',
+          color: 'var(--color-primary-dark)',
+          fontSize: '13.5px',
+          fontWeight: 500
+        }}>
+          Memuat data laporan keuangan langsung dari database SQLite...
         </div>
       )}
 

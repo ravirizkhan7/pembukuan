@@ -161,6 +161,17 @@ export class PegawaiRepository extends BaseRepository {
       throw new Error(`Pegawai dengan ID ${id} tidak ditemukan.`);
     }
     const nextStatus = existing.status === 'Aktif' ? 'Nonaktif' : 'Aktif';
+    if (nextStatus === 'Nonaktif') {
+      const activeShiftRows = await this.executor.query<any>(
+        `SELECT COUNT(*) AS total_active FROM shifts WHERE status = 'Aktif' AND (operator = ? OR operator = ?);`,
+        [existing.name, existing.id]
+      );
+      if (Number(activeShiftRows[0]?.total_active || 0) > 0) {
+        throw new Error(
+          `Pegawai [${existing.name}] tidak dapat dinonaktifkan karena sedang bertugas pada shift aktif.`
+        );
+      }
+    }
     return this.update(id, { status: nextStatus });
   }
 

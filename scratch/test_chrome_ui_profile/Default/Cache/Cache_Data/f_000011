@@ -1,0 +1,2547 @@
+export const mockStationInfo = {
+	id: "SPBU-34-12301",
+	name: "SPBU 34.12301 Pertamina",
+	address: "Jl. Raya Ahmad Yani No. 88, Sidoarjo, Jawa Timur",
+	phone: "(031) 8921-3400",
+	manager: "H. Bambang Sudiro",
+	email: "admin@spbucontoh.co.id",
+	status: "Online (Simulasi Local Tablet)",
+	lastBackup: "2026-09-24 18:30 WIB",
+	version: "v0.1.0-alpha (AKRUAL — Prototype Berbasis Kode)"
+};
+// PIN AKSES DEFAULT APLIKASI (SIMULASI AUTHENTICATION TANPA IDENTITY USER)
+export const initialAuthPin = "1234";
+export const mockProductCategories = [
+	{
+		id: "PCAT-001",
+		name: "BBM Subsidi",
+		status: "Aktif"
+	},
+	{
+		id: "PCAT-002",
+		name: "BBM Non-Subsidi",
+		status: "Aktif"
+	},
+	{
+		id: "PCAT-003",
+		name: "Pelumas & Oli",
+		status: "Aktif"
+	},
+	{
+		id: "PCAT-004",
+		name: "Non-BBM",
+		status: "Aktif"
+	}
+];
+export const mockProducts = [
+	{
+		id: "PRD-01",
+		code: "PLT",
+		name: "Pertalite (RON 90)",
+		categoryId: "PCAT-001",
+		sellPrice: 1e4,
+		buyPrice: 9650,
+		unit: "Liter",
+		color: "#10B981",
+		status: "Aktif",
+		tankId: "TNK-01"
+	},
+	{
+		id: "PRD-02",
+		code: "PTX",
+		name: "Pertamax (RON 92)",
+		categoryId: "PCAT-002",
+		sellPrice: 12950,
+		buyPrice: 12400,
+		unit: "Liter",
+		color: "#2563EB",
+		status: "Aktif",
+		tankId: "TNK-02"
+	},
+	{
+		id: "PRD-03",
+		code: "TUR",
+		name: "Pertamax Turbo (RON 98)",
+		categoryId: "PCAT-002",
+		sellPrice: 14400,
+		buyPrice: 13800,
+		unit: "Liter",
+		color: "#DC2626",
+		status: "Aktif",
+		tankId: "TNK-03"
+	},
+	{
+		id: "PRD-04",
+		code: "BSL",
+		name: "Bio Solar",
+		categoryId: "PCAT-001",
+		sellPrice: 6800,
+		buyPrice: 6550,
+		unit: "Liter",
+		color: "#D97706",
+		status: "Aktif",
+		tankId: "TNK-04"
+	},
+	{
+		id: "PRD-05",
+		code: "DXL",
+		name: "Dexlite",
+		categoryId: "PCAT-002",
+		sellPrice: 13700,
+		buyPrice: 13150,
+		unit: "Liter",
+		color: "#059669",
+		status: "Aktif",
+		tankId: "TNK-05"
+	},
+	(
+	// Produk Oli & Pelumas (Non-Tanki, Unit: Botol)
+	{
+		id: "PRD-06",
+		code: "OLI-001",
+		name: "Pertamina Enduro 4T 10W-40",
+		categoryId: "PCAT-003",
+		sellPrice: 48e3,
+		buyPrice: 42e3,
+		unit: "Botol",
+		color: "#EF4444",
+		status: "Aktif"
+	}),
+	{
+		id: "PRD-07",
+		code: "OLI-002",
+		name: "Pertamina Enduro Matic 10W-30",
+		categoryId: "PCAT-003",
+		sellPrice: 5e4,
+		buyPrice: 44e3,
+		unit: "Botol",
+		color: "#3B82F6",
+		status: "Aktif"
+	},
+	{
+		id: "PRD-08",
+		code: "OLI-003",
+		name: "Federal Matic 30",
+		categoryId: "PCAT-003",
+		sellPrice: 46e3,
+		buyPrice: 4e4,
+		unit: "Botol",
+		color: "#F59E0B",
+		status: "Aktif"
+	},
+	{
+		id: "PRD-09",
+		code: "OLI-004",
+		name: "Castrol Activ 4T",
+		categoryId: "PCAT-003",
+		sellPrice: 55e3,
+		buyPrice: 48e3,
+		unit: "Botol",
+		color: "#10B981",
+		status: "Aktif"
+	},
+	{
+		id: "PRD-10",
+		code: "OLI-005",
+		name: "Shell Advance AX5",
+		categoryId: "PCAT-003",
+		sellPrice: 52e3,
+		buyPrice: 45500,
+		unit: "Botol",
+		color: "#E11D48",
+		status: "Aktif"
+	}
+];
+export const mockTanks = [
+	{
+		id: "TNK-01",
+		name: "Tanki Pendam 1",
+		productId: "PRD-01",
+		productName: "Pertalite",
+		capacity: 3e4,
+		currentStock: 21450,
+		unit: "Liter",
+		lastSounding: "2026-09-24 05:45",
+		status: "Aman"
+	},
+	{
+		id: "TNK-02",
+		name: "Tanki Pendam 2",
+		productId: "PRD-02",
+		productName: "Pertamax",
+		capacity: 2e4,
+		currentStock: 14200,
+		unit: "Liter",
+		lastSounding: "2026-09-24 05:50",
+		status: "Aman"
+	},
+	{
+		id: "TNK-03",
+		name: "Tanki Pendam 3",
+		productId: "PRD-03",
+		productName: "Pertamax Turbo",
+		capacity: 15e3,
+		currentStock: 4800,
+		unit: "Liter",
+		lastSounding: "2026-09-24 05:52",
+		status: "Perlu Reorder"
+	},
+	{
+		id: "TNK-04",
+		name: "Tanki Pendam 4",
+		productId: "PRD-04",
+		productName: "Bio Solar",
+		capacity: 3e4,
+		currentStock: 25800,
+		unit: "Liter",
+		lastSounding: "2026-09-24 05:55",
+		status: "Aman"
+	},
+	{
+		id: "TNK-05",
+		name: "Tanki Pendam 5",
+		productId: "PRD-05",
+		productName: "Dexlite",
+		capacity: 15e3,
+		currentStock: 11200,
+		unit: "Liter",
+		lastSounding: "2026-09-24 05:58",
+		status: "Aman"
+	}
+];
+export const mockNozzles = [
+	{
+		id: "NZL-01",
+		code: "NZ-01",
+		island: "Pulau 1 (Mobil)",
+		tankId: "TNK-01",
+		productId: "PRD-01",
+		productName: "Pertalite",
+		currentMeter: 485230.5,
+		status: "Aktif"
+	},
+	{
+		id: "NZL-02",
+		code: "NZ-02",
+		island: "Pulau 1 (Mobil)",
+		tankId: "TNK-02",
+		productId: "PRD-02",
+		productName: "Pertamax",
+		currentMeter: 312110.2,
+		status: "Aktif"
+	},
+	{
+		id: "NZL-03",
+		code: "NZ-03",
+		island: "Pulau 2 (Mobil)",
+		tankId: "TNK-04",
+		productId: "PRD-04",
+		productName: "Bio Solar",
+		currentMeter: 592880,
+		status: "Aktif"
+	},
+	{
+		id: "NZL-04",
+		code: "NZ-04",
+		island: "Pulau 2 (Mobil)",
+		tankId: "TNK-05",
+		productId: "PRD-05",
+		productName: "Dexlite",
+		currentMeter: 184520.8,
+		status: "Aktif"
+	},
+	{
+		id: "NZL-05",
+		code: "NZ-05",
+		island: "Pulau 3 (Motor)",
+		tankId: "TNK-01",
+		productId: "PRD-01",
+		productName: "Pertalite",
+		currentMeter: 820140.3,
+		status: "Aktif"
+	},
+	{
+		id: "NZL-06",
+		code: "NZ-06",
+		island: "Pulau 3 (Motor)",
+		tankId: "TNK-02",
+		productId: "PRD-02",
+		productName: "Pertamax",
+		currentMeter: 440215.7,
+		status: "Aktif"
+	},
+	{
+		id: "NZL-07",
+		code: "NZ-07",
+		island: "Pulau 4 (Motor)",
+		tankId: "TNK-01",
+		productId: "PRD-01",
+		productName: "Pertalite",
+		currentMeter: 765910.1,
+		status: "Maintenance"
+	},
+	{
+		id: "NZL-08",
+		code: "NZ-08",
+		island: "Pulau 4 (Motor)",
+		tankId: "TNK-03",
+		productId: "PRD-03",
+		productName: "Pertamax Turbo",
+		currentMeter: 125300.4,
+		status: "Aktif"
+	}
+];
+export const mockShifts = [{
+	id: "SFT-01",
+	name: "Shift 1",
+	startTime: "07:00",
+	endTime: "15:00",
+	operator: "Ahmad Fauzi",
+	status: "Aktif",
+	totalSales: 2845e4,
+	cashHandover: 0,
+	date: "2026-09-24",
+	initialCash: 1e6,
+	discrepancy: 0
+}, {
+	id: "SFT-02",
+	name: "Shift 2",
+	startTime: "15:00",
+	endTime: "23:00",
+	operator: "Siti Rahma",
+	status: "Menunggu",
+	totalSales: 0,
+	cashHandover: 0,
+	date: "2026-09-24",
+	initialCash: 0,
+	discrepancy: 0
+}];
+export const mockPegawai = [
+	{
+		id: "OPR-001",
+		name: "Ahmad Fauzi",
+		role: "Operator Kasir",
+		status: "Aktif",
+		shiftId: "SFT-01"
+	},
+	{
+		id: "OPR-002",
+		name: "Siti Rahma",
+		role: "Operator Kasir",
+		status: "Aktif",
+		shiftId: "SFT-02"
+	},
+	{
+		id: "OPR-003",
+		name: "Doni Pratama",
+		role: "Operator Kasir",
+		status: "Aktif",
+		shiftId: "SFT-01"
+	},
+	{
+		id: "OPR-004",
+		name: "Rima",
+		role: "Operator Kasir",
+		status: "Aktif",
+		shiftId: "SFT-01"
+	}
+];
+export const mockAttendances = [
+	{
+		id: "ATT-20260924-001",
+		employeeId: "OPR-001",
+		employeeName: "Ahmad Fauzi",
+		shiftId: "SFT-01",
+		shiftName: "Shift 1",
+		date: "2026-09-24",
+		status: "Hadir",
+		notes: "Tepat waktu",
+		checkInTime: "06:55"
+	},
+	{
+		id: "ATT-20260924-002",
+		employeeId: "OPR-004",
+		employeeName: "Rima",
+		shiftId: "SFT-01",
+		shiftName: "Shift 1",
+		date: "2026-09-24",
+		status: "Hadir",
+		notes: "Tepat waktu",
+		checkInTime: "06:58"
+	},
+	{
+		id: "ATT-20260924-003",
+		employeeId: "OPR-002",
+		employeeName: "Siti Rahma",
+		shiftId: "SFT-02",
+		shiftName: "Shift 2",
+		date: "2026-09-24",
+		status: "Hadir",
+		notes: "Shift siang standby",
+		checkInTime: "14:50"
+	},
+	{
+		id: "ATT-20260924-004",
+		employeeId: "OPR-003",
+		employeeName: "Doni Pratama",
+		shiftId: "SFT-01",
+		shiftName: "Shift 1",
+		date: "2026-09-24",
+		status: "Izin",
+		notes: "Izin urusan keluarga",
+		checkInTime: "-"
+	}
+];
+/**
+* Requirement Tera:
+* Volume = Tera Akhir - Tera Awal
+* Nilai Penjualan = Volume * Harga Jual
+*/
+export const mockTera = [
+	{
+		id: "TRA-001",
+		date: "2026-09-24",
+		shiftId: "SFT-01",
+		shift: "Shift 1",
+		nozzleId: "NZL-01",
+		nozzleCode: "NZ-01",
+		productId: "PRD-01",
+		productName: "Pertalite",
+		price: 1e4,
+		teraAwal: 483500,
+		teraAkhir: 485230.5,
+		volume: 1730.5,
+		selisih: 0,
+		salesAmount: 17305e3,
+		officer: "Ahmad Fauzi",
+		status: "Valid",
+		transactionId: "TX-20260924-001"
+	},
+	{
+		id: "TRA-002",
+		date: "2026-09-24",
+		shiftId: "SFT-01",
+		shift: "Shift 1",
+		nozzleId: "NZL-02",
+		nozzleCode: "NZ-02",
+		productId: "PRD-02",
+		productName: "Pertamax",
+		price: 12950,
+		teraAwal: 311450,
+		teraAkhir: 312110.2,
+		volume: 660.2,
+		selisih: 0,
+		salesAmount: 8549590,
+		officer: "Ahmad Fauzi",
+		status: "Valid",
+		transactionId: "TX-20260924-002"
+	},
+	{
+		id: "TRA-003",
+		date: "2026-09-24",
+		shiftId: "SFT-01",
+		shift: "Shift 1",
+		nozzleId: "NZL-03",
+		nozzleCode: "NZ-03",
+		productId: "PRD-04",
+		productName: "Bio Solar",
+		price: 6800,
+		teraAwal: 591900,
+		teraAkhir: 592880,
+		volume: 980,
+		selisih: 0,
+		salesAmount: 6664e3,
+		officer: "Ahmad Fauzi",
+		status: "Valid"
+	}
+];
+/**
+* Master Code Berbasis Prototype:
+* Menggunakan kode numerik ringkas (303, 304, 305, 306, 307, 308, 309).
+* Master Code DINAMIS, menentukan template input dan mapping akuntansi.
+*/
+export const mockMasterCodes = [
+	{
+		id: "MK-303",
+		code: "303",
+		name: "Penjualan Pertalite Tunai",
+		category: "Penjualan",
+		type: "Penjualan BBM",
+		requiresTera: true,
+		productId: "PRD-01",
+		product: "Pertalite",
+		unitPrice: 1e4,
+		debitAccountId: "1-1001",
+		debitAccountName: "Kas Utama",
+		creditAccountId: "4-1001",
+		creditAccountName: "Pendapatan Penjualan Pertalite",
+		description: "Penjualan Pertalite tunai dengan pengukuran Tera Nozzle",
+		paymentMethod: "Tunai",
+		isActive: true
+	},
+	{
+		id: "MK-304",
+		code: "304",
+		name: "Penjualan Pertamax Tunai",
+		category: "Penjualan",
+		type: "Penjualan BBM",
+		requiresTera: true,
+		productId: "PRD-02",
+		product: "Pertamax",
+		unitPrice: 12950,
+		debitAccountId: "1-1001",
+		debitAccountName: "Kas Utama",
+		creditAccountId: "4-1002",
+		creditAccountName: "Pendapatan Penjualan Pertamax",
+		description: "Penjualan Pertamax tunai dengan pengukuran Tera Nozzle",
+		paymentMethod: "Tunai",
+		isActive: true
+	},
+	{
+		id: "MK-309",
+		code: "309",
+		name: "Penjualan Bio Solar Tunai",
+		category: "Penjualan",
+		type: "Penjualan BBM",
+		requiresTera: true,
+		productId: "PRD-04",
+		product: "Bio Solar",
+		unitPrice: 6800,
+		debitAccountId: "1-1001",
+		debitAccountName: "Kas Utama",
+		creditAccountId: "4-1003",
+		creditAccountName: "Pendapatan Penjualan Bio Solar",
+		description: "Penjualan Bio Solar tunai dengan pengukuran Tera Nozzle",
+		paymentMethod: "Tunai",
+		isActive: true
+	},
+	{
+		id: "MK-310",
+		code: "310",
+		name: "Penjualan Pertalite Kredit (Piutang)",
+		category: "Penjualan",
+		type: "Penjualan BBM",
+		requiresTera: true,
+		productId: "PRD-01",
+		product: "Pertalite",
+		unitPrice: 1e4,
+		debitAccountId: "1-1101",
+		debitAccountName: "Piutang Usaha",
+		creditAccountId: "4-1001",
+		creditAccountName: "Pendapatan Penjualan Pertalite",
+		description: "Penjualan Pertalite non-tunai kupon/tagihan instansi langganan",
+		paymentMethod: "Piutang",
+		isActive: true
+	},
+	{
+		id: "MK-311",
+		code: "311",
+		name: "Penjualan Pertamax Kredit (Piutang)",
+		category: "Penjualan",
+		type: "Penjualan BBM",
+		requiresTera: true,
+		productId: "PRD-02",
+		product: "Pertamax",
+		unitPrice: 12950,
+		debitAccountId: "1-1101",
+		debitAccountName: "Piutang Usaha",
+		creditAccountId: "4-1002",
+		creditAccountName: "Pendapatan Penjualan Pertamax",
+		description: "Penjualan Pertamax non-tunai kupon/tagihan instansi langganan",
+		paymentMethod: "Piutang",
+		isActive: true
+	},
+	{
+		id: "MK-312",
+		code: "312",
+		name: "Pelunasan Piutang Pelanggan",
+		category: "Pelunasan",
+		type: "Penerimaan Kas",
+		requiresTera: false,
+		debitAccountId: "1-1001",
+		debitAccountName: "Kas Utama",
+		creditAccountId: "1-1101",
+		creditAccountName: "Piutang Usaha",
+		description: "Penerimaan setoran kas dari penagihan piutang kupon langganan",
+		paymentMethod: "Tunai",
+		isActive: true
+	},
+	{
+		id: "MK-305",
+		code: "305",
+		name: "Biaya Listrik PLN & Genset",
+		category: "Biaya Operasional",
+		type: "Beban Operasional",
+		requiresTera: false,
+		debitAccountId: "6-1002",
+		debitAccountName: "Biaya Listrik & Air",
+		creditAccountId: "1-1001",
+		creditAccountName: "Kas Utama",
+		description: "Pembayaran tagihan listrik PLN dan BBM genset SPBU",
+		paymentMethod: "Tunai",
+		isActive: true
+	},
+	{
+		id: "MK-306",
+		code: "306",
+		name: "Biaya Langganan WiFi & Telp",
+		category: "Biaya Operasional",
+		type: "Beban Operasional",
+		requiresTera: false,
+		debitAccountId: "6-1002",
+		debitAccountName: "Biaya Listrik & Air",
+		creditAccountId: "1-1001",
+		creditAccountName: "Kas Utama",
+		description: "Pembayaran internet fiber optik operasional kantor SPBU",
+		paymentMethod: "Tunai",
+		isActive: true
+	},
+	{
+		id: "MK-307",
+		code: "307",
+		name: "Gaji & Uang Makan Karyawan",
+		category: "Biaya Operasional",
+		type: "Beban Operasional",
+		requiresTera: false,
+		debitAccountId: "6-1001",
+		debitAccountName: "Biaya Gaji & Upah Karyawan",
+		creditAccountId: "1-1001",
+		creditAccountName: "Kas Utama",
+		description: "Upah kerja operator shift, teknisi, dan petugas kebersihan",
+		paymentMethod: "Tunai",
+		isActive: true
+	},
+	{
+		id: "MK-308",
+		code: "308",
+		name: "Penebusan DO Pertamina (Pertalite)",
+		category: "Pembelian",
+		type: "Pembelian BBM",
+		requiresTera: false,
+		productId: "PRD-01",
+		product: "Pertalite",
+		unitPrice: 9650,
+		debitAccountId: "1-1201",
+		debitAccountName: "Persediaan BBM Pertalite",
+		creditAccountId: "1-1002",
+		creditAccountName: "Bank Mandiri Operasional",
+		description: "Penebusan Delivery Order BBM ke Pertamina Patra Niaga (Bank)",
+		paymentMethod: "Transfer",
+		isActive: true
+	},
+	{
+		id: "MK-313",
+		code: "313",
+		name: "Pembelian Persediaan Tunai Kas",
+		category: "Pembelian",
+		type: "Pembelian BBM / Barang",
+		requiresTera: false,
+		productId: "PRD-01",
+		product: "Pertalite",
+		unitPrice: 9650,
+		debitAccountId: "1-1201",
+		debitAccountName: "Persediaan BBM Pertalite",
+		creditAccountId: "1-1001",
+		creditAccountName: "Kas Utama",
+		description: "Pembelian BBM atau perlengkapan operasional langsung tunai kas brankas",
+		paymentMethod: "Tunai",
+		isActive: true
+	},
+	{
+		id: "MK-314",
+		code: "314",
+		name: "Pembelian Persediaan Kredit (Hutang Usaha)",
+		category: "Pembelian",
+		type: "Pembelian BBM / Barang",
+		requiresTera: false,
+		productId: "PRD-01",
+		product: "Pertalite",
+		unitPrice: 9650,
+		debitAccountId: "1-1201",
+		debitAccountName: "Persediaan BBM Pertalite",
+		creditAccountId: "2-1001",
+		creditAccountName: "Hutang Usaha (Pertamina)",
+		description: "Penerimaan DO / barang dagang secara kredit atau konsinyasi",
+		paymentMethod: "Hutang",
+		isActive: true
+	},
+	{
+		id: "MK-315",
+		code: "315",
+		name: "Pembayaran Hutang Usaha",
+		category: "Pelunasan",
+		type: "Pengeluaran Kas",
+		requiresTera: false,
+		debitAccountId: "2-1001",
+		debitAccountName: "Hutang Usaha (Pertamina)",
+		creditAccountId: "1-1001",
+		creditAccountName: "Kas Utama",
+		description: "Pembayaran pelunasan invoice tagihan hutang supplier/vendor",
+		paymentMethod: "Tunai",
+		isActive: true
+	}
+];
+export const mockAccounts = [
+	{
+		id: "1-1001",
+		code: "1-1001",
+		name: "Kas Utama (Brankas)",
+		category: "Aset",
+		normalBalance: "Debit",
+		balance: 5482e4,
+		isActive: true
+	},
+	{
+		id: "1-1002",
+		code: "1-1002",
+		name: "Bank Mandiri Operasional",
+		category: "Aset",
+		normalBalance: "Debit",
+		balance: 1854e5,
+		isActive: true
+	},
+	{
+		id: "1-1101",
+		code: "1-1101",
+		name: "Piutang Usaha (Pelanggan / Kupon)",
+		category: "Aset",
+		normalBalance: "Debit",
+		balance: 15e6,
+		isActive: true
+	},
+	{
+		id: "1-1201",
+		code: "1-1201",
+		name: "Persediaan BBM Pertalite",
+		category: "Aset",
+		normalBalance: "Debit",
+		balance: 206992500,
+		isActive: true
+	},
+	{
+		id: "1-1202",
+		code: "1-1202",
+		name: "Persediaan BBM Pertamax",
+		category: "Aset",
+		normalBalance: "Debit",
+		balance: 17608e4,
+		isActive: true
+	},
+	{
+		id: "1-1203",
+		code: "1-1203",
+		name: "Persediaan BBM Bio Solar",
+		category: "Aset",
+		normalBalance: "Debit",
+		balance: 16899e4,
+		isActive: true
+	},
+	{
+		id: "1-1204",
+		code: "1-1204",
+		name: "Persediaan BBM Dexlite",
+		category: "Aset",
+		normalBalance: "Debit",
+		balance: 14728e4,
+		isActive: true
+	},
+	{
+		id: "1-1501",
+		code: "1-1501",
+		name: "Tanah & Bangunan SPBU",
+		category: "Aset",
+		normalBalance: "Debit",
+		balance: 185e7,
+		isActive: true
+	},
+	{
+		id: "1-1502",
+		code: "1-1502",
+		name: "Dispenser & Mesin Pompa",
+		category: "Aset",
+		normalBalance: "Debit",
+		balance: 42e7,
+		isActive: true
+	},
+	{
+		id: "2-1001",
+		code: "2-1001",
+		name: "Hutang Usaha (Pertamina)",
+		category: "Kewajiban",
+		normalBalance: "Kredit",
+		balance: 95e6,
+		isActive: true
+	},
+	{
+		id: "2-1002",
+		code: "2-1002",
+		name: "Hutang Beban Operasional",
+		category: "Kewajiban",
+		normalBalance: "Kredit",
+		balance: 65e5,
+		isActive: true
+	},
+	{
+		id: "3-1001",
+		code: "3-1001",
+		name: "Modal Pemilik SPBU",
+		category: "Ekuitas",
+		normalBalance: "Kredit",
+		balance: 285e7,
+		isActive: true
+	},
+	{
+		id: "3-2001",
+		code: "3-2001",
+		name: "Laba Ditahan",
+		category: "Ekuitas",
+		normalBalance: "Kredit",
+		balance: 185e6,
+		isActive: true
+	},
+	{
+		id: "4-1001",
+		code: "4-1001",
+		name: "Pendapatan Penjualan Pertalite",
+		category: "Pendapatan",
+		normalBalance: "Kredit",
+		balance: 742e5,
+		isActive: true
+	},
+	{
+		id: "4-1002",
+		code: "4-1002",
+		name: "Pendapatan Penjualan Pertamax",
+		category: "Pendapatan",
+		normalBalance: "Kredit",
+		balance: 4185e4,
+		isActive: true
+	},
+	{
+		id: "4-1003",
+		code: "4-1003",
+		name: "Pendapatan Penjualan Bio Solar",
+		category: "Pendapatan",
+		normalBalance: "Kredit",
+		balance: 326e5,
+		isActive: true
+	},
+	{
+		id: "5-1001",
+		code: "5-1001",
+		name: "HPP Pertalite",
+		category: "Beban Pokok",
+		normalBalance: "Debit",
+		balance: 716e5,
+		isActive: true
+	},
+	{
+		id: "6-1001",
+		code: "6-1001",
+		name: "Biaya Gaji & Upah Karyawan",
+		category: "Beban",
+		normalBalance: "Debit",
+		balance: 125e5,
+		isActive: true
+	},
+	{
+		id: "6-1002",
+		code: "6-1002",
+		name: "Biaya Listrik & Air",
+		category: "Beban",
+		normalBalance: "Debit",
+		balance: 42e5,
+		isActive: true
+	},
+	{
+		id: "6-1003",
+		code: "6-1003",
+		name: "Biaya Pemeliharaan & Tera",
+		category: "Beban",
+		normalBalance: "Debit",
+		balance: 21e5,
+		isActive: true
+	}
+];
+export const mockTransactions = [
+	{
+		id: "TX-20260924-001",
+		date: "2026-09-24 07:15",
+		code: "303",
+		name: "Penjualan Pertalite Tunai",
+		category: "Penjualan BBM",
+		productId: "PRD-01",
+		product: "Pertalite",
+		volume: 35.5,
+		unitPrice: 1e4,
+		total: 355e3,
+		shiftId: "SFT-01",
+		shift: "Shift 1",
+		cashier: "Ahmad Fauzi",
+		status: "Selesai",
+		nozzleId: "NZL-01",
+		teraId: "TRA-001",
+		teraAwal: 485195,
+		teraAkhir: 485230.5
+	},
+	{
+		id: "TX-20260924-002",
+		date: "2026-09-24 07:22",
+		code: "304",
+		name: "Penjualan Pertamax Tunai",
+		category: "Penjualan BBM",
+		productId: "PRD-02",
+		product: "Pertamax",
+		volume: 25,
+		unitPrice: 12950,
+		total: 323750,
+		shiftId: "SFT-01",
+		shift: "Shift 1",
+		cashier: "Ahmad Fauzi",
+		status: "Selesai",
+		nozzleId: "NZL-02",
+		teraId: "TRA-002",
+		teraAwal: 312085.2,
+		teraAkhir: 312110.2
+	},
+	{
+		id: "TX-20260924-003",
+		date: "2026-09-24 08:30",
+		code: "308",
+		name: "Penebusan DO Pertamina (Pertalite)",
+		category: "Pembelian",
+		productId: "PRD-01",
+		product: "Pertalite",
+		volume: 16e3,
+		unitPrice: 9650,
+		total: 1544e5,
+		shiftId: "SFT-01",
+		shift: "Shift 1",
+		cashier: "Ahmad Fauzi",
+		status: "Selesai"
+	},
+	{
+		id: "TX-20260924-004",
+		date: "2026-09-24 09:10",
+		code: "305",
+		name: "Biaya Listrik PLN & Genset",
+		category: "Biaya Operasional",
+		product: "-",
+		volume: 0,
+		unitPrice: 0,
+		total: 385e4,
+		shiftId: "SFT-01",
+		shift: "Shift 1",
+		cashier: "Ahmad Fauzi",
+		status: "Selesai"
+	},
+	{
+		id: "TX-20260924-005",
+		date: "2026-09-24 10:45",
+		code: "309",
+		name: "Penjualan Bio Solar Tunai",
+		category: "Penjualan BBM",
+		productId: "PRD-04",
+		product: "Bio Solar",
+		volume: 60,
+		unitPrice: 6800,
+		total: 408e3,
+		shiftId: "SFT-01",
+		shift: "Shift 1",
+		cashier: "Ahmad Fauzi",
+		status: "Selesai",
+		nozzleId: "NZL-03",
+		teraId: "TRA-003",
+		teraAwal: 592820,
+		teraAkhir: 592880
+	}
+];
+export const mockBusinessPartners = [
+	{
+		id: "CUS-001",
+		code: "CUS-001",
+		name: "PT Transport Logistik Andalas",
+		type: "Customer",
+		phone: "0812-3456-7890",
+		address: "Jl. By Pass No. 12, Padang"
+	},
+	{
+		id: "CUS-002",
+		code: "CUS-002",
+		name: "Koperasi Angkutan Minang Mandiri",
+		type: "Customer",
+		phone: "0813-9876-5432",
+		address: "Jl. Raya Lubuk Alung No. 45"
+	},
+	{
+		id: "CUS-003",
+		code: "CUS-003",
+		name: "Dinas Lingkungan Hidup Kab. Padang Pariaman",
+		type: "Customer",
+		phone: "0751-89100",
+		address: "Kompleks Pemkab Padang Pariaman"
+	},
+	{
+		id: "VEN-001",
+		code: "VEN-001",
+		name: "PT Pertamina Patra Niaga",
+		type: "Vendor",
+		phone: "135",
+		address: "Jl. Veteran No. 1, Jakarta"
+	},
+	{
+		id: "VEN-002",
+		code: "VEN-002",
+		name: "PT PLN (Persero) ULP Lubuk Alung",
+		type: "Vendor",
+		phone: "123",
+		address: "Jl. Syekh Burhanuddin, Lubuk Alung"
+	}
+];
+export const mockReceivables = [{
+	id: "REC-001",
+	transactionId: "TX-INIT-001",
+	partnerId: "CUS-001",
+	partnerName: "PT Transport Logistik Andalas",
+	amount: 15e6,
+	outstanding: 15e6,
+	status: "Open",
+	date: "2026-09-20",
+	notes: "Pengisian Armada BBM Solar (Kupon #4421-4435)"
+}];
+export const mockPayables = [{
+	id: "PAY-001",
+	transactionId: "TX-INIT-002",
+	partnerId: "VEN-001",
+	partnerName: "PT Pertamina Patra Niaga",
+	amount: 95e6,
+	outstanding: 95e6,
+	status: "Open",
+	date: "2026-09-18",
+	notes: "DO Konsinyasi BBM Pertalite 10.000 L"
+}];
+export const mockJournal = [
+	{
+		id: "JRN-001",
+		date: "2026-09-24",
+		evidenceNo: "BKT/20260924/001",
+		transCode: "303",
+		description: "Penjualan Pertalite Tunai Shift 1",
+		isBalanced: true,
+		entries: [{
+			accountId: "1-1001",
+			accountCode: "1-1001",
+			accountName: "Kas Utama",
+			debit: 355e3,
+			credit: 0
+		}, {
+			accountId: "4-1001",
+			accountCode: "4-1001",
+			accountName: "Pendapatan Penjualan Pertalite",
+			debit: 0,
+			credit: 355e3
+		}]
+	},
+	{
+		id: "JRN-002",
+		date: "2026-09-24",
+		evidenceNo: "BKT/20260924/002",
+		transCode: "304",
+		description: "Penjualan Pertamax Tunai Shift 1",
+		isBalanced: true,
+		entries: [{
+			accountId: "1-1001",
+			accountCode: "1-1001",
+			accountName: "Kas Utama",
+			debit: 323750,
+			credit: 0
+		}, {
+			accountId: "4-1002",
+			accountCode: "4-1002",
+			accountName: "Pendapatan Penjualan Pertamax",
+			debit: 0,
+			credit: 323750
+		}]
+	},
+	{
+		id: "JRN-003",
+		date: "2026-09-24",
+		evidenceNo: "DO/PTM/2026/09/881",
+		transCode: "308",
+		description: "Penebusan DO Pertamina Pertalite 16.000 L",
+		isBalanced: true,
+		entries: [{
+			accountId: "1-1201",
+			accountCode: "1-1201",
+			accountName: "Persediaan BBM Pertalite",
+			debit: 1544e5,
+			credit: 0
+		}, {
+			accountId: "1-1002",
+			accountCode: "1-1002",
+			accountName: "Bank Mandiri Operasional",
+			debit: 0,
+			credit: 1544e5
+		}]
+	},
+	{
+		id: "JRN-004",
+		date: "2026-09-24",
+		evidenceNo: "PLN/BKT/0924",
+		transCode: "305",
+		description: "Pembayaran Listrik & Token Genset SPBU",
+		isBalanced: true,
+		entries: [{
+			accountId: "6-1002",
+			accountCode: "6-1002",
+			accountName: "Biaya Listrik & Air",
+			debit: 385e4,
+			credit: 0
+		}, {
+			accountId: "1-1001",
+			accountCode: "1-1001",
+			accountName: "Kas Utama",
+			debit: 0,
+			credit: 385e4
+		}]
+	}
+];
+export const mockReports = {
+	neracaKonsolidasi: {
+		title: "LAPORAN NERACA HARIAN KONSOLIDASI",
+		periodDate: "31-Aug-2026",
+		entityName: "PT BPR Ganto Nagari 1954",
+		location: "Lubuk alung",
+		signerDate: "01/09/26",
+		rows: [
+			(
+			// === 1. ASET ===
+			{
+				no: "",
+				code: "",
+				name: "1. ASET",
+				section: "ASET",
+				level: 1,
+				isSectionHeader: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			}),
+			{
+				no: "1",
+				code: "100",
+				name: "Kas dalam Rupiah",
+				section: "ASET",
+				level: 2,
+				saldoAwal: 27049e4,
+				debet: 322361003,
+				kredit: 410931503,
+				saldoAkhir: 181919500
+			},
+			{
+				no: "-",
+				code: "101",
+				name: "Kas Kecil",
+				section: "ASET",
+				level: 2,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "2",
+				code: "102",
+				name: "Kas Dalam Valuta Asing",
+				section: "ASET",
+				level: 2,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "3",
+				code: "110",
+				name: "Surat Berharga",
+				section: "ASET",
+				level: 2,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "4",
+				code: "130",
+				name: "Penempatan Pada Bank Lain",
+				section: "ASET",
+				level: 2,
+				saldoAwal: 12247151526,
+				debet: 333226100,
+				kredit: 108815296,
+				saldoAkhir: 12471562330
+			},
+			{
+				no: "-",
+				code: "131",
+				name: "-/- Cadangan Penurunan Nilai",
+				section: "ASET",
+				level: 3,
+				isContra: true,
+				saldoAwal: -6195412,
+				debet: 5773040,
+				kredit: 0,
+				saldoAkhir: -422372
+			},
+			{
+				no: "5",
+				code: "140",
+				name: "Kredit Yang Diberikan (Baki debet)",
+				section: "ASET",
+				level: 2,
+				saldoAwal: 28324827270,
+				debet: 125438621,
+				kredit: 265557380,
+				saldoAkhir: 28184708511
+			},
+			{
+				no: "-",
+				code: "141",
+				name: "-/- Provisi yang belum diamortisasi",
+				section: "ASET",
+				level: 3,
+				isContra: true,
+				saldoAwal: -230510535,
+				debet: 7530924,
+				kredit: 8e5,
+				saldoAkhir: -223779611
+			},
+			{
+				no: "-",
+				code: "142",
+				name: "Biaya Transaksi yang belum diamortisasi",
+				section: "ASET",
+				level: 3,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "-",
+				code: "143",
+				name: "-/- Pendapatan Bunga yang Ditangguhkan dalam rangka Restrukturisasi",
+				section: "ASET",
+				level: 3,
+				isContra: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "-",
+				code: "144",
+				name: "-/- Cadangan Kerugian Restrukturisasi",
+				section: "ASET",
+				level: 3,
+				isContra: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "-",
+				code: "145",
+				name: "-/- Cadangan Penurunan Nilai",
+				section: "ASET",
+				level: 3,
+				isContra: true,
+				saldoAwal: -1195982033,
+				debet: 0,
+				kredit: 11392147,
+				saldoAkhir: -1207374180
+			},
+			{
+				no: "6",
+				code: "200",
+				name: "Agunan Yang Diambil Alih",
+				section: "ASET",
+				level: 2,
+				saldoAwal: 61977337,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 61977337
+			},
+			{
+				no: "7",
+				code: "201",
+				name: "Properti Terbengkalai",
+				section: "ASET",
+				level: 2,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "8",
+				code: "210",
+				name: "Aset Tetap dan Inventaris",
+				section: "ASET",
+				level: 2,
+				saldoAwal: 3318045868,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 3318045868
+			},
+			{
+				no: "-",
+				code: "211",
+				name: "-/- Akumulasi Penyusutan dan Penurunan Nilai",
+				section: "ASET",
+				level: 3,
+				isContra: true,
+				saldoAwal: -1321785322,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: -1321785322
+			},
+			{
+				no: "9",
+				code: "220",
+				name: "Aset Tak Berwujud",
+				section: "ASET",
+				level: 2,
+				saldoAwal: 85e5,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 85e5
+			},
+			{
+				no: "-",
+				code: "221",
+				name: "-/- Akumulasi Penyusutan dan Penurunan Nilai",
+				section: "ASET",
+				level: 3,
+				isContra: true,
+				saldoAwal: -7020838,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: -7020838
+			},
+			{
+				no: "10",
+				code: "230",
+				name: "Aset Antar Kantor",
+				section: "ASET",
+				level: 2,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "11",
+				code: "240",
+				name: "Aset Keuangan Lainnya",
+				section: "ASET",
+				level: 2,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "-",
+				code: "250",
+				name: "-/- Cadangan Penurunan Nilai",
+				section: "ASET",
+				level: 3,
+				isContra: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "12",
+				code: "270",
+				name: "Aset Lain-lain",
+				section: "ASET",
+				level: 2,
+				saldoAwal: 428355252,
+				debet: 236249960,
+				kredit: 75023509,
+				saldoAkhir: 589581703
+			},
+			{
+				no: "-",
+				code: "-",
+				name: "TOTAL ASET",
+				section: "ASET",
+				level: 1,
+				isSubtotal: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "",
+				code: "",
+				name: "Sub Total 1. ASET",
+				section: "ASET",
+				level: 1,
+				isSubtotal: true,
+				saldoAwal: 41897853113,
+				debet: 1030579648,
+				kredit: 872519835,
+				saldoAkhir: 42055912926
+			},
+			{
+				no: "",
+				code: "",
+				name: "Jumlah Aset",
+				section: "ASET",
+				level: 1,
+				isGrandTotal: true,
+				saldoAwal: 41897853113,
+				debet: 1030579648,
+				kredit: 872519835,
+				saldoAkhir: 42055912926
+			},
+			(
+			// === 2. KEWAJIBAN ===
+			{
+				no: "",
+				code: "",
+				name: "2. KEWAJIBAN",
+				section: "KEWAJIBAN",
+				level: 1,
+				isSectionHeader: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			}),
+			{
+				no: "1",
+				code: "300",
+				name: "Liabilitas Segera",
+				section: "KEWAJIBAN",
+				level: 2,
+				saldoAwal: 161341160,
+				debet: 0,
+				kredit: 3560826,
+				saldoAkhir: 164901986
+			},
+			{
+				no: "-",
+				code: "-",
+				name: "Simpanan",
+				section: "KEWAJIBAN",
+				level: 2,
+				isSectionHeader: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "2",
+				code: "330",
+				name: "a. Tabungan",
+				section: "KEWAJIBAN",
+				level: 3,
+				saldoAwal: 12115095068,
+				debet: 451478872,
+				kredit: 196992756,
+				saldoAkhir: 11860608952
+			},
+			{
+				no: "-",
+				code: "331",
+				name: "-/- Biaya Transaksi Belum Diamortisasi",
+				section: "KEWAJIBAN",
+				level: 4,
+				isContra: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "3",
+				code: "340",
+				name: "b. Deposito",
+				section: "KEWAJIBAN",
+				level: 3,
+				saldoAwal: 20785e6,
+				debet: 8e7,
+				kredit: 0,
+				saldoAkhir: 20705e6
+			},
+			{
+				no: "-",
+				code: "341",
+				name: "-/- Biaya Transaksi Belum Diamortisasi",
+				section: "KEWAJIBAN",
+				level: 4,
+				isContra: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "4",
+				code: "360",
+				name: "Simpanan Dari Bank Lain",
+				section: "KEWAJIBAN",
+				level: 2,
+				saldoAwal: 972284420,
+				debet: 2e7,
+				kredit: 283787195,
+				saldoAkhir: 1236071615
+			},
+			{
+				no: "-",
+				code: "361",
+				name: "-/- Biaya Transaksi Belum Diamortisasi",
+				section: "KEWAJIBAN",
+				level: 3,
+				isContra: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "5",
+				code: "370",
+				name: "Pinjaman Diterima",
+				section: "KEWAJIBAN",
+				level: 2,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "-",
+				code: "371",
+				name: "-/- Biaya Transaksi Belum Diamortisasi",
+				section: "KEWAJIBAN",
+				level: 3,
+				isContra: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "-",
+				code: "372",
+				name: "-/- Diskonto Belum Diamortisasi",
+				section: "KEWAJIBAN",
+				level: 3,
+				isContra: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "7",
+				code: "400",
+				name: "Dana Setoran Modal - Kewajiban",
+				section: "KEWAJIBAN",
+				level: 2,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "8",
+				code: "440",
+				name: "Liabilitas Antar Kantor",
+				section: "KEWAJIBAN",
+				level: 2,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "9",
+				code: "470",
+				name: "Liabilitas Lainnya",
+				section: "KEWAJIBAN",
+				level: 2,
+				saldoAwal: 62597088,
+				debet: 610411,
+				kredit: 49016878,
+				saldoAkhir: 111003555
+			},
+			{
+				no: "-",
+				code: "-",
+				name: "TOTAL LIABILITAS",
+				section: "KEWAJIBAN",
+				level: 1,
+				isSubtotal: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "",
+				code: "",
+				name: "Sub Total 2. KEWAJIBAN",
+				section: "KEWAJIBAN",
+				level: 1,
+				isSubtotal: true,
+				saldoAwal: 34096317736,
+				debet: 552089283,
+				kredit: 533357655,
+				saldoAkhir: 34077586108
+			},
+			(
+			// === 3. EKUITAS ===
+			{
+				no: "",
+				code: "",
+				name: "3. EKUITAS",
+				section: "EKUITAS",
+				level: 1,
+				isSectionHeader: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			}),
+			{
+				no: "10",
+				code: "-",
+				name: "1. Modal Disetor",
+				section: "EKUITAS",
+				level: 2,
+				isSectionHeader: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "-",
+				code: "501",
+				name: "a. Modal Dasar",
+				section: "EKUITAS",
+				level: 3,
+				saldoAwal: 1e10,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 1e10
+			},
+			{
+				no: "-",
+				code: "502",
+				name: "b. Modal Yang Belum Disetor -/-",
+				section: "EKUITAS",
+				level: 3,
+				isContra: true,
+				saldoAwal: -393565e4,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: -393565e4
+			},
+			{
+				no: "11",
+				code: "-",
+				name: "2. Tambahan Modal Disetor",
+				section: "EKUITAS",
+				level: 2,
+				isSectionHeader: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "-",
+				code: "503",
+				name: "a. Agio/Disagio",
+				section: "EKUITAS",
+				level: 3,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "-",
+				code: "504",
+				name: "b. Modal Sumbangan",
+				section: "EKUITAS",
+				level: 3,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "-",
+				code: "505",
+				name: "c. Dana Setoran Modal - Ekuitas",
+				section: "EKUITAS",
+				level: 3,
+				saldoAwal: 1e9,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 1e9
+			},
+			{
+				no: "-",
+				code: "506",
+				name: "d. Tambahan Modal Disetor Lainnya",
+				section: "EKUITAS",
+				level: 3,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "12",
+				code: "-",
+				name: "3. Ekuitas Lainnya",
+				section: "EKUITAS",
+				level: 2,
+				isSectionHeader: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "-",
+				code: "510",
+				name: "a. Keuntungan (Kerugian) dari Perubahan Nilai Aset Keuangan",
+				section: "EKUITAS",
+				level: 3,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "-",
+				code: "511",
+				name: "b. Keuntungan Revaluasi Aset Tetap",
+				section: "EKUITAS",
+				level: 3,
+				saldoAwal: 1150330208,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 1150330208
+			},
+			{
+				no: "-",
+				code: "512",
+				name: "c. Lainnya",
+				section: "EKUITAS",
+				level: 3,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "-",
+				code: "513",
+				name: "d. Pajak Penghasilan terkait dengan Ekuitas Lain",
+				section: "EKUITAS",
+				level: 3,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "13",
+				code: "-",
+				name: "Cadangan",
+				section: "EKUITAS",
+				level: 2,
+				isSectionHeader: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "-",
+				code: "541",
+				name: "a. Cadangan Umum",
+				section: "EKUITAS",
+				level: 3,
+				saldoAwal: 739566478,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 739566478
+			},
+			{
+				no: "-",
+				code: "542",
+				name: "b. Cadangan Tujuan",
+				section: "EKUITAS",
+				level: 3,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "14",
+				code: "-",
+				name: "Laba/Rugi",
+				section: "EKUITAS",
+				level: 2,
+				isSectionHeader: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "-",
+				code: "543",
+				name: "a. Tahun-Tahun Lalu",
+				section: "EKUITAS",
+				level: 3,
+				isContra: true,
+				saldoAwal: -897720652,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: -897720652
+			},
+			{
+				no: "-",
+				code: "545",
+				name: "b. Laba Rugi Tahun Berjalan",
+				section: "EKUITAS",
+				level: 3,
+				isContra: true,
+				saldoAwal: -254990657,
+				debet: 169761683,
+				kredit: 346553124,
+				saldoAkhir: -78199216
+			},
+			{
+				no: "-",
+				code: "-",
+				name: "TOTAL EKUITAS",
+				section: "EKUITAS",
+				level: 1,
+				isSubtotal: true,
+				saldoAwal: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				no: "",
+				code: "",
+				name: "Sub Total 3. EKUITAS",
+				section: "EKUITAS",
+				level: 1,
+				isSubtotal: true,
+				saldoAwal: 7801535377,
+				debet: 169761683,
+				kredit: 346553124,
+				saldoAkhir: 7978326818
+			},
+			(
+			// === GRAND TOTAL ===
+			{
+				no: "",
+				code: "",
+				name: "Jumlah Kewajiban + Ekuitas",
+				section: "TOTAL",
+				level: 1,
+				isGrandTotal: true,
+				saldoAwal: 41897853113,
+				debet: 721850966,
+				kredit: 879910779,
+				saldoAkhir: 42055912926
+			})
+		]
+	},
+	labaRugi: {
+		period: "Agustus 2026",
+		revenues: [
+			{
+				name: "Penjualan Pertalite",
+				amount: 2458e5
+			},
+			{
+				name: "Penjualan Pertamax",
+				amount: 1542e5
+			},
+			{
+				name: "Penjualan Bio Solar",
+				amount: 984e5
+			},
+			{
+				name: "Penjualan Dexlite",
+				amount: 468e5
+			}
+		],
+		cogs: [
+			{
+				name: "HPP Pertalite (Pembelian Netto)",
+				amount: 2372e5
+			},
+			{
+				name: "HPP Pertamax",
+				amount: 1476e5
+			},
+			{
+				name: "HPP Bio Solar",
+				amount: 948e5
+			},
+			{
+				name: "HPP Dexlite",
+				amount: 449e5
+			}
+		],
+		operationalExpenses: [
+			{
+				name: "Gaji & Upah Karyawan Shift",
+				amount: 185e5
+			},
+			{
+				name: "Biaya Listrik PLN & Bahan Bakar Genset",
+				amount: 72e5
+			},
+			{
+				name: "Biaya Retribusi & Tera Dispenser",
+				amount: 35e5
+			},
+			{
+				name: "Biaya Perlengkapan Kasir & Kantor",
+				amount: 18e5
+			}
+		]
+	},
+	labaRugiKonsolidasi: {
+		title: "LAPORAN LABA-RUGI KONSOLIDASI HARIAN",
+		periodDate: "31 Agustus 2026",
+		entityName: "PT SPBU Mitra Akrual 1954",
+		location: "Lubuk alung",
+		rows: [
+			(
+			// === A. PENDAPATAN OPERASIONAL ===
+			{
+				code: "100",
+				name: "A. Pendapatan Operasional",
+				level: 1,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0,
+				isSectionHeader: true
+			}),
+			{
+				code: "-",
+				name: "1. Pendapatan Penjualan BBM",
+				level: 2,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0,
+				isSectionHeader: true
+			},
+			{
+				code: "-",
+				name: "a. Penjualan BBM Retail Bersubsidi & Kompensasi",
+				level: 3,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0,
+				isSectionHeader: true
+			},
+			{
+				code: "111",
+				name: "i.  Pertalite RON 90 (Kompensasi)",
+				level: 4,
+				saldoKemarin: 38332435,
+				debet: 0,
+				kredit: 3717100,
+				saldoAkhir: 42049535
+			},
+			{
+				code: "112",
+				name: "ii. Biosolar B35 (Subsidi)",
+				level: 4,
+				saldoKemarin: 309514184,
+				debet: 16845204,
+				kredit: 26040410,
+				saldoAkhir: 318709390
+			},
+			{
+				code: "113",
+				name: "-. Pertamax RON 92 & Dex Series",
+				level: 4,
+				saldoKemarin: 1774912015,
+				debet: 67816753,
+				kredit: 296766742,
+				saldoAkhir: 2003862004
+			},
+			{
+				code: "-",
+				name: "b. Penjualan Pelumas & Produk Non-BBM",
+				level: 3,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0,
+				isSectionHeader: true
+			},
+			{
+				code: "124",
+				name: "-. Pelumas Fastron, Enduro & Mesran",
+				level: 4,
+				saldoKemarin: 111945272,
+				debet: 0,
+				kredit: 7530924,
+				saldoAkhir: 119476196
+			},
+			{
+				code: "-",
+				name: "2. Pendapatan Operasional Lainnya",
+				level: 2,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0,
+				isSectionHeader: true
+			},
+			{
+				code: "136",
+				name: "a. Pendapatan Sewa Tenant & Bright Store",
+				level: 3,
+				saldoKemarin: 2275e4,
+				debet: 0,
+				kredit: 994e3,
+				saldoAkhir: 23744e3
+			},
+			{
+				code: "137",
+				name: "b. Pendapatan Selisih Tera Positif Nozzle",
+				level: 3,
+				saldoKemarin: 1640740505,
+				debet: 0,
+				kredit: 5773040,
+				saldoAkhir: 1646513545
+			},
+			{
+				code: "143",
+				name: "c. Pendapatan Jasa Layanan Nitrogen & Kompresor",
+				level: 3,
+				saldoKemarin: 50013109,
+				debet: 0,
+				kredit: 5550497,
+				saldoAkhir: 55563606
+			},
+			{
+				code: "-",
+				name: "3. Pendapatan Non Operasional",
+				level: 2,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0,
+				isSectionHeader: true
+			},
+			{
+				code: "311",
+				name: "a. Penjualan Drum Bekas & Limbah Pelumas",
+				level: 3,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				code: "317",
+				name: "b. Pendapatan Bunga Jasa Giro Operasional",
+				level: 3,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				code: "318",
+				name: "c. Lainnya",
+				level: 3,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			(
+			// TOTAL PENDAPATAN
+			{
+				code: "",
+				name: "JUMLAH PENDAPATAN",
+				level: 1,
+				saldoKemarin: 3948207520,
+				debet: 84661957,
+				kredit: 346372713,
+				saldoAkhir: 4209918276,
+				isTotal: true
+			}),
+			(
+			// === B. BEBAN OPERASIONAL ===
+			{
+				code: "150",
+				name: "B. Beban Operasional",
+				level: 1,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0,
+				isSectionHeader: true
+			}),
+			{
+				code: "-",
+				name: "1. Harga Pokok Penjualan (HPP) DO Pertamina",
+				level: 2,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0,
+				isSectionHeader: true
+			},
+			{
+				code: "-",
+				name: "a. Penebusan DO BBM Retail",
+				level: 3,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0,
+				isSectionHeader: true
+			},
+			{
+				code: "161",
+				name: "i.    DO Pertalite RON 90",
+				level: 4,
+				saldoKemarin: 93695592,
+				debet: 12700756,
+				kredit: 0,
+				saldoAkhir: 106396348
+			},
+			{
+				code: "162",
+				name: "ii.   DO Biosolar B35",
+				level: 4,
+				saldoKemarin: 740290634,
+				debet: 55007683,
+				kredit: 180411,
+				saldoAkhir: 795117906
+			},
+			{
+				code: "163",
+				name: "iii.  DO Pertamax RON 92",
+				level: 4,
+				saldoKemarin: 17491887,
+				debet: 2540140,
+				kredit: 0,
+				saldoAkhir: 20032027
+			},
+			{
+				code: "168",
+				name: "iv.   Ongkos Angkut Mobil Tangki Pertamina",
+				level: 4,
+				saldoKemarin: 41101500,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 41101500
+			},
+			{
+				code: "-",
+				name: "2. Beban Kerugian & Selisih Tera",
+				level: 2,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0,
+				isSectionHeader: true
+			},
+			{
+				code: "174",
+				name: "a. Kerugian Penguapan & Losses Tanki Pendam",
+				level: 3,
+				saldoKemarin: 8937971,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 8937971
+			},
+			{
+				code: "176",
+				name: "b. Selisih Tera Negatif Nozzle Dispenser",
+				level: 3,
+				saldoKemarin: 647415694,
+				debet: 11392147,
+				kredit: 0,
+				saldoAkhir: 658807841
+			},
+			{
+				code: "180",
+				name: "3. Beban Pemasaran & Promosi SPBU",
+				level: 2,
+				saldoKemarin: 58679e3,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 58679e3
+			},
+			{
+				code: "-",
+				name: "4. Beban Administrasi dan Umum",
+				level: 2,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0,
+				isSectionHeader: true
+			},
+			{
+				code: "-",
+				name: "a. Beban Tenaga Kerja SPBU",
+				level: 3,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0,
+				isSectionHeader: true
+			},
+			{
+				code: "201",
+				name: "i.   Gaji dan Upah Operator Shift",
+				level: 4,
+				saldoKemarin: 1445678201,
+				debet: 1395e3,
+				kredit: 0,
+				saldoAkhir: 1447073201
+			},
+			{
+				code: "202",
+				name: "ii.  Honorarium Pengawas & Security",
+				level: 4,
+				saldoKemarin: 10868e4,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 10868e4
+			},
+			{
+				code: "203",
+				name: "iii. Tunjangan & BPJS Ketenagakerjaan",
+				level: 4,
+				saldoKemarin: 345474070,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 345474070
+			},
+			{
+				code: "204",
+				name: "b. Beban Pendidikan, Pelatihan & K3 SPBU",
+				level: 3,
+				saldoKemarin: 58372009,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 58372009
+			},
+			{
+				code: "-",
+				name: "c. Beban Sewa",
+				level: 3,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0,
+				isSectionHeader: true
+			},
+			{
+				code: "205",
+				name: "i.   Sewa Lahan SPBU",
+				level: 4,
+				saldoKemarin: 19964e3,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 19964e3
+			},
+			{
+				code: "207",
+				name: "d. Beban Penyusutan Dispenser & Kanopi SPBU",
+				level: 3,
+				saldoKemarin: 133072770,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 133072770
+			},
+			{
+				code: "208",
+				name: "e. Beban Amortisasi Perizinan SPBU",
+				level: 3,
+				saldoKemarin: 999987,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 999987
+			},
+			{
+				code: "209",
+				name: "f. Beban Asuransi Kebakaran & SPBU",
+				level: 3,
+				saldoKemarin: 3824200,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 3824200
+			},
+			{
+				code: "210",
+				name: "g. Beban Pemeliharaan Dispenser, Pompa & Tanki",
+				level: 3,
+				saldoKemarin: 58611e3,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 58611e3
+			},
+			{
+				code: "211",
+				name: "h. Beban Listrik PLN, Air & Bahan Bakar Genset",
+				level: 3,
+				saldoKemarin: 254226500,
+				debet: 504e3,
+				kredit: 0,
+				saldoAkhir: 254730500
+			},
+			{
+				code: "215",
+				name: "i. Pajak-pajak & Retribusi Daerah",
+				level: 3,
+				saldoKemarin: 7472e3,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 7472e3
+			},
+			{
+				code: "226",
+				name: "j. Beban Perlengkapan Struk & Cetak Kasir",
+				level: 3,
+				saldoKemarin: 116289100,
+				debet: 156e4,
+				kredit: 0,
+				saldoAkhir: 117849100
+			},
+			{
+				code: "-",
+				name: "5. Beban Non Operasional",
+				level: 2,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0,
+				isSectionHeader: true
+			},
+			{
+				code: "359",
+				name: "a. Beban Administrasi Bank & Bunga Pinjaman",
+				level: 3,
+				saldoKemarin: 29287e3,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 29287e3
+			},
+			(
+			// TOTAL BIAYA
+			{
+				code: "",
+				name: "JUMLAH BIAYA",
+				level: 1,
+				saldoKemarin: 4189563115,
+				debet: 85099726,
+				kredit: 180411,
+				saldoAkhir: 4274482430,
+				isTotal: true
+			}),
+			(
+			// === LABA RUGI & PAJAK SUMMARY ===
+			{
+				code: "400",
+				name: "Laba Rugi Operasional",
+				level: 1,
+				saldoKemarin: -241355595,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: -64564154,
+				isTotal: true
+			}),
+			{
+				code: "401",
+				name: "Laba Rugi Non Operasional",
+				level: 1,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				code: "402",
+				name: "Laba Rugi Sebelum Taksiran Pajak",
+				level: 1,
+				saldoKemarin: -241355595,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: -64564154,
+				isTotal: true
+			},
+			{
+				code: "403",
+				name: "Taksiran Pajak Penghasilan",
+				level: 1,
+				saldoKemarin: 13635062,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 13635062
+			},
+			{
+				code: "404",
+				name: "Pendapatan Pajak Tangguhan",
+				level: 1,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				code: "405",
+				name: "Biaya Pajak Tangguhan",
+				level: 1,
+				saldoKemarin: 0,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: 0
+			},
+			{
+				code: "406",
+				name: "Laba/Rugi Net",
+				level: 1,
+				saldoKemarin: -254990657,
+				debet: 0,
+				kredit: 0,
+				saldoAkhir: -78199216,
+				isGrandTotal: true
+			}
+		]
+	},
+	arusKas: {
+		period: "September 2026",
+		operasional: [
+			{
+				name: "Penerimaan Kas dari Pelanggan BBM",
+				amount: 5452e5
+			},
+			{
+				name: "Pembayaran Kas ke Pemasok (Pertamina)",
+				amount: -5245e5
+			},
+			{
+				name: "Pembayaran Beban Operasional & Gaji",
+				amount: -31e6
+			}
+		],
+		investasi: [{
+			name: "Pembelian Suku Cadang Nozzle & Selang",
+			amount: -45e5
+		}],
+		pendanaan: [{
+			name: "Prive / Penarikan Pemilik",
+			amount: -15e6
+		}],
+		saldoAwal: 8462e4
+	},
+	stokPenjualan: [
+		{
+			code: "PLT",
+			name: "Pertalite",
+			stokAwal: 12500,
+			pembelian: 16e3,
+			penjualan: 7050,
+			penyesuaian: 0,
+			stokAkhir: 21450,
+			unit: "Liter",
+			kapasitasTanki: 3e4,
+			persenTerisi: 71.5
+		},
+		{
+			code: "PTX",
+			name: "Pertamax",
+			stokAwal: 8200,
+			pembelian: 1e4,
+			penjualan: 4e3,
+			penyesuaian: 0,
+			stokAkhir: 14200,
+			unit: "Liter",
+			kapasitasTanki: 2e4,
+			persenTerisi: 71
+		},
+		{
+			code: "TUR",
+			name: "Pertamax Turbo",
+			stokAwal: 6e3,
+			pembelian: 0,
+			penjualan: 1200,
+			penyesuaian: 0,
+			stokAkhir: 4800,
+			unit: "Liter",
+			kapasitasTanki: 15e3,
+			persenTerisi: 32
+		},
+		{
+			code: "BSL",
+			name: "Bio Solar",
+			stokAwal: 14800,
+			pembelian: 18e3,
+			penjualan: 7e3,
+			penyesuaian: 0,
+			stokAkhir: 25800,
+			unit: "Liter",
+			kapasitasTanki: 3e4,
+			persenTerisi: 86
+		},
+		{
+			code: "DXL",
+			name: "Dexlite",
+			stokAwal: 6200,
+			pembelian: 8e3,
+			penjualan: 3e3,
+			penyesuaian: 0,
+			stokAkhir: 11200,
+			unit: "Liter",
+			kapasitasTanki: 15e3,
+			persenTerisi: 74.6
+		}
+	]
+};
+
+//# sourceMappingURL=data:application/json;base64,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QUFjO0VBQ2hCO0VBQ0E7R0FDRSxNQUFNO0dBQ04sTUFBTTtHQUNOLFVBQVU7R0FDVixXQUFXO0dBQ1gsV0FBVztHQUNYLGFBQWE7R0FDYixXQUFXO0dBQ1gsTUFBTTtHQUNOLGdCQUFnQjtHQUNoQixjQUFjO0VBQ2hCO0VBQ0E7R0FDRSxNQUFNO0dBQ04sTUFBTTtHQUNOLFVBQVU7R0FDVixXQUFXO0dBQ1gsV0FBVztHQUNYLGFBQWE7R0FDYixXQUFXO0dBQ1gsTUFBTTtHQUNOLGdCQUFnQjtHQUNoQixjQUFjO0VBQ2hCO0NBQ0Y7QUFDRiIsIm5hbWVzIjpbXSwic291cmNlcyI6WyJtb2NrRGF0YS50cyJdLCJ2ZXJzaW9uIjozLCJzb3VyY2VzQ29udGVudCI6WyIvKipcbiAqIENFTlRSQUxJWkVEIE1PQ0sgREFUQSAtIFNJU1RFTSBQRU1CVUtVQU4gJiBPUEVSQVNJT05BTCBTUEJVIChUeXBlU2NyaXB0KVxuICogS29uc2VwOiBBS1JVQUwg4oCUIFBlbWJ1a3VhbiBCZXJiYXNpcyBLb2RlICsgVGVyYVxuICogQ2F0YXRhbjogRGF0YSBkdW1teSBzaW11bGFzaSwgYmVsdW0gdGVyaHVidW5nIGtlIGRhdGFiYXNlLlxuICovXG5cbmltcG9ydCB7XG4gIFN0YXRpb25JbmZvLFxuICBQcm9kdWN0LFxuICBUYW5rLFxuICBOb3p6bGUsXG4gIFNoaWZ0LFxuICBUZXJhLFxuICBNYXN0ZXJDb2RlLFxuICBBY2NvdW50LFxuICBUcmFuc2FjdGlvbixcbiAgSm91cm5hbCxcbiAgUmVwb3J0c0RhdGEsXG4gIEJ1c2luZXNzUGFydG5lcixcbiAgUmVjZWl2YWJsZSxcbiAgUGF5YWJsZSxcbiAgUHJvZHVjdENhdGVnb3J5LFxuICBQZWdhd2FpLFxuICBBdHRlbmRhbmNlXG59IGZyb20gJy4uL3R5cGVzJztcblxuZXhwb3J0IGNvbnN0IG1vY2tTdGF0aW9uSW5mbzogU3RhdGlvbkluZm8gPSB7XG4gIGlkOiBcIlNQQlUtMzQtMTIzMDFcIixcbiAgbmFtZTogXCJTUEJVIDM0LjEyMzAxIFBlcnRhbWluYVwiLFxuICBhZGRyZXNzOiBcIkpsLiBSYXlhIEFobWFkIFlhbmkgTm8uIDg4LCBTaWRvYXJqbywgSmF3YSBUaW11clwiLFxuICBwaG9uZTogXCIoMDMxKSA4OTIxLTM0MDBcIixcbiAgbWFuYWdlcjogXCJILiBCYW1iYW5nIFN1ZGlyb1wiLFxuICBlbWFpbDogXCJhZG1pbkBzcGJ1Y29udG9oLmNvLmlkXCIsXG4gIHN0YXR1czogXCJPbmxpbmUgKFNpbXVsYXNpIExvY2FsIFRhYmxldClcIixcbiAgbGFzdEJhY2t1cDogXCIyMDI2LTA5LTI0IDE4OjMwIFdJQlwiLFxuICB2ZXJzaW9uOiBcInYwLjEuMC1hbHBoYSAoQUtSVUFMIOKAlCBQcm90b3R5cGUgQmVyYmFzaXMgS29kZSlcIlxufTtcblxuLy8gUElOIEFLU0VTIERFRkFVTFQgQVBMSUtBU0kgKFNJTVVMQVNJIEFVVEhFTlRJQ0FUSU9OIFRBTlBBIElERU5USVRZIFVTRVIpXG5leHBvcnQgY29uc3QgaW5pdGlhbEF1dGhQaW4gPSBcIjEyMzRcIjtcblxuZXhwb3J0IGNvbnN0IG1vY2tQcm9kdWN0Q2F0ZWdvcmllczogUHJvZHVjdENhdGVnb3J5W10gPSBbXG4gIHsgaWQ6IFwiUENBVC0wMDFcIiwgbmFtZTogXCJCQk0gU3Vic2lkaVwiLCBzdGF0dXM6IFwiQWt0aWZcIiB9LFxuICB7IGlkOiBcIlBDQVQtMDAyXCIsIG5hbWU6IFwiQkJNIE5vbi1TdWJzaWRpXCIsIHN0YXR1czogXCJBa3RpZlwiIH0sXG4gIHsgaWQ6IFwiUENBVC0wMDNcIiwgbmFtZTogXCJQZWx1bWFzICYgT2xpXCIsIHN0YXR1czogXCJBa3RpZlwiIH0sXG4gIHsgaWQ6IFwiUENBVC0wMDRcIiwgbmFtZTogXCJOb24tQkJNXCIsIHN0YXR1czogXCJBa3RpZlwiIH1cbl07XG5cbmV4cG9ydCBjb25zdCBtb2NrUHJvZHVjdHM6IFByb2R1Y3RbXSA9IFtcbiAgeyBpZDogXCJQUkQtMDFcIiwgY29kZTogXCJQTFRcIiwgbmFtZTogXCJQZXJ0YWxpdGUgKFJPTiA5MClcIiwgY2F0ZWdvcnlJZDogXCJQQ0FULTAwMVwiLCBzZWxsUHJpY2U6IDEwMDAwLCBidXlQcmljZTogOTY1MCwgdW5pdDogXCJMaXRlclwiLCBjb2xvcjogXCIjMTBCOTgxXCIsIHN0YXR1czogXCJBa3RpZlwiLCB0YW5rSWQ6IFwiVE5LLTAxXCIgfSxcbiAgeyBpZDogXCJQUkQtMDJcIiwgY29kZTogXCJQVFhcIiwgbmFtZTogXCJQZXJ0YW1heCAoUk9OIDkyKVwiLCBjYXRlZ29yeUlkOiBcIlBDQVQtMDAyXCIsIHNlbGxQcmljZTogMTI5NTAsIGJ1eVByaWNlOiAxMjQwMCwgdW5pdDogXCJMaXRlclwiLCBjb2xvcjogXCIjMjU2M0VCXCIsIHN0YXR1czogXCJBa3RpZlwiLCB0YW5rSWQ6IFwiVE5LLTAyXCIgfSxcbiAgeyBpZDogXCJQUkQtMDNcIiwgY29kZTogXCJUVVJcIiwgbmFtZTogXCJQZXJ0YW1heCBUdXJibyAoUk9OIDk4KVwiLCBjYXRlZ29yeUlkOiBcIlBDQVQtMDAyXCIsIHNlbGxQcmljZTogMTQ0MDAsIGJ1eVByaWNlOiAxMzgwMCwgdW5pdDogXCJMaXRlclwiLCBjb2xvcjogXCIjREMyNjI2XCIsIHN0YXR1czogXCJBa3RpZlwiLCB0YW5rSWQ6IFwiVE5LLTAzXCIgfSxcbiAgeyBpZDogXCJQUkQtMDRcIiwgY29kZTogXCJCU0xcIiwgbmFtZTogXCJCaW8gU29sYXJcIiwgY2F0ZWdvcnlJZDogXCJQQ0FULTAwMVwiLCBzZWxsUHJpY2U6IDY4MDAsIGJ1eVByaWNlOiA2NTUwLCB1bml0OiBcIkxpdGVyXCIsIGNvbG9yOiBcIiNEOTc3MDZcIiwgc3RhdHVzOiBcIkFrdGlmXCIsIHRhbmtJZDogXCJUTkstMDRcIiB9LFxuICB7IGlkOiBcIlBSRC0wNVwiLCBjb2RlOiBcIkRYTFwiLCBuYW1lOiBcIkRleGxpdGVcIiwgY2F0ZWdvcnlJZDogXCJQQ0FULTAwMlwiLCBzZWxsUHJpY2U6IDEzNzAwLCBidXlQcmljZTogMTMxNTAsIHVuaXQ6IFwiTGl0ZXJcIiwgY29sb3I6IFwiIzA1OTY2OVwiLCBzdGF0dXM6IFwiQWt0aWZcIiwgdGFua0lkOiBcIlROSy0wNVwiIH0sXG4gIC8vIFByb2R1ayBPbGkgJiBQZWx1bWFzIChOb24tVGFua2ksIFVuaXQ6IEJvdG9sKVxuICB7IGlkOiBcIlBSRC0wNlwiLCBjb2RlOiBcIk9MSS0wMDFcIiwgbmFtZTogXCJQZXJ0YW1pbmEgRW5kdXJvIDRUIDEwVy00MFwiLCBjYXRlZ29yeUlkOiBcIlBDQVQtMDAzXCIsIHNlbGxQcmljZTogNDgwMDAsIGJ1eVByaWNlOiA0MjAwMCwgdW5pdDogXCJCb3RvbFwiLCBjb2xvcjogXCIjRUY0NDQ0XCIsIHN0YXR1czogXCJBa3RpZlwiIH0sXG4gIHsgaWQ6IFwiUFJELTA3XCIsIGNvZGU6IFwiT0xJLTAwMlwiLCBuYW1lOiBcIlBlcnRhbWluYSBFbmR1cm8gTWF0aWMgMTBXLTMwXCIsIGNhdGVnb3J5SWQ6IFwiUENBVC0wMDNcIiwgc2VsbFByaWNlOiA1MDAwMCwgYnV5UHJpY2U6IDQ0MDAwLCB1bml0OiBcIkJvdG9sXCIsIGNvbG9yOiBcIiMzQjgyRjZcIiwgc3RhdHVzOiBcIkFrdGlmXCIgfSxcbiAgeyBpZDogXCJQUkQtMDhcIiwgY29kZTogXCJPTEktMDAzXCIsIG5hbWU6IFwiRmVkZXJhbCBNYXRpYyAzMFwiLCBjYXRlZ29yeUlkOiBcIlBDQVQtMDAzXCIsIHNlbGxQcmljZTogNDYwMDAsIGJ1eVByaWNlOiA0MDAwMCwgdW5pdDogXCJCb3RvbFwiLCBjb2xvcjogXCIjRjU5RTBCXCIsIHN0YXR1czogXCJBa3RpZlwiIH0sXG4gIHsgaWQ6IFwiUFJELTA5XCIsIGNvZGU6IFwiT0xJLTAwNFwiLCBuYW1lOiBcIkNhc3Ryb2wgQWN0aXYgNFRcIiwgY2F0ZWdvcnlJZDogXCJQQ0FULTAwM1wiLCBzZWxsUHJpY2U6IDU1MDAwLCBidXlQcmljZTogNDgwMDAsIHVuaXQ6IFwiQm90b2xcIiwgY29sb3I6IFwiIzEwQjk4MVwiLCBzdGF0dXM6IFwiQWt0aWZcIiB9LFxuICB7IGlkOiBcIlBSRC0xMFwiLCBjb2RlOiBcIk9MSS0wMDVcIiwgbmFtZTogXCJTaGVsbCBBZHZhbmNlIEFYNVwiLCBjYXRlZ29yeUlkOiBcIlBDQVQtMDAzXCIsIHNlbGxQcmljZTogNTIwMDAsIGJ1eVByaWNlOiA0NTUwMCwgdW5pdDogXCJCb3RvbFwiLCBjb2xvcjogXCIjRTExRDQ4XCIsIHN0YXR1czogXCJBa3RpZlwiIH1cbl07XG5cbmV4cG9ydCBjb25zdCBtb2NrVGFua3M6IFRhbmtbXSA9IFtcbiAgeyBpZDogXCJUTkstMDFcIiwgbmFtZTogXCJUYW5raSBQZW5kYW0gMVwiLCBwcm9kdWN0SWQ6IFwiUFJELTAxXCIsIHByb2R1Y3ROYW1lOiBcIlBlcnRhbGl0ZVwiLCBjYXBhY2l0eTogMzAwMDAsIGN1cnJlbnRTdG9jazogMjE0NTAsIHVuaXQ6IFwiTGl0ZXJcIiwgbGFzdFNvdW5kaW5nOiBcIjIwMjYtMDktMjQgMDU6NDVcIiwgc3RhdHVzOiBcIkFtYW5cIiB9LFxuICB7IGlkOiBcIlROSy0wMlwiLCBuYW1lOiBcIlRhbmtpIFBlbmRhbSAyXCIsIHByb2R1Y3RJZDogXCJQUkQtMDJcIiwgcHJvZHVjdE5hbWU6IFwiUGVydGFtYXhcIiwgY2FwYWNpdHk6IDIwMDAwLCBjdXJyZW50U3RvY2s6IDE0MjAwLCB1bml0OiBcIkxpdGVyXCIsIGxhc3RTb3VuZGluZzogXCIyMDI2LTA5LTI0IDA1OjUwXCIsIHN0YXR1czogXCJBbWFuXCIgfSxcbiAgeyBpZDogXCJUTkstMDNcIiwgbmFtZTogXCJUYW5raSBQZW5kYW0gM1wiLCBwcm9kdWN0SWQ6IFwiUFJELTAzXCIsIHByb2R1Y3ROYW1lOiBcIlBlcnRhbWF4IFR1cmJvXCIsIGNhcGFjaXR5OiAxNTAwMCwgY3VycmVudFN0b2NrOiA0ODAwLCB1bml0OiBcIkxpdGVyXCIsIGxhc3RTb3VuZGluZzogXCIyMDI2LTA5LTI0IDA1OjUyXCIsIHN0YXR1czogXCJQZXJsdSBSZW9yZGVyXCIgfSxcbiAgeyBpZDogXCJUTkstMDRcIiwgbmFtZTogXCJUYW5raSBQZW5kYW0gNFwiLCBwcm9kdWN0SWQ6IFwiUFJELTA0XCIsIHByb2R1Y3ROYW1lOiBcIkJpbyBTb2xhclwiLCBjYXBhY2l0eTogMzAwMDAsIGN1cnJlbnRTdG9jazogMjU4MDAsIHVuaXQ6IFwiTGl0ZXJcIiwgbGFzdFNvdW5kaW5nOiBcIjIwMjYtMDktMjQgMDU6NTVcIiwgc3RhdHVzOiBcIkFtYW5cIiB9LFxuICB7IGlkOiBcIlROSy0wNVwiLCBuYW1lOiBcIlRhbmtpIFBlbmRhbSA1XCIsIHByb2R1Y3RJZDogXCJQUkQtMDVcIiwgcHJvZHVjdE5hbWU6IFwiRGV4bGl0ZVwiLCBjYXBhY2l0eTogMTUwMDAsIGN1cnJlbnRTdG9jazogMTEyMDAsIHVuaXQ6IFwiTGl0ZXJcIiwgbGFzdFNvdW5kaW5nOiBcIjIwMjYtMDktMjQgMDU6NThcIiwgc3RhdHVzOiBcIkFtYW5cIiB9XG5dO1xuXG5leHBvcnQgY29uc3QgbW9ja05venpsZXM6IE5venpsZVtdID0gW1xuICB7IGlkOiBcIk5aTC0wMVwiLCBjb2RlOiBcIk5aLTAxXCIsIGlzbGFuZDogXCJQdWxhdSAxIChNb2JpbClcIiwgdGFua0lkOiBcIlROSy0wMVwiLCBwcm9kdWN0SWQ6IFwiUFJELTAxXCIsIHByb2R1Y3ROYW1lOiBcIlBlcnRhbGl0ZVwiLCBjdXJyZW50TWV0ZXI6IDQ4NTIzMC41LCBzdGF0dXM6IFwiQWt0aWZcIiB9LFxuICB7IGlkOiBcIk5aTC0wMlwiLCBjb2RlOiBcIk5aLTAyXCIsIGlzbGFuZDogXCJQdWxhdSAxIChNb2JpbClcIiwgdGFua0lkOiBcIlROSy0wMlwiLCBwcm9kdWN0SWQ6IFwiUFJELTAyXCIsIHByb2R1Y3ROYW1lOiBcIlBlcnRhbWF4XCIsIGN1cnJlbnRNZXRlcjogMzEyMTEwLjIsIHN0YXR1czogXCJBa3RpZlwiIH0sXG4gIHsgaWQ6IFwiTlpMLTAzXCIsIGNvZGU6IFwiTlotMDNcIiwgaXNsYW5kOiBcIlB1bGF1IDIgKE1vYmlsKVwiLCB0YW5rSWQ6IFwiVE5LLTA0XCIsIHByb2R1Y3RJZDogXCJQUkQtMDRcIiwgcHJvZHVjdE5hbWU6IFwiQmlvIFNvbGFyXCIsIGN1cnJlbnRNZXRlcjogNTkyODgwLjAsIHN0YXR1czogXCJBa3RpZlwiIH0sXG4gIHsgaWQ6IFwiTlpMLTA0XCIsIGNvZGU6IFwiTlotMDRcIiwgaXNsYW5kOiBcIlB1bGF1IDIgKE1vYmlsKVwiLCB0YW5rSWQ6IFwiVE5LLTA1XCIsIHByb2R1Y3RJZDogXCJQUkQtMDVcIiwgcHJvZHVjdE5hbWU6IFwiRGV4bGl0ZVwiLCBjdXJyZW50TWV0ZXI6IDE4NDUyMC44LCBzdGF0dXM6IFwiQWt0aWZcIiB9LFxuICB7IGlkOiBcIk5aTC0wNVwiLCBjb2RlOiBcIk5aLTA1XCIsIGlzbGFuZDogXCJQdWxhdSAzIChNb3RvcilcIiwgdGFua0lkOiBcIlROSy0wMVwiLCBwcm9kdWN0SWQ6IFwiUFJELTAxXCIsIHByb2R1Y3ROYW1lOiBcIlBlcnRhbGl0ZVwiLCBjdXJyZW50TWV0ZXI6IDgyMDE0MC4zLCBzdGF0dXM6IFwiQWt0aWZcIiB9LFxuICB7IGlkOiBcIk5aTC0wNlwiLCBjb2RlOiBcIk5aLTA2XCIsIGlzbGFuZDogXCJQdWxhdSAzIChNb3RvcilcIiwgdGFua0lkOiBcIlROSy0wMlwiLCBwcm9kdWN0SWQ6IFwiUFJELTAyXCIsIHByb2R1Y3ROYW1lOiBcIlBlcnRhbWF4XCIsIGN1cnJlbnRNZXRlcjogNDQwMjE1LjcsIHN0YXR1czogXCJBa3RpZlwiIH0sXG4gIHsgaWQ6IFwiTlpMLTA3XCIsIGNvZGU6IFwiTlotMDdcIiwgaXNsYW5kOiBcIlB1bGF1IDQgKE1vdG9yKVwiLCB0YW5rSWQ6IFwiVE5LLTAxXCIsIHByb2R1Y3RJZDogXCJQUkQtMDFcIiwgcHJvZHVjdE5hbWU6IFwiUGVydGFsaXRlXCIsIGN1cnJlbnRNZXRlcjogNzY1OTEwLjEsIHN0YXR1czogXCJNYWludGVuYW5jZVwiIH0sXG4gIHsgaWQ6IFwiTlpMLTA4XCIsIGNvZGU6IFwiTlotMDhcIiwgaXNsYW5kOiBcIlB1bGF1IDQgKE1vdG9yKVwiLCB0YW5rSWQ6IFwiVE5LLTAzXCIsIHByb2R1Y3RJZDogXCJQUkQtMDNcIiwgcHJvZHVjdE5hbWU6IFwiUGVydGFtYXggVHVyYm9cIiwgY3VycmVudE1ldGVyOiAxMjUzMDAuNCwgc3RhdHVzOiBcIkFrdGlmXCIgfVxuXTtcblxuZXhwb3J0IGNvbnN0IG1vY2tTaGlmdHM6IFNoaWZ0W10gPSBbXG4gIHsgaWQ6IFwiU0ZULTAxXCIsIG5hbWU6IFwiU2hpZnQgMVwiLCBzdGFydFRpbWU6IFwiMDc6MDBcIiwgZW5kVGltZTogXCIxNTowMFwiLCBvcGVyYXRvcjogXCJBaG1hZCBGYXV6aVwiLCBzdGF0dXM6IFwiQWt0aWZcIiwgdG90YWxTYWxlczogMjg0NTAwMDAsIGNhc2hIYW5kb3ZlcjogMCwgZGF0ZTogXCIyMDI2LTA5LTI0XCIsIGluaXRpYWxDYXNoOiAxMDAwMDAwLCBkaXNjcmVwYW5jeTogMCB9LFxuICB7IGlkOiBcIlNGVC0wMlwiLCBuYW1lOiBcIlNoaWZ0IDJcIiwgc3RhcnRUaW1lOiBcIjE1OjAwXCIsIGVuZFRpbWU6IFwiMjM6MDBcIiwgb3BlcmF0b3I6IFwiU2l0aSBSYWhtYVwiLCBzdGF0dXM6IFwiTWVudW5nZ3VcIiwgdG90YWxTYWxlczogMCwgY2FzaEhhbmRvdmVyOiAwLCBkYXRlOiBcIjIwMjYtMDktMjRcIiwgaW5pdGlhbENhc2g6IDAsIGRpc2NyZXBhbmN5OiAwIH1cbl07XG5cbmV4cG9ydCBjb25zdCBtb2NrUGVnYXdhaTogUGVnYXdhaVtdID0gW1xuICB7IGlkOiBcIk9QUi0wMDFcIiwgbmFtZTogXCJBaG1hZCBGYXV6aVwiLCByb2xlOiBcIk9wZXJhdG9yIEthc2lyXCIsIHN0YXR1czogXCJBa3RpZlwiLCBzaGlmdElkOiBcIlNGVC0wMVwiIH0sXG4gIHsgaWQ6IFwiT1BSLTAwMlwiLCBuYW1lOiBcIlNpdGkgUmFobWFcIiwgcm9sZTogXCJPcGVyYXRvciBLYXNpclwiLCBzdGF0dXM6IFwiQWt0aWZcIiwgc2hpZnRJZDogXCJTRlQtMDJcIiB9LFxuICB7IGlkOiBcIk9QUi0wMDNcIiwgbmFtZTogXCJEb25pIFByYXRhbWFcIiwgcm9sZTogXCJPcGVyYXRvciBLYXNpclwiLCBzdGF0dXM6IFwiQWt0aWZcIiwgc2hpZnRJZDogXCJTRlQtMDFcIiB9LFxuICB7IGlkOiBcIk9QUi0wMDRcIiwgbmFtZTogXCJSaW1hXCIsIHJvbGU6IFwiT3BlcmF0b3IgS2FzaXJcIiwgc3RhdHVzOiBcIkFrdGlmXCIsIHNoaWZ0SWQ6IFwiU0ZULTAxXCIgfVxuXTtcblxuZXhwb3J0IGNvbnN0IG1vY2tBdHRlbmRhbmNlczogQXR0ZW5kYW5jZVtdID0gW1xuICB7XG4gICAgaWQ6IFwiQVRULTIwMjYwOTI0LTAwMVwiLFxuICAgIGVtcGxveWVlSWQ6IFwiT1BSLTAwMVwiLFxuICAgIGVtcGxveWVlTmFtZTogXCJBaG1hZCBGYXV6aVwiLFxuICAgIHNoaWZ0SWQ6IFwiU0ZULTAxXCIsXG4gICAgc2hpZnROYW1lOiBcIlNoaWZ0IDFcIixcbiAgICBkYXRlOiBcIjIwMjYtMDktMjRcIixcbiAgICBzdGF0dXM6IFwiSGFkaXJcIixcbiAgICBub3RlczogXCJUZXBhdCB3YWt0dVwiLFxuICAgIGNoZWNrSW5UaW1lOiBcIjA2OjU1XCJcbiAgfSxcbiAge1xuICAgIGlkOiBcIkFUVC0yMDI2MDkyNC0wMDJcIixcbiAgICBlbXBsb3llZUlkOiBcIk9QUi0wMDRcIixcbiAgICBlbXBsb3llZU5hbWU6IFwiUmltYVwiLFxuICAgIHNoaWZ0SWQ6IFwiU0ZULTAxXCIsXG4gICAgc2hpZnROYW1lOiBcIlNoaWZ0IDFcIixcbiAgICBkYXRlOiBcIjIwMjYtMDktMjRcIixcbiAgICBzdGF0dXM6IFwiSGFkaXJcIixcbiAgICBub3RlczogXCJUZXBhdCB3YWt0dVwiLFxuICAgIGNoZWNrSW5UaW1lOiBcIjA2OjU4XCJcbiAgfSxcbiAge1xuICAgIGlkOiBcIkFUVC0yMDI2MDkyNC0wMDNcIixcbiAgICBlbXBsb3llZUlkOiBcIk9QUi0wMDJcIixcbiAgICBlbXBsb3llZU5hbWU6IFwiU2l0aSBSYWhtYVwiLFxuICAgIHNoaWZ0SWQ6IFwiU0ZULTAyXCIsXG4gICAgc2hpZnROYW1lOiBcIlNoaWZ0IDJcIixcbiAgICBkYXRlOiBcIjIwMjYtMDktMjRcIixcbiAgICBzdGF0dXM6IFwiSGFkaXJcIixcbiAgICBub3RlczogXCJTaGlmdCBzaWFuZyBzdGFuZGJ5XCIsXG4gICAgY2hlY2tJblRpbWU6IFwiMTQ6NTBcIlxuICB9LFxuICB7XG4gICAgaWQ6IFwiQVRULTIwMjYwOTI0LTAwNFwiLFxuICAgIGVtcGxveWVlSWQ6IFwiT1BSLTAwM1wiLFxuICAgIGVtcGxveWVlTmFtZTogXCJEb25pIFByYXRhbWFcIixcbiAgICBzaGlmdElkOiBcIlNGVC0wMVwiLFxuICAgIHNoaWZ0TmFtZTogXCJTaGlmdCAxXCIsXG4gICAgZGF0ZTogXCIyMDI2LTA5LTI0XCIsXG4gICAgc3RhdHVzOiBcIkl6aW5cIixcbiAgICBub3RlczogXCJJemluIHVydXNhbiBrZWx1YXJnYVwiLFxuICAgIGNoZWNrSW5UaW1lOiBcIi1cIlxuICB9XG5dO1xuXG4vKipcbiAqIFJlcXVpcmVtZW50IFRlcmE6XG4gKiBWb2x1bWUgPSBUZXJhIEFraGlyIC0gVGVyYSBBd2FsXG4gKiBOaWxhaSBQZW5qdWFsYW4gPSBWb2x1bWUgKiBIYXJnYSBKdWFsXG4gKi9cbmV4cG9ydCBjb25zdCBtb2NrVGVyYTogVGVyYVtdID0gW1xuICB7XG4gICAgaWQ6IFwiVFJBLTAwMVwiLFxuICAgIGRhdGU6IFwiMjAyNi0wOS0yNFwiLFxuICAgIHNoaWZ0SWQ6IFwiU0ZULTAxXCIsXG4gICAgc2hpZnQ6IFwiU2hpZnQgMVwiLFxuICAgIG5venpsZUlkOiBcIk5aTC0wMVwiLFxuICAgIG5venpsZUNvZGU6IFwiTlotMDFcIixcbiAgICBwcm9kdWN0SWQ6IFwiUFJELTAxXCIsXG4gICAgcHJvZHVjdE5hbWU6IFwiUGVydGFsaXRlXCIsXG4gICAgcHJpY2U6IDEwMDAwLFxuICAgIHRlcmFBd2FsOiA0ODM1MDAuMCxcbiAgICB0ZXJhQWtoaXI6IDQ4NTIzMC41LFxuICAgIHZvbHVtZTogMTczMC41LFxuICAgIHNlbGlzaWg6IDAuMCxcbiAgICBzYWxlc0Ftb3VudDogMTczMDUwMDAsXG4gICAgb2ZmaWNlcjogXCJBaG1hZCBGYXV6aVwiLFxuICAgIHN0YXR1czogXCJWYWxpZFwiLFxuICAgIHRyYW5zYWN0aW9uSWQ6IFwiVFgtMjAyNjA5MjQtMDAxXCJcbiAgfSxcbiAge1xuICAgIGlkOiBcIlRSQS0wMDJcIixcbiAgICBkYXRlOiBcIjIwMjYtMDktMjRcIixcbiAgICBzaGlmdElkOiBcIlNGVC0wMVwiLFxuICAgIHNoaWZ0OiBcIlNoaWZ0IDFcIixcbiAgICBub3p6bGVJZDogXCJOWkwtMDJcIixcbiAgICBub3p6bGVDb2RlOiBcIk5aLTAyXCIsXG4gICAgcHJvZHVjdElkOiBcIlBSRC0wMlwiLFxuICAgIHByb2R1Y3ROYW1lOiBcIlBlcnRhbWF4XCIsXG4gICAgcHJpY2U6IDEyOTUwLFxuICAgIHRlcmFBd2FsOiAzMTE0NTAuMCxcbiAgICB0ZXJhQWtoaXI6IDMxMjExMC4yLFxuICAgIHZvbHVtZTogNjYwLjIsXG4gICAgc2VsaXNpaDogMC4wLFxuICAgIHNhbGVzQW1vdW50OiA4NTQ5NTkwLFxuICAgIG9mZmljZXI6IFwiQWhtYWQgRmF1emlcIixcbiAgICBzdGF0dXM6IFwiVmFsaWRcIixcbiAgICB0cmFuc2FjdGlvbklkOiBcIlRYLTIwMjYwOTI0LTAwMlwiXG4gIH0sXG4gIHtcbiAgICBpZDogXCJUUkEtMDAzXCIsXG4gICAgZGF0ZTogXCIyMDI2LTA5LTI0XCIsXG4gICAgc2hpZnRJZDogXCJTRlQtMDFcIixcbiAgICBzaGlmdDogXCJTaGlmdCAxXCIsXG4gICAgbm96emxlSWQ6IFwiTlpMLTAzXCIsXG4gICAgbm96emxlQ29kZTogXCJOWi0wM1wiLFxuICAgIHByb2R1Y3RJZDogXCJQUkQtMDRcIixcbiAgICBwcm9kdWN0TmFtZTogXCJCaW8gU29sYXJcIixcbiAgICBwcmljZTogNjgwMCxcbiAgICB0ZXJhQXdhbDogNTkxOTAwLjAsXG4gICAgdGVyYUFraGlyOiA1OTI4ODAuMCxcbiAgICB2b2x1bWU6IDk4MC4wLFxuICAgIHNlbGlzaWg6IDAuMCxcbiAgICBzYWxlc0Ftb3VudDogNjY2NDAwMCxcbiAgICBvZmZpY2VyOiBcIkFobWFkIEZhdXppXCIsXG4gICAgc3RhdHVzOiBcIlZhbGlkXCJcbiAgfVxuXTtcblxuLyoqXG4gKiBNYXN0ZXIgQ29kZSBCZXJiYXNpcyBQcm90b3R5cGU6XG4gKiBNZW5nZ3VuYWthbiBrb2RlIG51bWVyaWsgcmluZ2thcyAoMzAzLCAzMDQsIDMwNSwgMzA2LCAzMDcsIDMwOCwgMzA5KS5cbiAqIE1hc3RlciBDb2RlIERJTkFNSVMsIG1lbmVudHVrYW4gdGVtcGxhdGUgaW5wdXQgZGFuIG1hcHBpbmcgYWt1bnRhbnNpLlxuICovXG5leHBvcnQgY29uc3QgbW9ja01hc3RlckNvZGVzOiBNYXN0ZXJDb2RlW10gPSBbXG4gIHtcbiAgICBpZDogXCJNSy0zMDNcIixcbiAgICBjb2RlOiBcIjMwM1wiLFxuICAgIG5hbWU6IFwiUGVuanVhbGFuIFBlcnRhbGl0ZSBUdW5haVwiLFxuICAgIGNhdGVnb3J5OiBcIlBlbmp1YWxhblwiLFxuICAgIHR5cGU6IFwiUGVuanVhbGFuIEJCTVwiLFxuICAgIHJlcXVpcmVzVGVyYTogdHJ1ZSxcbiAgICBwcm9kdWN0SWQ6IFwiUFJELTAxXCIsXG4gICAgcHJvZHVjdDogXCJQZXJ0YWxpdGVcIixcbiAgICB1bml0UHJpY2U6IDEwMDAwLFxuICAgIGRlYml0QWNjb3VudElkOiBcIjEtMTAwMVwiLFxuICAgIGRlYml0QWNjb3VudE5hbWU6IFwiS2FzIFV0YW1hXCIsXG4gICAgY3JlZGl0QWNjb3VudElkOiBcIjQtMTAwMVwiLFxuICAgIGNyZWRpdEFjY291bnROYW1lOiBcIlBlbmRhcGF0YW4gUGVuanVhbGFuIFBlcnRhbGl0ZVwiLFxuICAgIGRlc2NyaXB0aW9uOiBcIlBlbmp1YWxhbiBQZXJ0YWxpdGUgdHVuYWkgZGVuZ2FuIHBlbmd1a3VyYW4gVGVyYSBOb3p6bGVcIixcbiAgICBwYXltZW50TWV0aG9kOiBcIlR1bmFpXCIsXG4gICAgaXNBY3RpdmU6IHRydWVcbiAgfSxcbiAge1xuICAgIGlkOiBcIk1LLTMwNFwiLFxuICAgIGNvZGU6IFwiMzA0XCIsXG4gICAgbmFtZTogXCJQZW5qdWFsYW4gUGVydGFtYXggVHVuYWlcIixcbiAgICBjYXRlZ29yeTogXCJQZW5qdWFsYW5cIixcbiAgICB0eXBlOiBcIlBlbmp1YWxhbiBCQk1cIixcbiAgICByZXF1aXJlc1RlcmE6IHRydWUsXG4gICAgcHJvZHVjdElkOiBcIlBSRC0wMlwiLFxuICAgIHByb2R1Y3Q6IFwiUGVydGFtYXhcIixcbiAgICB1bml0UHJpY2U6IDEyOTUwLFxuICAgIGRlYml0QWNjb3VudElkOiBcIjEtMTAwMVwiLFxuICAgIGRlYml0QWNjb3VudE5hbWU6IFwiS2FzIFV0YW1hXCIsXG4gICAgY3JlZGl0QWNjb3VudElkOiBcIjQtMTAwMlwiLFxuICAgIGNyZWRpdEFjY291bnROYW1lOiBcIlBlbmRhcGF0YW4gUGVuanVhbGFuIFBlcnRhbWF4XCIsXG4gICAgZGVzY3JpcHRpb246IFwiUGVuanVhbGFuIFBlcnRhbWF4IHR1bmFpIGRlbmdhbiBwZW5ndWt1cmFuIFRlcmEgTm96emxlXCIsXG4gICAgcGF5bWVudE1ldGhvZDogXCJUdW5haVwiLFxuICAgIGlzQWN0aXZlOiB0cnVlXG4gIH0sXG4gIHtcbiAgICBpZDogXCJNSy0zMDlcIixcbiAgICBjb2RlOiBcIjMwOVwiLFxuICAgIG5hbWU6IFwiUGVuanVhbGFuIEJpbyBTb2xhciBUdW5haVwiLFxuICAgIGNhdGVnb3J5OiBcIlBlbmp1YWxhblwiLFxuICAgIHR5cGU6IFwiUGVuanVhbGFuIEJCTVwiLFxuICAgIHJlcXVpcmVzVGVyYTogdHJ1ZSxcbiAgICBwcm9kdWN0SWQ6IFwiUFJELTA0XCIsXG4gICAgcHJvZHVjdDogXCJCaW8gU29sYXJcIixcbiAgICB1bml0UHJpY2U6IDY4MDAsXG4gICAgZGViaXRBY2NvdW50SWQ6IFwiMS0xMDAxXCIsXG4gICAgZGViaXRBY2NvdW50TmFtZTogXCJLYXMgVXRhbWFcIixcbiAgICBjcmVkaXRBY2NvdW50SWQ6IFwiNC0xMDAzXCIsXG4gICAgY3JlZGl0QWNjb3VudE5hbWU6IFwiUGVuZGFwYXRhbiBQZW5qdWFsYW4gQmlvIFNvbGFyXCIsXG4gICAgZGVzY3JpcHRpb246IFwiUGVuanVhbGFuIEJpbyBTb2xhciB0dW5haSBkZW5nYW4gcGVuZ3VrdXJhbiBUZXJhIE5venpsZVwiLFxuICAgIHBheW1lbnRNZXRob2Q6IFwiVHVuYWlcIixcbiAgICBpc0FjdGl2ZTogdHJ1ZVxuICB9LFxuICB7XG4gICAgaWQ6IFwiTUstMzEwXCIsXG4gICAgY29kZTogXCIzMTBcIixcbiAgICBuYW1lOiBcIlBlbmp1YWxhbiBQZXJ0YWxpdGUgS3JlZGl0IChQaXV0YW5nKVwiLFxuICAgIGNhdGVnb3J5OiBcIlBlbmp1YWxhblwiLFxuICAgIHR5cGU6IFwiUGVuanVhbGFuIEJCTVwiLFxuICAgIHJlcXVpcmVzVGVyYTogdHJ1ZSxcbiAgICBwcm9kdWN0SWQ6IFwiUFJELTAxXCIsXG4gICAgcHJvZHVjdDogXCJQZXJ0YWxpdGVcIixcbiAgICB1bml0UHJpY2U6IDEwMDAwLFxuICAgIGRlYml0QWNjb3VudElkOiBcIjEtMTEwMVwiLFxuICAgIGRlYml0QWNjb3VudE5hbWU6IFwiUGl1dGFuZyBVc2FoYVwiLFxuICAgIGNyZWRpdEFjY291bnRJZDogXCI0LTEwMDFcIixcbiAgICBjcmVkaXRBY2NvdW50TmFtZTogXCJQZW5kYXBhdGFuIFBlbmp1YWxhbiBQZXJ0YWxpdGVcIixcbiAgICBkZXNjcmlwdGlvbjogXCJQZW5qdWFsYW4gUGVydGFsaXRlIG5vbi10dW5haSBrdXBvbi90YWdpaGFuIGluc3RhbnNpIGxhbmdnYW5hblwiLFxuICAgIHBheW1lbnRNZXRob2Q6IFwiUGl1dGFuZ1wiLFxuICAgIGlzQWN0aXZlOiB0cnVlXG4gIH0sXG4gIHtcbiAgICBpZDogXCJNSy0zMTFcIixcbiAgICBjb2RlOiBcIjMxMVwiLFxuICAgIG5hbWU6IFwiUGVuanVhbGFuIFBlcnRhbWF4IEtyZWRpdCAoUGl1dGFuZylcIixcbiAgICBjYXRlZ29yeTogXCJQZW5qdWFsYW5cIixcbiAgICB0eXBlOiBcIlBlbmp1YWxhbiBCQk1cIixcbiAgICByZXF1aXJlc1RlcmE6IHRydWUsXG4gICAgcHJvZHVjdElkOiBcIlBSRC0wMlwiLFxuICAgIHByb2R1Y3Q6IFwiUGVydGFtYXhcIixcbiAgICB1bml0UHJpY2U6IDEyOTUwLFxuICAgIGRlYml0QWNjb3VudElkOiBcIjEtMTEwMVwiLFxuICAgIGRlYml0QWNjb3VudE5hbWU6IFwiUGl1dGFuZyBVc2FoYVwiLFxuICAgIGNyZWRpdEFjY291bnRJZDogXCI0LTEwMDJcIixcbiAgICBjcmVkaXRBY2NvdW50TmFtZTogXCJQZW5kYXBhdGFuIFBlbmp1YWxhbiBQZXJ0YW1heFwiLFxuICAgIGRlc2NyaXB0aW9uOiBcIlBlbmp1YWxhbiBQZXJ0YW1heCBub24tdHVuYWkga3Vwb24vdGFnaWhhbiBpbnN0YW5zaSBsYW5nZ2FuYW5cIixcbiAgICBwYXltZW50TWV0aG9kOiBcIlBpdXRhbmdcIixcbiAgICBpc0FjdGl2ZTogdHJ1ZVxuICB9LFxuICB7XG4gICAgaWQ6IFwiTUstMzEyXCIsXG4gICAgY29kZTogXCIzMTJcIixcbiAgICBuYW1lOiBcIlBlbHVuYXNhbiBQaXV0YW5nIFBlbGFuZ2dhblwiLFxuICAgIGNhdGVnb3J5OiBcIlBlbHVuYXNhblwiLFxuICAgIHR5cGU6IFwiUGVuZXJpbWFhbiBLYXNcIixcbiAgICByZXF1aXJlc1RlcmE6IGZhbHNlLFxuICAgIGRlYml0QWNjb3VudElkOiBcIjEtMTAwMVwiLFxuICAgIGRlYml0QWNjb3VudE5hbWU6IFwiS2FzIFV0YW1hXCIsXG4gICAgY3JlZGl0QWNjb3VudElkOiBcIjEtMTEwMVwiLFxuICAgIGNyZWRpdEFjY291bnROYW1lOiBcIlBpdXRhbmcgVXNhaGFcIixcbiAgICBkZXNjcmlwdGlvbjogXCJQZW5lcmltYWFuIHNldG9yYW4ga2FzIGRhcmkgcGVuYWdpaGFuIHBpdXRhbmcga3Vwb24gbGFuZ2dhbmFuXCIsXG4gICAgcGF5bWVudE1ldGhvZDogXCJUdW5haVwiLFxuICAgIGlzQWN0aXZlOiB0cnVlXG4gIH0sXG4gIHtcbiAgICBpZDogXCJNSy0zMDVcIixcbiAgICBjb2RlOiBcIjMwNVwiLFxuICAgIG5hbWU6IFwiQmlheWEgTGlzdHJpayBQTE4gJiBHZW5zZXRcIixcbiAgICBjYXRlZ29yeTogXCJCaWF5YSBPcGVyYXNpb25hbFwiLFxuICAgIHR5cGU6IFwiQmViYW4gT3BlcmFzaW9uYWxcIixcbiAgICByZXF1aXJlc1RlcmE6IGZhbHNlLFxuICAgIGRlYml0QWNjb3VudElkOiBcIjYtMTAwMlwiLFxuICAgIGRlYml0QWNjb3VudE5hbWU6IFwiQmlheWEgTGlzdHJpayAmIEFpclwiLFxuICAgIGNyZWRpdEFjY291bnRJZDogXCIxLTEwMDFcIixcbiAgICBjcmVkaXRBY2NvdW50TmFtZTogXCJLYXMgVXRhbWFcIixcbiAgICBkZXNjcmlwdGlvbjogXCJQZW1iYXlhcmFuIHRhZ2loYW4gbGlzdHJpayBQTE4gZGFuIEJCTSBnZW5zZXQgU1BCVVwiLFxuICAgIHBheW1lbnRNZXRob2Q6IFwiVHVuYWlcIixcbiAgICBpc0FjdGl2ZTogdHJ1ZVxuICB9LFxuICB7XG4gICAgaWQ6IFwiTUstMzA2XCIsXG4gICAgY29kZTogXCIzMDZcIixcbiAgICBuYW1lOiBcIkJpYXlhIExhbmdnYW5hbiBXaUZpICYgVGVscFwiLFxuICAgIGNhdGVnb3J5OiBcIkJpYXlhIE9wZXJhc2lvbmFsXCIsXG4gICAgdHlwZTogXCJCZWJhbiBPcGVyYXNpb25hbFwiLFxuICAgIHJlcXVpcmVzVGVyYTogZmFsc2UsXG4gICAgZGViaXRBY2NvdW50SWQ6IFwiNi0xMDAyXCIsXG4gICAgZGViaXRBY2NvdW50TmFtZTogXCJCaWF5YSBMaXN0cmlrICYgQWlyXCIsXG4gICAgY3JlZGl0QWNjb3VudElkOiBcIjEtMTAwMVwiLFxuICAgIGNyZWRpdEFjY291bnROYW1lOiBcIkthcyBVdGFtYVwiLFxuICAgIGRlc2NyaXB0aW9uOiBcIlBlbWJheWFyYW4gaW50ZXJuZXQgZmliZXIgb3B0aWsgb3BlcmFzaW9uYWwga2FudG9yIFNQQlVcIixcbiAgICBwYXltZW50TWV0aG9kOiBcIlR1bmFpXCIsXG4gICAgaXNBY3RpdmU6IHRydWVcbiAgfSxcbiAge1xuICAgIGlkOiBcIk1LLTMwN1wiLFxuICAgIGNvZGU6IFwiMzA3XCIsXG4gICAgbmFtZTogXCJHYWppICYgVWFuZyBNYWthbiBLYXJ5YXdhblwiLFxuICAgIGNhdGVnb3J5OiBcIkJpYXlhIE9wZXJhc2lvbmFsXCIsXG4gICAgdHlwZTogXCJCZWJhbiBPcGVyYXNpb25hbFwiLFxuICAgIHJlcXVpcmVzVGVyYTogZmFsc2UsXG4gICAgZGViaXRBY2NvdW50SWQ6IFwiNi0xMDAxXCIsXG4gICAgZGViaXRBY2NvdW50TmFtZTogXCJCaWF5YSBHYWppICYgVXBhaCBLYXJ5YXdhblwiLFxuICAgIGNyZWRpdEFjY291bnRJZDogXCIxLTEwMDFcIixcbiAgICBjcmVkaXRBY2NvdW50TmFtZTogXCJLYXMgVXRhbWFcIixcbiAgICBkZXNjcmlwdGlvbjogXCJVcGFoIGtlcmphIG9wZXJhdG9yIHNoaWZ0LCB0ZWtuaXNpLCBkYW4gcGV0dWdhcyBrZWJlcnNpaGFuXCIsXG4gICAgcGF5bWVudE1ldGhvZDogXCJUdW5haVwiLFxuICAgIGlzQWN0aXZlOiB0cnVlXG4gIH0sXG4gIHtcbiAgICBpZDogXCJNSy0zMDhcIixcbiAgICBjb2RlOiBcIjMwOFwiLFxuICAgIG5hbWU6IFwiUGVuZWJ1c2FuIERPIFBlcnRhbWluYSAoUGVydGFsaXRlKVwiLFxuICAgIGNhdGVnb3J5OiBcIlBlbWJlbGlhblwiLFxuICAgIHR5cGU6IFwiUGVtYmVsaWFuIEJCTVwiLFxuICAgIHJlcXVpcmVzVGVyYTogZmFsc2UsXG4gICAgcHJvZHVjdElkOiBcIlBSRC0wMVwiLFxuICAgIHByb2R1Y3Q6IFwiUGVydGFsaXRlXCIsXG4gICAgdW5pdFByaWNlOiA5NjUwLFxuICAgIGRlYml0QWNjb3VudElkOiBcIjEtMTIwMVwiLFxuICAgIGRlYml0QWNjb3VudE5hbWU6IFwiUGVyc2VkaWFhbiBCQk0gUGVydGFsaXRlXCIsXG4gICAgY3JlZGl0QWNjb3VudElkOiBcIjEtMTAwMlwiLFxuICAgIGNyZWRpdEFjY291bnROYW1lOiBcIkJhbmsgTWFuZGlyaSBPcGVyYXNpb25hbFwiLFxuICAgIGRlc2NyaXB0aW9uOiBcIlBlbmVidXNhbiBEZWxpdmVyeSBPcmRlciBCQk0ga2UgUGVydGFtaW5hIFBhdHJhIE5pYWdhIChCYW5rKVwiLFxuICAgIHBheW1lbnRNZXRob2Q6IFwiVHJhbnNmZXJcIixcbiAgICBpc0FjdGl2ZTogdHJ1ZVxuICB9LFxuICB7XG4gICAgaWQ6IFwiTUstMzEzXCIsXG4gICAgY29kZTogXCIzMTNcIixcbiAgICBuYW1lOiBcIlBlbWJlbGlhbiBQZXJzZWRpYWFuIFR1bmFpIEthc1wiLFxuICAgIGNhdGVnb3J5OiBcIlBlbWJlbGlhblwiLFxuICAgIHR5cGU6IFwiUGVtYmVsaWFuIEJCTSAvIEJhcmFuZ1wiLFxuICAgIHJlcXVpcmVzVGVyYTogZmFsc2UsXG4gICAgcHJvZHVjdElkOiBcIlBSRC0wMVwiLFxuICAgIHByb2R1Y3Q6IFwiUGVydGFsaXRlXCIsXG4gICAgdW5pdFByaWNlOiA5NjUwLFxuICAgIGRlYml0QWNjb3VudElkOiBcIjEtMTIwMVwiLFxuICAgIGRlYml0QWNjb3VudE5hbWU6IFwiUGVyc2VkaWFhbiBCQk0gUGVydGFsaXRlXCIsXG4gICAgY3JlZGl0QWNjb3VudElkOiBcIjEtMTAwMVwiLFxuICAgIGNyZWRpdEFjY291bnROYW1lOiBcIkthcyBVdGFtYVwiLFxuICAgIGRlc2NyaXB0aW9uOiBcIlBlbWJlbGlhbiBCQk0gYXRhdSBwZXJsZW5na2FwYW4gb3BlcmFzaW9uYWwgbGFuZ3N1bmcgdHVuYWkga2FzIGJyYW5rYXNcIixcbiAgICBwYXltZW50TWV0aG9kOiBcIlR1bmFpXCIsXG4gICAgaXNBY3RpdmU6IHRydWVcbiAgfSxcbiAge1xuICAgIGlkOiBcIk1LLTMxNFwiLFxuICAgIGNvZGU6IFwiMzE0XCIsXG4gICAgbmFtZTogXCJQZW1iZWxpYW4gUGVyc2VkaWFhbiBLcmVkaXQgKEh1dGFuZyBVc2FoYSlcIixcbiAgICBjYXRlZ29yeTogXCJQZW1iZWxpYW5cIixcbiAgICB0eXBlOiBcIlBlbWJlbGlhbiBCQk0gLyBCYXJhbmdcIixcbiAgICByZXF1aXJlc1RlcmE6IGZhbHNlLFxuICAgIHByb2R1Y3RJZDogXCJQUkQtMDFcIixcbiAgICBwcm9kdWN0OiBcIlBlcnRhbGl0ZVwiLFxuICAgIHVuaXRQcmljZTogOTY1MCxcbiAgICBkZWJpdEFjY291bnRJZDogXCIxLTEyMDFcIixcbiAgICBkZWJpdEFjY291bnROYW1lOiBcIlBlcnNlZGlhYW4gQkJNIFBlcnRhbGl0ZVwiLFxuICAgIGNyZWRpdEFjY291bnRJZDogXCIyLTEwMDFcIixcbiAgICBjcmVkaXRBY2NvdW50TmFtZTogXCJIdXRhbmcgVXNhaGEgKFBlcnRhbWluYSlcIixcbiAgICBkZXNjcmlwdGlvbjogXCJQZW5lcmltYWFuIERPIC8gYmFyYW5nIGRhZ2FuZyBzZWNhcmEga3JlZGl0IGF0YXUga29uc2lueWFzaVwiLFxuICAgIHBheW1lbnRNZXRob2Q6IFwiSHV0YW5nXCIsXG4gICAgaXNBY3RpdmU6IHRydWVcbiAgfSxcbiAge1xuICAgIGlkOiBcIk1LLTMxNVwiLFxuICAgIGNvZGU6IFwiMzE1XCIsXG4gICAgbmFtZTogXCJQZW1iYXlhcmFuIEh1dGFuZyBVc2FoYVwiLFxuICAgIGNhdGVnb3J5OiBcIlBlbHVuYXNhblwiLFxuICAgIHR5cGU6IFwiUGVuZ2VsdWFyYW4gS2FzXCIsXG4gICAgcmVxdWlyZXNUZXJhOiBmYWxzZSxcbiAgICBkZWJpdEFjY291bnRJZDogXCIyLTEwMDFcIixcbiAgICBkZWJpdEFjY291bnROYW1lOiBcIkh1dGFuZyBVc2FoYSAoUGVydGFtaW5hKVwiLFxuICAgIGNyZWRpdEFjY291bnRJZDogXCIxLTEwMDFcIixcbiAgICBjcmVkaXRBY2NvdW50TmFtZTogXCJLYXMgVXRhbWFcIixcbiAgICBkZXNjcmlwdGlvbjogXCJQZW1iYXlhcmFuIHBlbHVuYXNhbiBpbnZvaWNlIHRhZ2loYW4gaHV0YW5nIHN1cHBsaWVyL3ZlbmRvclwiLFxuICAgIHBheW1lbnRNZXRob2Q6IFwiVHVuYWlcIixcbiAgICBpc0FjdGl2ZTogdHJ1ZVxuICB9XG5dO1xuXG5leHBvcnQgY29uc3QgbW9ja0FjY291bnRzOiBBY2NvdW50W10gPSBbXG4gIHsgaWQ6IFwiMS0xMDAxXCIsIGNvZGU6IFwiMS0xMDAxXCIsIG5hbWU6IFwiS2FzIFV0YW1hIChCcmFua2FzKVwiLCBjYXRlZ29yeTogXCJBc2V0XCIsIG5vcm1hbEJhbGFuY2U6IFwiRGViaXRcIiwgYmFsYW5jZTogNTQ4MjAwMDAsIGlzQWN0aXZlOiB0cnVlIH0sXG4gIHsgaWQ6IFwiMS0xMDAyXCIsIGNvZGU6IFwiMS0xMDAyXCIsIG5hbWU6IFwiQmFuayBNYW5kaXJpIE9wZXJhc2lvbmFsXCIsIGNhdGVnb3J5OiBcIkFzZXRcIiwgbm9ybWFsQmFsYW5jZTogXCJEZWJpdFwiLCBiYWxhbmNlOiAxODU0MDAwMDAsIGlzQWN0aXZlOiB0cnVlIH0sXG4gIHsgaWQ6IFwiMS0xMTAxXCIsIGNvZGU6IFwiMS0xMTAxXCIsIG5hbWU6IFwiUGl1dGFuZyBVc2FoYSAoUGVsYW5nZ2FuIC8gS3Vwb24pXCIsIGNhdGVnb3J5OiBcIkFzZXRcIiwgbm9ybWFsQmFsYW5jZTogXCJEZWJpdFwiLCBiYWxhbmNlOiAxNTAwMDAwMCwgaXNBY3RpdmU6IHRydWUgfSxcbiAgeyBpZDogXCIxLTEyMDFcIiwgY29kZTogXCIxLTEyMDFcIiwgbmFtZTogXCJQZXJzZWRpYWFuIEJCTSBQZXJ0YWxpdGVcIiwgY2F0ZWdvcnk6IFwiQXNldFwiLCBub3JtYWxCYWxhbmNlOiBcIkRlYml0XCIsIGJhbGFuY2U6IDIwNjk5MjUwMCwgaXNBY3RpdmU6IHRydWUgfSxcbiAgeyBpZDogXCIxLTEyMDJcIiwgY29kZTogXCIxLTEyMDJcIiwgbmFtZTogXCJQZXJzZWRpYWFuIEJCTSBQZXJ0YW1heFwiLCBjYXRlZ29yeTogXCJBc2V0XCIsIG5vcm1hbEJhbGFuY2U6IFwiRGViaXRcIiwgYmFsYW5jZTogMTc2MDgwMDAwLCBpc0FjdGl2ZTogdHJ1ZSB9LFxuICB7IGlkOiBcIjEtMTIwM1wiLCBjb2RlOiBcIjEtMTIwM1wiLCBuYW1lOiBcIlBlcnNlZGlhYW4gQkJNIEJpbyBTb2xhclwiLCBjYXRlZ29yeTogXCJBc2V0XCIsIG5vcm1hbEJhbGFuY2U6IFwiRGViaXRcIiwgYmFsYW5jZTogMTY4OTkwMDAwLCBpc0FjdGl2ZTogdHJ1ZSB9LFxuICB7IGlkOiBcIjEtMTIwNFwiLCBjb2RlOiBcIjEtMTIwNFwiLCBuYW1lOiBcIlBlcnNlZGlhYW4gQkJNIERleGxpdGVcIiwgY2F0ZWdvcnk6IFwiQXNldFwiLCBub3JtYWxCYWxhbmNlOiBcIkRlYml0XCIsIGJhbGFuY2U6IDE0NzI4MDAwMCwgaXNBY3RpdmU6IHRydWUgfSxcbiAgeyBpZDogXCIxLTE1MDFcIiwgY29kZTogXCIxLTE1MDFcIiwgbmFtZTogXCJUYW5haCAmIEJhbmd1bmFuIFNQQlVcIiwgY2F0ZWdvcnk6IFwiQXNldFwiLCBub3JtYWxCYWxhbmNlOiBcIkRlYml0XCIsIGJhbGFuY2U6IDE4NTAwMDAwMDAsIGlzQWN0aXZlOiB0cnVlIH0sXG4gIHsgaWQ6IFwiMS0xNTAyXCIsIGNvZGU6IFwiMS0xNTAyXCIsIG5hbWU6IFwiRGlzcGVuc2VyICYgTWVzaW4gUG9tcGFcIiwgY2F0ZWdvcnk6IFwiQXNldFwiLCBub3JtYWxCYWxhbmNlOiBcIkRlYml0XCIsIGJhbGFuY2U6IDQyMDAwMDAwMCwgaXNBY3RpdmU6IHRydWUgfSxcbiAgeyBpZDogXCIyLTEwMDFcIiwgY29kZTogXCIyLTEwMDFcIiwgbmFtZTogXCJIdXRhbmcgVXNhaGEgKFBlcnRhbWluYSlcIiwgY2F0ZWdvcnk6IFwiS2V3YWppYmFuXCIsIG5vcm1hbEJhbGFuY2U6IFwiS3JlZGl0XCIsIGJhbGFuY2U6IDk1MDAwMDAwLCBpc0FjdGl2ZTogdHJ1ZSB9LFxuICB7IGlkOiBcIjItMTAwMlwiLCBjb2RlOiBcIjItMTAwMlwiLCBuYW1lOiBcIkh1dGFuZyBCZWJhbiBPcGVyYXNpb25hbFwiLCBjYXRlZ29yeTogXCJLZXdhamliYW5cIiwgbm9ybWFsQmFsYW5jZTogXCJLcmVkaXRcIiwgYmFsYW5jZTogNjUwMDAwMCwgaXNBY3RpdmU6IHRydWUgfSxcbiAgeyBpZDogXCIzLTEwMDFcIiwgY29kZTogXCIzLTEwMDFcIiwgbmFtZTogXCJNb2RhbCBQZW1pbGlrIFNQQlVcIiwgY2F0ZWdvcnk6IFwiRWt1aXRhc1wiLCBub3JtYWxCYWxhbmNlOiBcIktyZWRpdFwiLCBiYWxhbmNlOiAyODUwMDAwMDAwLCBpc0FjdGl2ZTogdHJ1ZSB9LFxuICB7IGlkOiBcIjMtMjAwMVwiLCBjb2RlOiBcIjMtMjAwMVwiLCBuYW1lOiBcIkxhYmEgRGl0YWhhblwiLCBjYXRlZ29yeTogXCJFa3VpdGFzXCIsIG5vcm1hbEJhbGFuY2U6IFwiS3JlZGl0XCIsIGJhbGFuY2U6IDE4NTAwMDAwMCwgaXNBY3RpdmU6IHRydWUgfSxcbiAgeyBpZDogXCI0LTEwMDFcIiwgY29kZTogXCI0LTEwMDFcIiwgbmFtZTogXCJQZW5kYXBhdGFuIFBlbmp1YWxhbiBQZXJ0YWxpdGVcIiwgY2F0ZWdvcnk6IFwiUGVuZGFwYXRhblwiLCBub3JtYWxCYWxhbmNlOiBcIktyZWRpdFwiLCBiYWxhbmNlOiA3NDIwMDAwMCwgaXNBY3RpdmU6IHRydWUgfSxcbiAgeyBpZDogXCI0LTEwMDJcIiwgY29kZTogXCI0LTEwMDJcIiwgbmFtZTogXCJQZW5kYXBhdGFuIFBlbmp1YWxhbiBQZXJ0YW1heFwiLCBjYXRlZ29yeTogXCJQZW5kYXBhdGFuXCIsIG5vcm1hbEJhbGFuY2U6IFwiS3JlZGl0XCIsIGJhbGFuY2U6IDQxODUwMDAwLCBpc0FjdGl2ZTogdHJ1ZSB9LFxuICB7IGlkOiBcIjQtMTAwM1wiLCBjb2RlOiBcIjQtMTAwM1wiLCBuYW1lOiBcIlBlbmRhcGF0YW4gUGVuanVhbGFuIEJpbyBTb2xhclwiLCBjYXRlZ29yeTogXCJQZW5kYXBhdGFuXCIsIG5vcm1hbEJhbGFuY2U6IFwiS3JlZGl0XCIsIGJhbGFuY2U6IDMyNjAwMDAwLCBpc0FjdGl2ZTogdHJ1ZSB9LFxuICB7IGlkOiBcIjUtMTAwMVwiLCBjb2RlOiBcIjUtMTAwMVwiLCBuYW1lOiBcIkhQUCBQZXJ0YWxpdGVcIiwgY2F0ZWdvcnk6IFwiQmViYW4gUG9rb2tcIiwgbm9ybWFsQmFsYW5jZTogXCJEZWJpdFwiLCBiYWxhbmNlOiA3MTYwMDAwMCwgaXNBY3RpdmU6IHRydWUgfSxcbiAgeyBpZDogXCI2LTEwMDFcIiwgY29kZTogXCI2LTEwMDFcIiwgbmFtZTogXCJCaWF5YSBHYWppICYgVXBhaCBLYXJ5YXdhblwiLCBjYXRlZ29yeTogXCJCZWJhblwiLCBub3JtYWxCYWxhbmNlOiBcIkRlYml0XCIsIGJhbGFuY2U6IDEyNTAwMDAwLCBpc0FjdGl2ZTogdHJ1ZSB9LFxuICB7IGlkOiBcIjYtMTAwMlwiLCBjb2RlOiBcIjYtMTAwMlwiLCBuYW1lOiBcIkJpYXlhIExpc3RyaWsgJiBBaXJcIiwgY2F0ZWdvcnk6IFwiQmViYW5cIiwgbm9ybWFsQmFsYW5jZTogXCJEZWJpdFwiLCBiYWxhbmNlOiA0MjAwMDAwLCBpc0FjdGl2ZTogdHJ1ZSB9LFxuICB7IGlkOiBcIjYtMTAwM1wiLCBjb2RlOiBcIjYtMTAwM1wiLCBuYW1lOiBcIkJpYXlhIFBlbWVsaWhhcmFhbiAmIFRlcmFcIiwgY2F0ZWdvcnk6IFwiQmViYW5cIiwgbm9ybWFsQmFsYW5jZTogXCJEZWJpdFwiLCBiYWxhbmNlOiAyMTAwMDAwLCBpc0FjdGl2ZTogdHJ1ZSB9XG5dO1xuXG5leHBvcnQgY29uc3QgbW9ja1RyYW5zYWN0aW9uczogVHJhbnNhY3Rpb25bXSA9IFtcbiAge1xuICAgIGlkOiBcIlRYLTIwMjYwOTI0LTAwMVwiLFxuICAgIGRhdGU6IFwiMjAyNi0wOS0yNCAwNzoxNVwiLFxuICAgIGNvZGU6IFwiMzAzXCIsXG4gICAgbmFtZTogXCJQZW5qdWFsYW4gUGVydGFsaXRlIFR1bmFpXCIsXG4gICAgY2F0ZWdvcnk6IFwiUGVuanVhbGFuIEJCTVwiLFxuICAgIHByb2R1Y3RJZDogXCJQUkQtMDFcIixcbiAgICBwcm9kdWN0OiBcIlBlcnRhbGl0ZVwiLFxuICAgIHZvbHVtZTogMzUuNSxcbiAgICB1bml0UHJpY2U6IDEwMDAwLFxuICAgIHRvdGFsOiAzNTUwMDAsXG4gICAgc2hpZnRJZDogXCJTRlQtMDFcIixcbiAgICBzaGlmdDogXCJTaGlmdCAxXCIsXG4gICAgY2FzaGllcjogXCJBaG1hZCBGYXV6aVwiLFxuICAgIHN0YXR1czogXCJTZWxlc2FpXCIsXG4gICAgbm96emxlSWQ6IFwiTlpMLTAxXCIsXG4gICAgdGVyYUlkOiBcIlRSQS0wMDFcIixcbiAgICB0ZXJhQXdhbDogNDg1MTk1LjAsXG4gICAgdGVyYUFraGlyOiA0ODUyMzAuNVxuICB9LFxuICB7XG4gICAgaWQ6IFwiVFgtMjAyNjA5MjQtMDAyXCIsXG4gICAgZGF0ZTogXCIyMDI2LTA5LTI0IDA3OjIyXCIsXG4gICAgY29kZTogXCIzMDRcIixcbiAgICBuYW1lOiBcIlBlbmp1YWxhbiBQZXJ0YW1heCBUdW5haVwiLFxuICAgIGNhdGVnb3J5OiBcIlBlbmp1YWxhbiBCQk1cIixcbiAgICBwcm9kdWN0SWQ6IFwiUFJELTAyXCIsXG4gICAgcHJvZHVjdDogXCJQZXJ0YW1heFwiLFxuICAgIHZvbHVtZTogMjUuMCxcbiAgICB1bml0UHJpY2U6IDEyOTUwLFxuICAgIHRvdGFsOiAzMjM3NTAsXG4gICAgc2hpZnRJZDogXCJTRlQtMDFcIixcbiAgICBzaGlmdDogXCJTaGlmdCAxXCIsXG4gICAgY2FzaGllcjogXCJBaG1hZCBGYXV6aVwiLFxuICAgIHN0YXR1czogXCJTZWxlc2FpXCIsXG4gICAgbm96emxlSWQ6IFwiTlpMLTAyXCIsXG4gICAgdGVyYUlkOiBcIlRSQS0wMDJcIixcbiAgICB0ZXJhQXdhbDogMzEyMDg1LjIsXG4gICAgdGVyYUFraGlyOiAzMTIxMTAuMlxuICB9LFxuICB7XG4gICAgaWQ6IFwiVFgtMjAyNjA5MjQtMDAzXCIsXG4gICAgZGF0ZTogXCIyMDI2LTA5LTI0IDA4OjMwXCIsXG4gICAgY29kZTogXCIzMDhcIixcbiAgICBuYW1lOiBcIlBlbmVidXNhbiBETyBQZXJ0YW1pbmEgKFBlcnRhbGl0ZSlcIixcbiAgICBjYXRlZ29yeTogXCJQZW1iZWxpYW5cIixcbiAgICBwcm9kdWN0SWQ6IFwiUFJELTAxXCIsXG4gICAgcHJvZHVjdDogXCJQZXJ0YWxpdGVcIixcbiAgICB2b2x1bWU6IDE2MDAwLFxuICAgIHVuaXRQcmljZTogOTY1MCxcbiAgICB0b3RhbDogMTU0NDAwMDAwLFxuICAgIHNoaWZ0SWQ6IFwiU0ZULTAxXCIsXG4gICAgc2hpZnQ6IFwiU2hpZnQgMVwiLFxuICAgIGNhc2hpZXI6IFwiQWhtYWQgRmF1emlcIixcbiAgICBzdGF0dXM6IFwiU2VsZXNhaVwiXG4gIH0sXG4gIHtcbiAgICBpZDogXCJUWC0yMDI2MDkyNC0wMDRcIixcbiAgICBkYXRlOiBcIjIwMjYtMDktMjQgMDk6MTBcIixcbiAgICBjb2RlOiBcIjMwNVwiLFxuICAgIG5hbWU6IFwiQmlheWEgTGlzdHJpayBQTE4gJiBHZW5zZXRcIixcbiAgICBjYXRlZ29yeTogXCJCaWF5YSBPcGVyYXNpb25hbFwiLFxuICAgIHByb2R1Y3Q6IFwiLVwiLFxuICAgIHZvbHVtZTogMCxcbiAgICB1bml0UHJpY2U6IDAsXG4gICAgdG90YWw6IDM4NTAwMDAsXG4gICAgc2hpZnRJZDogXCJTRlQtMDFcIixcbiAgICBzaGlmdDogXCJTaGlmdCAxXCIsXG4gICAgY2FzaGllcjogXCJBaG1hZCBGYXV6aVwiLFxuICAgIHN0YXR1czogXCJTZWxlc2FpXCJcbiAgfSxcbiAge1xuICAgIGlkOiBcIlRYLTIwMjYwOTI0LTAwNVwiLFxuICAgIGRhdGU6IFwiMjAyNi0wOS0yNCAxMDo0NVwiLFxuICAgIGNvZGU6IFwiMzA5XCIsXG4gICAgbmFtZTogXCJQZW5qdWFsYW4gQmlvIFNvbGFyIFR1bmFpXCIsXG4gICAgY2F0ZWdvcnk6IFwiUGVuanVhbGFuIEJCTVwiLFxuICAgIHByb2R1Y3RJZDogXCJQUkQtMDRcIixcbiAgICBwcm9kdWN0OiBcIkJpbyBTb2xhclwiLFxuICAgIHZvbHVtZTogNjAuMCxcbiAgICB1bml0UHJpY2U6IDY4MDAsXG4gICAgdG90YWw6IDQwODAwMCxcbiAgICBzaGlmdElkOiBcIlNGVC0wMVwiLFxuICAgIHNoaWZ0OiBcIlNoaWZ0IDFcIixcbiAgICBjYXNoaWVyOiBcIkFobWFkIEZhdXppXCIsXG4gICAgc3RhdHVzOiBcIlNlbGVzYWlcIixcbiAgICBub3p6bGVJZDogXCJOWkwtMDNcIixcbiAgICB0ZXJhSWQ6IFwiVFJBLTAwM1wiLFxuICAgIHRlcmFBd2FsOiA1OTI4MjAuMCxcbiAgICB0ZXJhQWtoaXI6IDU5Mjg4MC4wXG4gIH1cbl07XG5cbmV4cG9ydCBjb25zdCBtb2NrQnVzaW5lc3NQYXJ0bmVyczogQnVzaW5lc3NQYXJ0bmVyW10gPSBbXG4gIHsgaWQ6IFwiQ1VTLTAwMVwiLCBjb2RlOiBcIkNVUy0wMDFcIiwgbmFtZTogXCJQVCBUcmFuc3BvcnQgTG9naXN0aWsgQW5kYWxhc1wiLCB0eXBlOiBcIkN1c3RvbWVyXCIsIHBob25lOiBcIjA4MTItMzQ1Ni03ODkwXCIsIGFkZHJlc3M6IFwiSmwuIEJ5IFBhc3MgTm8uIDEyLCBQYWRhbmdcIiB9LFxuICB7IGlkOiBcIkNVUy0wMDJcIiwgY29kZTogXCJDVVMtMDAyXCIsIG5hbWU6IFwiS29wZXJhc2kgQW5na3V0YW4gTWluYW5nIE1hbmRpcmlcIiwgdHlwZTogXCJDdXN0b21lclwiLCBwaG9uZTogXCIwODEzLTk4NzYtNTQzMlwiLCBhZGRyZXNzOiBcIkpsLiBSYXlhIEx1YnVrIEFsdW5nIE5vLiA0NVwiIH0sXG4gIHsgaWQ6IFwiQ1VTLTAwM1wiLCBjb2RlOiBcIkNVUy0wMDNcIiwgbmFtZTogXCJEaW5hcyBMaW5na3VuZ2FuIEhpZHVwIEthYi4gUGFkYW5nIFBhcmlhbWFuXCIsIHR5cGU6IFwiQ3VzdG9tZXJcIiwgcGhvbmU6IFwiMDc1MS04OTEwMFwiLCBhZGRyZXNzOiBcIktvbXBsZWtzIFBlbWthYiBQYWRhbmcgUGFyaWFtYW5cIiB9LFxuICB7IGlkOiBcIlZFTi0wMDFcIiwgY29kZTogXCJWRU4tMDAxXCIsIG5hbWU6IFwiUFQgUGVydGFtaW5hIFBhdHJhIE5pYWdhXCIsIHR5cGU6IFwiVmVuZG9yXCIsIHBob25lOiBcIjEzNVwiLCBhZGRyZXNzOiBcIkpsLiBWZXRlcmFuIE5vLiAxLCBKYWthcnRhXCIgfSxcbiAgeyBpZDogXCJWRU4tMDAyXCIsIGNvZGU6IFwiVkVOLTAwMlwiLCBuYW1lOiBcIlBUIFBMTiAoUGVyc2VybykgVUxQIEx1YnVrIEFsdW5nXCIsIHR5cGU6IFwiVmVuZG9yXCIsIHBob25lOiBcIjEyM1wiLCBhZGRyZXNzOiBcIkpsLiBTeWVraCBCdXJoYW51ZGRpbiwgTHVidWsgQWx1bmdcIiB9XG5dO1xuXG5leHBvcnQgY29uc3QgbW9ja1JlY2VpdmFibGVzOiBSZWNlaXZhYmxlW10gPSBbXG4gIHtcbiAgICBpZDogXCJSRUMtMDAxXCIsXG4gICAgdHJhbnNhY3Rpb25JZDogXCJUWC1JTklULTAwMVwiLFxuICAgIHBhcnRuZXJJZDogXCJDVVMtMDAxXCIsXG4gICAgcGFydG5lck5hbWU6IFwiUFQgVHJhbnNwb3J0IExvZ2lzdGlrIEFuZGFsYXNcIixcbiAgICBhbW91bnQ6IDE1MDAwMDAwLFxuICAgIG91dHN0YW5kaW5nOiAxNTAwMDAwMCxcbiAgICBzdGF0dXM6IFwiT3BlblwiLFxuICAgIGRhdGU6IFwiMjAyNi0wOS0yMFwiLFxuICAgIG5vdGVzOiBcIlBlbmdpc2lhbiBBcm1hZGEgQkJNIFNvbGFyIChLdXBvbiAjNDQyMS00NDM1KVwiXG4gIH1cbl07XG5cbmV4cG9ydCBjb25zdCBtb2NrUGF5YWJsZXM6IFBheWFibGVbXSA9IFtcbiAge1xuICAgIGlkOiBcIlBBWS0wMDFcIixcbiAgICB0cmFuc2FjdGlvbklkOiBcIlRYLUlOSVQtMDAyXCIsXG4gICAgcGFydG5lcklkOiBcIlZFTi0wMDFcIixcbiAgICBwYXJ0bmVyTmFtZTogXCJQVCBQZXJ0YW1pbmEgUGF0cmEgTmlhZ2FcIixcbiAgICBhbW91bnQ6IDk1MDAwMDAwLFxuICAgIG91dHN0YW5kaW5nOiA5NTAwMDAwMCxcbiAgICBzdGF0dXM6IFwiT3BlblwiLFxuICAgIGRhdGU6IFwiMjAyNi0wOS0xOFwiLFxuICAgIG5vdGVzOiBcIkRPIEtvbnNpbnlhc2kgQkJNIFBlcnRhbGl0ZSAxMC4wMDAgTFwiXG4gIH1cbl07XG5cbmV4cG9ydCBjb25zdCBtb2NrSm91cm5hbDogSm91cm5hbFtdID0gW1xuICB7XG4gICAgaWQ6IFwiSlJOLTAwMVwiLFxuICAgIGRhdGU6IFwiMjAyNi0wOS0yNFwiLFxuICAgIGV2aWRlbmNlTm86IFwiQktULzIwMjYwOTI0LzAwMVwiLFxuICAgIHRyYW5zQ29kZTogXCIzMDNcIixcbiAgICBkZXNjcmlwdGlvbjogXCJQZW5qdWFsYW4gUGVydGFsaXRlIFR1bmFpIFNoaWZ0IDFcIixcbiAgICBpc0JhbGFuY2VkOiB0cnVlLFxuICAgIGVudHJpZXM6IFtcbiAgICAgIHsgYWNjb3VudElkOiBcIjEtMTAwMVwiLCBhY2NvdW50Q29kZTogXCIxLTEwMDFcIiwgYWNjb3VudE5hbWU6IFwiS2FzIFV0YW1hXCIsIGRlYml0OiAzNTUwMDAsIGNyZWRpdDogMCB9LFxuICAgICAgeyBhY2NvdW50SWQ6IFwiNC0xMDAxXCIsIGFjY291bnRDb2RlOiBcIjQtMTAwMVwiLCBhY2NvdW50TmFtZTogXCJQZW5kYXBhdGFuIFBlbmp1YWxhbiBQZXJ0YWxpdGVcIiwgZGViaXQ6IDAsIGNyZWRpdDogMzU1MDAwIH1cbiAgICBdXG4gIH0sXG4gIHtcbiAgICBpZDogXCJKUk4tMDAyXCIsXG4gICAgZGF0ZTogXCIyMDI2LTA5LTI0XCIsXG4gICAgZXZpZGVuY2VObzogXCJCS1QvMjAyNjA5MjQvMDAyXCIsXG4gICAgdHJhbnNDb2RlOiBcIjMwNFwiLFxuICAgIGRlc2NyaXB0aW9uOiBcIlBlbmp1YWxhbiBQZXJ0YW1heCBUdW5haSBTaGlmdCAxXCIsXG4gICAgaXNCYWxhbmNlZDogdHJ1ZSxcbiAgICBlbnRyaWVzOiBbXG4gICAgICB7IGFjY291bnRJZDogXCIxLTEwMDFcIiwgYWNjb3VudENvZGU6IFwiMS0xMDAxXCIsIGFjY291bnROYW1lOiBcIkthcyBVdGFtYVwiLCBkZWJpdDogMzIzNzUwLCBjcmVkaXQ6IDAgfSxcbiAgICAgIHsgYWNjb3VudElkOiBcIjQtMTAwMlwiLCBhY2NvdW50Q29kZTogXCI0LTEwMDJcIiwgYWNjb3VudE5hbWU6IFwiUGVuZGFwYXRhbiBQZW5qdWFsYW4gUGVydGFtYXhcIiwgZGViaXQ6IDAsIGNyZWRpdDogMzIzNzUwIH1cbiAgICBdXG4gIH0sXG4gIHtcbiAgICBpZDogXCJKUk4tMDAzXCIsXG4gICAgZGF0ZTogXCIyMDI2LTA5LTI0XCIsXG4gICAgZXZpZGVuY2VObzogXCJETy9QVE0vMjAyNi8wOS84ODFcIixcbiAgICB0cmFuc0NvZGU6IFwiMzA4XCIsXG4gICAgZGVzY3JpcHRpb246IFwiUGVuZWJ1c2FuIERPIFBlcnRhbWluYSBQZXJ0YWxpdGUgMTYuMDAwIExcIixcbiAgICBpc0JhbGFuY2VkOiB0cnVlLFxuICAgIGVudHJpZXM6IFtcbiAgICAgIHsgYWNjb3VudElkOiBcIjEtMTIwMVwiLCBhY2NvdW50Q29kZTogXCIxLTEyMDFcIiwgYWNjb3VudE5hbWU6IFwiUGVyc2VkaWFhbiBCQk0gUGVydGFsaXRlXCIsIGRlYml0OiAxNTQ0MDAwMDAsIGNyZWRpdDogMCB9LFxuICAgICAgeyBhY2NvdW50SWQ6IFwiMS0xMDAyXCIsIGFjY291bnRDb2RlOiBcIjEtMTAwMlwiLCBhY2NvdW50TmFtZTogXCJCYW5rIE1hbmRpcmkgT3BlcmFzaW9uYWxcIiwgZGViaXQ6IDAsIGNyZWRpdDogMTU0NDAwMDAwIH1cbiAgICBdXG4gIH0sXG4gIHtcbiAgICBpZDogXCJKUk4tMDA0XCIsXG4gICAgZGF0ZTogXCIyMDI2LTA5LTI0XCIsXG4gICAgZXZpZGVuY2VObzogXCJQTE4vQktULzA5MjRcIixcbiAgICB0cmFuc0NvZGU6IFwiMzA1XCIsXG4gICAgZGVzY3JpcHRpb246IFwiUGVtYmF5YXJhbiBMaXN0cmlrICYgVG9rZW4gR2Vuc2V0IFNQQlVcIixcbiAgICBpc0JhbGFuY2VkOiB0cnVlLFxuICAgIGVudHJpZXM6IFtcbiAgICAgIHsgYWNjb3VudElkOiBcIjYtMTAwMlwiLCBhY2NvdW50Q29kZTogXCI2LTEwMDJcIiwgYWNjb3VudE5hbWU6IFwiQmlheWEgTGlzdHJpayAmIEFpclwiLCBkZWJpdDogMzg1MDAwMCwgY3JlZGl0OiAwIH0sXG4gICAgICB7IGFjY291bnRJZDogXCIxLTEwMDFcIiwgYWNjb3VudENvZGU6IFwiMS0xMDAxXCIsIGFjY291bnROYW1lOiBcIkthcyBVdGFtYVwiLCBkZWJpdDogMCwgY3JlZGl0OiAzODUwMDAwIH1cbiAgICBdXG4gIH1cbl07XG5cbmV4cG9ydCBjb25zdCBtb2NrUmVwb3J0czogUmVwb3J0c0RhdGEgPSB7XG4gIG5lcmFjYUtvbnNvbGlkYXNpOiB7XG4gICAgdGl0bGU6IFwiTEFQT1JBTiBORVJBQ0EgSEFSSUFOIEtPTlNPTElEQVNJXCIsXG4gICAgcGVyaW9kRGF0ZTogXCIzMS1BdWctMjAyNlwiLFxuICAgIGVudGl0eU5hbWU6IFwiUFQgQlBSIEdhbnRvIE5hZ2FyaSAxOTU0XCIsXG4gICAgbG9jYXRpb246IFwiTHVidWsgYWx1bmdcIixcbiAgICBzaWduZXJEYXRlOiBcIjAxLzA5LzI2XCIsXG4gICAgcm93czogW1xuICAgICAgLy8gPT09IDEuIEFTRVQgPT09XG4gICAgICB7XG4gICAgICAgIG5vOiBcIlwiLFxuICAgICAgICBjb2RlOiBcIlwiLFxuICAgICAgICBuYW1lOiBcIjEuIEFTRVRcIixcbiAgICAgICAgc2VjdGlvbjogXCJBU0VUXCIsXG4gICAgICAgIGxldmVsOiAxLFxuICAgICAgICBpc1NlY3Rpb25IZWFkZXI6IHRydWUsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiMVwiLFxuICAgICAgICBjb2RlOiBcIjEwMFwiLFxuICAgICAgICBuYW1lOiBcIkthcyBkYWxhbSBSdXBpYWhcIixcbiAgICAgICAgc2VjdGlvbjogXCJBU0VUXCIsXG4gICAgICAgIGxldmVsOiAyLFxuICAgICAgICBzYWxkb0F3YWw6IDI3MDQ5MDAwMCxcbiAgICAgICAgZGViZXQ6IDMyMjM2MTAwMyxcbiAgICAgICAga3JlZGl0OiA0MTA5MzE1MDMsXG4gICAgICAgIHNhbGRvQWtoaXI6IDE4MTkxOTUwMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiLVwiLFxuICAgICAgICBjb2RlOiBcIjEwMVwiLFxuICAgICAgICBuYW1lOiBcIkthcyBLZWNpbFwiLFxuICAgICAgICBzZWN0aW9uOiBcIkFTRVRcIixcbiAgICAgICAgbGV2ZWw6IDIsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiMlwiLFxuICAgICAgICBjb2RlOiBcIjEwMlwiLFxuICAgICAgICBuYW1lOiBcIkthcyBEYWxhbSBWYWx1dGEgQXNpbmdcIixcbiAgICAgICAgc2VjdGlvbjogXCJBU0VUXCIsXG4gICAgICAgIGxldmVsOiAyLFxuICAgICAgICBzYWxkb0F3YWw6IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIjNcIixcbiAgICAgICAgY29kZTogXCIxMTBcIixcbiAgICAgICAgbmFtZTogXCJTdXJhdCBCZXJoYXJnYVwiLFxuICAgICAgICBzZWN0aW9uOiBcIkFTRVRcIixcbiAgICAgICAgbGV2ZWw6IDIsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiNFwiLFxuICAgICAgICBjb2RlOiBcIjEzMFwiLFxuICAgICAgICBuYW1lOiBcIlBlbmVtcGF0YW4gUGFkYSBCYW5rIExhaW5cIixcbiAgICAgICAgc2VjdGlvbjogXCJBU0VUXCIsXG4gICAgICAgIGxldmVsOiAyLFxuICAgICAgICBzYWxkb0F3YWw6IDEyMjQ3MTUxNTI2LFxuICAgICAgICBkZWJldDogMzMzMjI2MTAwLFxuICAgICAgICBrcmVkaXQ6IDEwODgxNTI5NixcbiAgICAgICAgc2FsZG9Ba2hpcjogMTI0NzE1NjIzMzBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIi1cIixcbiAgICAgICAgY29kZTogXCIxMzFcIixcbiAgICAgICAgbmFtZTogXCItLy0gQ2FkYW5nYW4gUGVudXJ1bmFuIE5pbGFpXCIsXG4gICAgICAgIHNlY3Rpb246IFwiQVNFVFwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgaXNDb250cmE6IHRydWUsXG4gICAgICAgIHNhbGRvQXdhbDogLTYxOTU0MTIsXG4gICAgICAgIGRlYmV0OiA1NzczMDQwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IC00MjIzNzJcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIjVcIixcbiAgICAgICAgY29kZTogXCIxNDBcIixcbiAgICAgICAgbmFtZTogXCJLcmVkaXQgWWFuZyBEaWJlcmlrYW4gKEJha2kgZGViZXQpXCIsXG4gICAgICAgIHNlY3Rpb246IFwiQVNFVFwiLFxuICAgICAgICBsZXZlbDogMixcbiAgICAgICAgc2FsZG9Bd2FsOiAyODMyNDgyNzI3MCxcbiAgICAgICAgZGViZXQ6IDEyNTQzODYyMSxcbiAgICAgICAga3JlZGl0OiAyNjU1NTczODAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDI4MTg0NzA4NTExXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBubzogXCItXCIsXG4gICAgICAgIGNvZGU6IFwiMTQxXCIsXG4gICAgICAgIG5hbWU6IFwiLS8tIFByb3Zpc2kgeWFuZyBiZWx1bSBkaWFtb3J0aXNhc2lcIixcbiAgICAgICAgc2VjdGlvbjogXCJBU0VUXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBpc0NvbnRyYTogdHJ1ZSxcbiAgICAgICAgc2FsZG9Bd2FsOiAtMjMwNTEwNTM1LFxuICAgICAgICBkZWJldDogNzUzMDkyNCxcbiAgICAgICAga3JlZGl0OiA4MDAwMDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IC0yMjM3Nzk2MTFcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIi1cIixcbiAgICAgICAgY29kZTogXCIxNDJcIixcbiAgICAgICAgbmFtZTogXCJCaWF5YSBUcmFuc2Frc2kgeWFuZyBiZWx1bSBkaWFtb3J0aXNhc2lcIixcbiAgICAgICAgc2VjdGlvbjogXCJBU0VUXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBzYWxkb0F3YWw6IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIi1cIixcbiAgICAgICAgY29kZTogXCIxNDNcIixcbiAgICAgICAgbmFtZTogXCItLy0gUGVuZGFwYXRhbiBCdW5nYSB5YW5nIERpdGFuZ2d1aGthbiBkYWxhbSByYW5na2EgUmVzdHJ1a3R1cmlzYXNpXCIsXG4gICAgICAgIHNlY3Rpb246IFwiQVNFVFwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgaXNDb250cmE6IHRydWUsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiLVwiLFxuICAgICAgICBjb2RlOiBcIjE0NFwiLFxuICAgICAgICBuYW1lOiBcIi0vLSBDYWRhbmdhbiBLZXJ1Z2lhbiBSZXN0cnVrdHVyaXNhc2lcIixcbiAgICAgICAgc2VjdGlvbjogXCJBU0VUXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBpc0NvbnRyYTogdHJ1ZSxcbiAgICAgICAgc2FsZG9Bd2FsOiAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBubzogXCItXCIsXG4gICAgICAgIGNvZGU6IFwiMTQ1XCIsXG4gICAgICAgIG5hbWU6IFwiLS8tIENhZGFuZ2FuIFBlbnVydW5hbiBOaWxhaVwiLFxuICAgICAgICBzZWN0aW9uOiBcIkFTRVRcIixcbiAgICAgICAgbGV2ZWw6IDMsXG4gICAgICAgIGlzQ29udHJhOiB0cnVlLFxuICAgICAgICBzYWxkb0F3YWw6IC0xMTk1OTgyMDMzLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAxMTM5MjE0NyxcbiAgICAgICAgc2FsZG9Ba2hpcjogLTEyMDczNzQxODBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIjZcIixcbiAgICAgICAgY29kZTogXCIyMDBcIixcbiAgICAgICAgbmFtZTogXCJBZ3VuYW4gWWFuZyBEaWFtYmlsIEFsaWhcIixcbiAgICAgICAgc2VjdGlvbjogXCJBU0VUXCIsXG4gICAgICAgIGxldmVsOiAyLFxuICAgICAgICBzYWxkb0F3YWw6IDYxOTc3MzM3LFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiA2MTk3NzMzN1xuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiN1wiLFxuICAgICAgICBjb2RlOiBcIjIwMVwiLFxuICAgICAgICBuYW1lOiBcIlByb3BlcnRpIFRlcmJlbmdrYWxhaVwiLFxuICAgICAgICBzZWN0aW9uOiBcIkFTRVRcIixcbiAgICAgICAgbGV2ZWw6IDIsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiOFwiLFxuICAgICAgICBjb2RlOiBcIjIxMFwiLFxuICAgICAgICBuYW1lOiBcIkFzZXQgVGV0YXAgZGFuIEludmVudGFyaXNcIixcbiAgICAgICAgc2VjdGlvbjogXCJBU0VUXCIsXG4gICAgICAgIGxldmVsOiAyLFxuICAgICAgICBzYWxkb0F3YWw6IDMzMTgwNDU4NjgsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDMzMTgwNDU4NjhcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIi1cIixcbiAgICAgICAgY29kZTogXCIyMTFcIixcbiAgICAgICAgbmFtZTogXCItLy0gQWt1bXVsYXNpIFBlbnl1c3V0YW4gZGFuIFBlbnVydW5hbiBOaWxhaVwiLFxuICAgICAgICBzZWN0aW9uOiBcIkFTRVRcIixcbiAgICAgICAgbGV2ZWw6IDMsXG4gICAgICAgIGlzQ29udHJhOiB0cnVlLFxuICAgICAgICBzYWxkb0F3YWw6IC0xMzIxNzg1MzIyLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAtMTMyMTc4NTMyMlxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiOVwiLFxuICAgICAgICBjb2RlOiBcIjIyMFwiLFxuICAgICAgICBuYW1lOiBcIkFzZXQgVGFrIEJlcnd1anVkXCIsXG4gICAgICAgIHNlY3Rpb246IFwiQVNFVFwiLFxuICAgICAgICBsZXZlbDogMixcbiAgICAgICAgc2FsZG9Bd2FsOiA4NTAwMDAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiA4NTAwMDAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBubzogXCItXCIsXG4gICAgICAgIGNvZGU6IFwiMjIxXCIsXG4gICAgICAgIG5hbWU6IFwiLS8tIEFrdW11bGFzaSBQZW55dXN1dGFuIGRhbiBQZW51cnVuYW4gTmlsYWlcIixcbiAgICAgICAgc2VjdGlvbjogXCJBU0VUXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBpc0NvbnRyYTogdHJ1ZSxcbiAgICAgICAgc2FsZG9Bd2FsOiAtNzAyMDgzOCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogLTcwMjA4MzhcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIjEwXCIsXG4gICAgICAgIGNvZGU6IFwiMjMwXCIsXG4gICAgICAgIG5hbWU6IFwiQXNldCBBbnRhciBLYW50b3JcIixcbiAgICAgICAgc2VjdGlvbjogXCJBU0VUXCIsXG4gICAgICAgIGxldmVsOiAyLFxuICAgICAgICBzYWxkb0F3YWw6IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIjExXCIsXG4gICAgICAgIGNvZGU6IFwiMjQwXCIsXG4gICAgICAgIG5hbWU6IFwiQXNldCBLZXVhbmdhbiBMYWlubnlhXCIsXG4gICAgICAgIHNlY3Rpb246IFwiQVNFVFwiLFxuICAgICAgICBsZXZlbDogMixcbiAgICAgICAgc2FsZG9Bd2FsOiAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBubzogXCItXCIsXG4gICAgICAgIGNvZGU6IFwiMjUwXCIsXG4gICAgICAgIG5hbWU6IFwiLS8tIENhZGFuZ2FuIFBlbnVydW5hbiBOaWxhaVwiLFxuICAgICAgICBzZWN0aW9uOiBcIkFTRVRcIixcbiAgICAgICAgbGV2ZWw6IDMsXG4gICAgICAgIGlzQ29udHJhOiB0cnVlLFxuICAgICAgICBzYWxkb0F3YWw6IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIjEyXCIsXG4gICAgICAgIGNvZGU6IFwiMjcwXCIsXG4gICAgICAgIG5hbWU6IFwiQXNldCBMYWluLWxhaW5cIixcbiAgICAgICAgc2VjdGlvbjogXCJBU0VUXCIsXG4gICAgICAgIGxldmVsOiAyLFxuICAgICAgICBzYWxkb0F3YWw6IDQyODM1NTI1MixcbiAgICAgICAgZGViZXQ6IDIzNjI0OTk2MCxcbiAgICAgICAga3JlZGl0OiA3NTAyMzUwOSxcbiAgICAgICAgc2FsZG9Ba2hpcjogNTg5NTgxNzAzXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBubzogXCItXCIsXG4gICAgICAgIGNvZGU6IFwiLVwiLFxuICAgICAgICBuYW1lOiBcIlRPVEFMIEFTRVRcIixcbiAgICAgICAgc2VjdGlvbjogXCJBU0VUXCIsXG4gICAgICAgIGxldmVsOiAxLFxuICAgICAgICBpc1N1YnRvdGFsOiB0cnVlLFxuICAgICAgICBzYWxkb0F3YWw6IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIlwiLFxuICAgICAgICBjb2RlOiBcIlwiLFxuICAgICAgICBuYW1lOiBcIlN1YiBUb3RhbCAxLiBBU0VUXCIsXG4gICAgICAgIHNlY3Rpb246IFwiQVNFVFwiLFxuICAgICAgICBsZXZlbDogMSxcbiAgICAgICAgaXNTdWJ0b3RhbDogdHJ1ZSxcbiAgICAgICAgc2FsZG9Bd2FsOiA0MTg5Nzg1MzExMyxcbiAgICAgICAgZGViZXQ6IDEwMzA1Nzk2NDgsXG4gICAgICAgIGtyZWRpdDogODcyNTE5ODM1LFxuICAgICAgICBzYWxkb0FraGlyOiA0MjA1NTkxMjkyNlxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiXCIsXG4gICAgICAgIGNvZGU6IFwiXCIsXG4gICAgICAgIG5hbWU6IFwiSnVtbGFoIEFzZXRcIixcbiAgICAgICAgc2VjdGlvbjogXCJBU0VUXCIsXG4gICAgICAgIGxldmVsOiAxLFxuICAgICAgICBpc0dyYW5kVG90YWw6IHRydWUsXG4gICAgICAgIHNhbGRvQXdhbDogNDE4OTc4NTMxMTMsXG4gICAgICAgIGRlYmV0OiAxMDMwNTc5NjQ4LFxuICAgICAgICBrcmVkaXQ6IDg3MjUxOTgzNSxcbiAgICAgICAgc2FsZG9Ba2hpcjogNDIwNTU5MTI5MjZcbiAgICAgIH0sXG5cbiAgICAgIC8vID09PSAyLiBLRVdBSklCQU4gPT09XG4gICAgICB7XG4gICAgICAgIG5vOiBcIlwiLFxuICAgICAgICBjb2RlOiBcIlwiLFxuICAgICAgICBuYW1lOiBcIjIuIEtFV0FKSUJBTlwiLFxuICAgICAgICBzZWN0aW9uOiBcIktFV0FKSUJBTlwiLFxuICAgICAgICBsZXZlbDogMSxcbiAgICAgICAgaXNTZWN0aW9uSGVhZGVyOiB0cnVlLFxuICAgICAgICBzYWxkb0F3YWw6IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIjFcIixcbiAgICAgICAgY29kZTogXCIzMDBcIixcbiAgICAgICAgbmFtZTogXCJMaWFiaWxpdGFzIFNlZ2VyYVwiLFxuICAgICAgICBzZWN0aW9uOiBcIktFV0FKSUJBTlwiLFxuICAgICAgICBsZXZlbDogMixcbiAgICAgICAgc2FsZG9Bd2FsOiAxNjEzNDExNjAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDM1NjA4MjYsXG4gICAgICAgIHNhbGRvQWtoaXI6IDE2NDkwMTk4NlxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiLVwiLFxuICAgICAgICBjb2RlOiBcIi1cIixcbiAgICAgICAgbmFtZTogXCJTaW1wYW5hblwiLFxuICAgICAgICBzZWN0aW9uOiBcIktFV0FKSUJBTlwiLFxuICAgICAgICBsZXZlbDogMixcbiAgICAgICAgaXNTZWN0aW9uSGVhZGVyOiB0cnVlLFxuICAgICAgICBzYWxkb0F3YWw6IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIjJcIixcbiAgICAgICAgY29kZTogXCIzMzBcIixcbiAgICAgICAgbmFtZTogXCJhLiBUYWJ1bmdhblwiLFxuICAgICAgICBzZWN0aW9uOiBcIktFV0FKSUJBTlwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgc2FsZG9Bd2FsOiAxMjExNTA5NTA2OCxcbiAgICAgICAgZGViZXQ6IDQ1MTQ3ODg3MixcbiAgICAgICAga3JlZGl0OiAxOTY5OTI3NTYsXG4gICAgICAgIHNhbGRvQWtoaXI6IDExODYwNjA4OTUyXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBubzogXCItXCIsXG4gICAgICAgIGNvZGU6IFwiMzMxXCIsXG4gICAgICAgIG5hbWU6IFwiLS8tIEJpYXlhIFRyYW5zYWtzaSBCZWx1bSBEaWFtb3J0aXNhc2lcIixcbiAgICAgICAgc2VjdGlvbjogXCJLRVdBSklCQU5cIixcbiAgICAgICAgbGV2ZWw6IDQsXG4gICAgICAgIGlzQ29udHJhOiB0cnVlLFxuICAgICAgICBzYWxkb0F3YWw6IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIjNcIixcbiAgICAgICAgY29kZTogXCIzNDBcIixcbiAgICAgICAgbmFtZTogXCJiLiBEZXBvc2l0b1wiLFxuICAgICAgICBzZWN0aW9uOiBcIktFV0FKSUJBTlwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgc2FsZG9Bd2FsOiAyMDc4NTAwMDAwMCxcbiAgICAgICAgZGViZXQ6IDgwMDAwMDAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDIwNzA1MDAwMDAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBubzogXCItXCIsXG4gICAgICAgIGNvZGU6IFwiMzQxXCIsXG4gICAgICAgIG5hbWU6IFwiLS8tIEJpYXlhIFRyYW5zYWtzaSBCZWx1bSBEaWFtb3J0aXNhc2lcIixcbiAgICAgICAgc2VjdGlvbjogXCJLRVdBSklCQU5cIixcbiAgICAgICAgbGV2ZWw6IDQsXG4gICAgICAgIGlzQ29udHJhOiB0cnVlLFxuICAgICAgICBzYWxkb0F3YWw6IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIjRcIixcbiAgICAgICAgY29kZTogXCIzNjBcIixcbiAgICAgICAgbmFtZTogXCJTaW1wYW5hbiBEYXJpIEJhbmsgTGFpblwiLFxuICAgICAgICBzZWN0aW9uOiBcIktFV0FKSUJBTlwiLFxuICAgICAgICBsZXZlbDogMixcbiAgICAgICAgc2FsZG9Bd2FsOiA5NzIyODQ0MjAsXG4gICAgICAgIGRlYmV0OiAyMDAwMDAwMCxcbiAgICAgICAga3JlZGl0OiAyODM3ODcxOTUsXG4gICAgICAgIHNhbGRvQWtoaXI6IDEyMzYwNzE2MTVcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIi1cIixcbiAgICAgICAgY29kZTogXCIzNjFcIixcbiAgICAgICAgbmFtZTogXCItLy0gQmlheWEgVHJhbnNha3NpIEJlbHVtIERpYW1vcnRpc2FzaVwiLFxuICAgICAgICBzZWN0aW9uOiBcIktFV0FKSUJBTlwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgaXNDb250cmE6IHRydWUsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiNVwiLFxuICAgICAgICBjb2RlOiBcIjM3MFwiLFxuICAgICAgICBuYW1lOiBcIlBpbmphbWFuIERpdGVyaW1hXCIsXG4gICAgICAgIHNlY3Rpb246IFwiS0VXQUpJQkFOXCIsXG4gICAgICAgIGxldmVsOiAyLFxuICAgICAgICBzYWxkb0F3YWw6IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIi1cIixcbiAgICAgICAgY29kZTogXCIzNzFcIixcbiAgICAgICAgbmFtZTogXCItLy0gQmlheWEgVHJhbnNha3NpIEJlbHVtIERpYW1vcnRpc2FzaVwiLFxuICAgICAgICBzZWN0aW9uOiBcIktFV0FKSUJBTlwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgaXNDb250cmE6IHRydWUsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiLVwiLFxuICAgICAgICBjb2RlOiBcIjM3MlwiLFxuICAgICAgICBuYW1lOiBcIi0vLSBEaXNrb250byBCZWx1bSBEaWFtb3J0aXNhc2lcIixcbiAgICAgICAgc2VjdGlvbjogXCJLRVdBSklCQU5cIixcbiAgICAgICAgbGV2ZWw6IDMsXG4gICAgICAgIGlzQ29udHJhOiB0cnVlLFxuICAgICAgICBzYWxkb0F3YWw6IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIjdcIixcbiAgICAgICAgY29kZTogXCI0MDBcIixcbiAgICAgICAgbmFtZTogXCJEYW5hIFNldG9yYW4gTW9kYWwgLSBLZXdhamliYW5cIixcbiAgICAgICAgc2VjdGlvbjogXCJLRVdBSklCQU5cIixcbiAgICAgICAgbGV2ZWw6IDIsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiOFwiLFxuICAgICAgICBjb2RlOiBcIjQ0MFwiLFxuICAgICAgICBuYW1lOiBcIkxpYWJpbGl0YXMgQW50YXIgS2FudG9yXCIsXG4gICAgICAgIHNlY3Rpb246IFwiS0VXQUpJQkFOXCIsXG4gICAgICAgIGxldmVsOiAyLFxuICAgICAgICBzYWxkb0F3YWw6IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIjlcIixcbiAgICAgICAgY29kZTogXCI0NzBcIixcbiAgICAgICAgbmFtZTogXCJMaWFiaWxpdGFzIExhaW5ueWFcIixcbiAgICAgICAgc2VjdGlvbjogXCJLRVdBSklCQU5cIixcbiAgICAgICAgbGV2ZWw6IDIsXG4gICAgICAgIHNhbGRvQXdhbDogNjI1OTcwODgsXG4gICAgICAgIGRlYmV0OiA2MTA0MTEsXG4gICAgICAgIGtyZWRpdDogNDkwMTY4NzgsXG4gICAgICAgIHNhbGRvQWtoaXI6IDExMTAwMzU1NVxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiLVwiLFxuICAgICAgICBjb2RlOiBcIi1cIixcbiAgICAgICAgbmFtZTogXCJUT1RBTCBMSUFCSUxJVEFTXCIsXG4gICAgICAgIHNlY3Rpb246IFwiS0VXQUpJQkFOXCIsXG4gICAgICAgIGxldmVsOiAxLFxuICAgICAgICBpc1N1YnRvdGFsOiB0cnVlLFxuICAgICAgICBzYWxkb0F3YWw6IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIlwiLFxuICAgICAgICBjb2RlOiBcIlwiLFxuICAgICAgICBuYW1lOiBcIlN1YiBUb3RhbCAyLiBLRVdBSklCQU5cIixcbiAgICAgICAgc2VjdGlvbjogXCJLRVdBSklCQU5cIixcbiAgICAgICAgbGV2ZWw6IDEsXG4gICAgICAgIGlzU3VidG90YWw6IHRydWUsXG4gICAgICAgIHNhbGRvQXdhbDogMzQwOTYzMTc3MzYsXG4gICAgICAgIGRlYmV0OiA1NTIwODkyODMsXG4gICAgICAgIGtyZWRpdDogNTMzMzU3NjU1LFxuICAgICAgICBzYWxkb0FraGlyOiAzNDA3NzU4NjEwOFxuICAgICAgfSxcblxuICAgICAgLy8gPT09IDMuIEVLVUlUQVMgPT09XG4gICAgICB7XG4gICAgICAgIG5vOiBcIlwiLFxuICAgICAgICBjb2RlOiBcIlwiLFxuICAgICAgICBuYW1lOiBcIjMuIEVLVUlUQVNcIixcbiAgICAgICAgc2VjdGlvbjogXCJFS1VJVEFTXCIsXG4gICAgICAgIGxldmVsOiAxLFxuICAgICAgICBpc1NlY3Rpb25IZWFkZXI6IHRydWUsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiMTBcIixcbiAgICAgICAgY29kZTogXCItXCIsXG4gICAgICAgIG5hbWU6IFwiMS4gTW9kYWwgRGlzZXRvclwiLFxuICAgICAgICBzZWN0aW9uOiBcIkVLVUlUQVNcIixcbiAgICAgICAgbGV2ZWw6IDIsXG4gICAgICAgIGlzU2VjdGlvbkhlYWRlcjogdHJ1ZSxcbiAgICAgICAgc2FsZG9Bd2FsOiAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBubzogXCItXCIsXG4gICAgICAgIGNvZGU6IFwiNTAxXCIsXG4gICAgICAgIG5hbWU6IFwiYS4gTW9kYWwgRGFzYXJcIixcbiAgICAgICAgc2VjdGlvbjogXCJFS1VJVEFTXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBzYWxkb0F3YWw6IDEwMDAwMDAwMDAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAxMDAwMDAwMDAwMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiLVwiLFxuICAgICAgICBjb2RlOiBcIjUwMlwiLFxuICAgICAgICBuYW1lOiBcImIuIE1vZGFsIFlhbmcgQmVsdW0gRGlzZXRvciAtLy1cIixcbiAgICAgICAgc2VjdGlvbjogXCJFS1VJVEFTXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBpc0NvbnRyYTogdHJ1ZSxcbiAgICAgICAgc2FsZG9Bd2FsOiAtMzkzNTY1MDAwMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogLTM5MzU2NTAwMDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIjExXCIsXG4gICAgICAgIGNvZGU6IFwiLVwiLFxuICAgICAgICBuYW1lOiBcIjIuIFRhbWJhaGFuIE1vZGFsIERpc2V0b3JcIixcbiAgICAgICAgc2VjdGlvbjogXCJFS1VJVEFTXCIsXG4gICAgICAgIGxldmVsOiAyLFxuICAgICAgICBpc1NlY3Rpb25IZWFkZXI6IHRydWUsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiLVwiLFxuICAgICAgICBjb2RlOiBcIjUwM1wiLFxuICAgICAgICBuYW1lOiBcImEuIEFnaW8vRGlzYWdpb1wiLFxuICAgICAgICBzZWN0aW9uOiBcIkVLVUlUQVNcIixcbiAgICAgICAgbGV2ZWw6IDMsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiLVwiLFxuICAgICAgICBjb2RlOiBcIjUwNFwiLFxuICAgICAgICBuYW1lOiBcImIuIE1vZGFsIFN1bWJhbmdhblwiLFxuICAgICAgICBzZWN0aW9uOiBcIkVLVUlUQVNcIixcbiAgICAgICAgbGV2ZWw6IDMsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiLVwiLFxuICAgICAgICBjb2RlOiBcIjUwNVwiLFxuICAgICAgICBuYW1lOiBcImMuIERhbmEgU2V0b3JhbiBNb2RhbCAtIEVrdWl0YXNcIixcbiAgICAgICAgc2VjdGlvbjogXCJFS1VJVEFTXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBzYWxkb0F3YWw6IDEwMDAwMDAwMDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDEwMDAwMDAwMDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIi1cIixcbiAgICAgICAgY29kZTogXCI1MDZcIixcbiAgICAgICAgbmFtZTogXCJkLiBUYW1iYWhhbiBNb2RhbCBEaXNldG9yIExhaW5ueWFcIixcbiAgICAgICAgc2VjdGlvbjogXCJFS1VJVEFTXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBzYWxkb0F3YWw6IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIjEyXCIsXG4gICAgICAgIGNvZGU6IFwiLVwiLFxuICAgICAgICBuYW1lOiBcIjMuIEVrdWl0YXMgTGFpbm55YVwiLFxuICAgICAgICBzZWN0aW9uOiBcIkVLVUlUQVNcIixcbiAgICAgICAgbGV2ZWw6IDIsXG4gICAgICAgIGlzU2VjdGlvbkhlYWRlcjogdHJ1ZSxcbiAgICAgICAgc2FsZG9Bd2FsOiAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBubzogXCItXCIsXG4gICAgICAgIGNvZGU6IFwiNTEwXCIsXG4gICAgICAgIG5hbWU6IFwiYS4gS2V1bnR1bmdhbiAoS2VydWdpYW4pIGRhcmkgUGVydWJhaGFuIE5pbGFpIEFzZXQgS2V1YW5nYW5cIixcbiAgICAgICAgc2VjdGlvbjogXCJFS1VJVEFTXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBzYWxkb0F3YWw6IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIG5vOiBcIi1cIixcbiAgICAgICAgY29kZTogXCI1MTFcIixcbiAgICAgICAgbmFtZTogXCJiLiBLZXVudHVuZ2FuIFJldmFsdWFzaSBBc2V0IFRldGFwXCIsXG4gICAgICAgIHNlY3Rpb246IFwiRUtVSVRBU1wiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgc2FsZG9Bd2FsOiAxMTUwMzMwMjA4LFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAxMTUwMzMwMjA4XG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBubzogXCItXCIsXG4gICAgICAgIGNvZGU6IFwiNTEyXCIsXG4gICAgICAgIG5hbWU6IFwiYy4gTGFpbm55YVwiLFxuICAgICAgICBzZWN0aW9uOiBcIkVLVUlUQVNcIixcbiAgICAgICAgbGV2ZWw6IDMsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiLVwiLFxuICAgICAgICBjb2RlOiBcIjUxM1wiLFxuICAgICAgICBuYW1lOiBcImQuIFBhamFrIFBlbmdoYXNpbGFuIHRlcmthaXQgZGVuZ2FuIEVrdWl0YXMgTGFpblwiLFxuICAgICAgICBzZWN0aW9uOiBcIkVLVUlUQVNcIixcbiAgICAgICAgbGV2ZWw6IDMsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiMTNcIixcbiAgICAgICAgY29kZTogXCItXCIsXG4gICAgICAgIG5hbWU6IFwiQ2FkYW5nYW5cIixcbiAgICAgICAgc2VjdGlvbjogXCJFS1VJVEFTXCIsXG4gICAgICAgIGxldmVsOiAyLFxuICAgICAgICBpc1NlY3Rpb25IZWFkZXI6IHRydWUsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiLVwiLFxuICAgICAgICBjb2RlOiBcIjU0MVwiLFxuICAgICAgICBuYW1lOiBcImEuIENhZGFuZ2FuIFVtdW1cIixcbiAgICAgICAgc2VjdGlvbjogXCJFS1VJVEFTXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBzYWxkb0F3YWw6IDczOTU2NjQ3OCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogNzM5NTY2NDc4XG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBubzogXCItXCIsXG4gICAgICAgIGNvZGU6IFwiNTQyXCIsXG4gICAgICAgIG5hbWU6IFwiYi4gQ2FkYW5nYW4gVHVqdWFuXCIsXG4gICAgICAgIHNlY3Rpb246IFwiRUtVSVRBU1wiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgc2FsZG9Bd2FsOiAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBubzogXCIxNFwiLFxuICAgICAgICBjb2RlOiBcIi1cIixcbiAgICAgICAgbmFtZTogXCJMYWJhL1J1Z2lcIixcbiAgICAgICAgc2VjdGlvbjogXCJFS1VJVEFTXCIsXG4gICAgICAgIGxldmVsOiAyLFxuICAgICAgICBpc1NlY3Rpb25IZWFkZXI6IHRydWUsXG4gICAgICAgIHNhbGRvQXdhbDogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiLVwiLFxuICAgICAgICBjb2RlOiBcIjU0M1wiLFxuICAgICAgICBuYW1lOiBcImEuIFRhaHVuLVRhaHVuIExhbHVcIixcbiAgICAgICAgc2VjdGlvbjogXCJFS1VJVEFTXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBpc0NvbnRyYTogdHJ1ZSxcbiAgICAgICAgc2FsZG9Bd2FsOiAtODk3NzIwNjUyLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAtODk3NzIwNjUyXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBubzogXCItXCIsXG4gICAgICAgIGNvZGU6IFwiNTQ1XCIsXG4gICAgICAgIG5hbWU6IFwiYi4gTGFiYSBSdWdpIFRhaHVuIEJlcmphbGFuXCIsXG4gICAgICAgIHNlY3Rpb246IFwiRUtVSVRBU1wiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgaXNDb250cmE6IHRydWUsXG4gICAgICAgIHNhbGRvQXdhbDogLTI1NDk5MDY1NyxcbiAgICAgICAgZGViZXQ6IDE2OTc2MTY4MyxcbiAgICAgICAga3JlZGl0OiAzNDY1NTMxMjQsXG4gICAgICAgIHNhbGRvQWtoaXI6IC03ODE5OTIxNlxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgbm86IFwiLVwiLFxuICAgICAgICBjb2RlOiBcIi1cIixcbiAgICAgICAgbmFtZTogXCJUT1RBTCBFS1VJVEFTXCIsXG4gICAgICAgIHNlY3Rpb246IFwiRUtVSVRBU1wiLFxuICAgICAgICBsZXZlbDogMSxcbiAgICAgICAgaXNTdWJ0b3RhbDogdHJ1ZSxcbiAgICAgICAgc2FsZG9Bd2FsOiAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBubzogXCJcIixcbiAgICAgICAgY29kZTogXCJcIixcbiAgICAgICAgbmFtZTogXCJTdWIgVG90YWwgMy4gRUtVSVRBU1wiLFxuICAgICAgICBzZWN0aW9uOiBcIkVLVUlUQVNcIixcbiAgICAgICAgbGV2ZWw6IDEsXG4gICAgICAgIGlzU3VidG90YWw6IHRydWUsXG4gICAgICAgIHNhbGRvQXdhbDogNzgwMTUzNTM3NyxcbiAgICAgICAgZGViZXQ6IDE2OTc2MTY4MyxcbiAgICAgICAga3JlZGl0OiAzNDY1NTMxMjQsXG4gICAgICAgIHNhbGRvQWtoaXI6IDc5NzgzMjY4MThcbiAgICAgIH0sXG5cbiAgICAgIC8vID09PSBHUkFORCBUT1RBTCA9PT1cbiAgICAgIHtcbiAgICAgICAgbm86IFwiXCIsXG4gICAgICAgIGNvZGU6IFwiXCIsXG4gICAgICAgIG5hbWU6IFwiSnVtbGFoIEtld2FqaWJhbiArIEVrdWl0YXNcIixcbiAgICAgICAgc2VjdGlvbjogXCJUT1RBTFwiLFxuICAgICAgICBsZXZlbDogMSxcbiAgICAgICAgaXNHcmFuZFRvdGFsOiB0cnVlLFxuICAgICAgICBzYWxkb0F3YWw6IDQxODk3ODUzMTEzLFxuICAgICAgICBkZWJldDogNzIxODUwOTY2LFxuICAgICAgICBrcmVkaXQ6IDg3OTkxMDc3OSxcbiAgICAgICAgc2FsZG9Ba2hpcjogNDIwNTU5MTI5MjZcbiAgICAgIH1cbiAgICBdXG4gIH0sXG4gIGxhYmFSdWdpOiB7XG4gICAgcGVyaW9kOiBcIkFndXN0dXMgMjAyNlwiLFxuICAgIHJldmVudWVzOiBbXG4gICAgICB7IG5hbWU6IFwiUGVuanVhbGFuIFBlcnRhbGl0ZVwiLCBhbW91bnQ6IDI0NTgwMDAwMCB9LFxuICAgICAgeyBuYW1lOiBcIlBlbmp1YWxhbiBQZXJ0YW1heFwiLCBhbW91bnQ6IDE1NDIwMDAwMCB9LFxuICAgICAgeyBuYW1lOiBcIlBlbmp1YWxhbiBCaW8gU29sYXJcIiwgYW1vdW50OiA5ODQwMDAwMCB9LFxuICAgICAgeyBuYW1lOiBcIlBlbmp1YWxhbiBEZXhsaXRlXCIsIGFtb3VudDogNDY4MDAwMDAgfVxuICAgIF0sXG4gICAgY29nczogW1xuICAgICAgeyBuYW1lOiBcIkhQUCBQZXJ0YWxpdGUgKFBlbWJlbGlhbiBOZXR0bylcIiwgYW1vdW50OiAyMzcyMDAwMDAgfSxcbiAgICAgIHsgbmFtZTogXCJIUFAgUGVydGFtYXhcIiwgYW1vdW50OiAxNDc2MDAwMDAgfSxcbiAgICAgIHsgbmFtZTogXCJIUFAgQmlvIFNvbGFyXCIsIGFtb3VudDogOTQ4MDAwMDAgfSxcbiAgICAgIHsgbmFtZTogXCJIUFAgRGV4bGl0ZVwiLCBhbW91bnQ6IDQ0OTAwMDAwIH1cbiAgICBdLFxuICAgIG9wZXJhdGlvbmFsRXhwZW5zZXM6IFtcbiAgICAgIHsgbmFtZTogXCJHYWppICYgVXBhaCBLYXJ5YXdhbiBTaGlmdFwiLCBhbW91bnQ6IDE4NTAwMDAwIH0sXG4gICAgICB7IG5hbWU6IFwiQmlheWEgTGlzdHJpayBQTE4gJiBCYWhhbiBCYWthciBHZW5zZXRcIiwgYW1vdW50OiA3MjAwMDAwIH0sXG4gICAgICB7IG5hbWU6IFwiQmlheWEgUmV0cmlidXNpICYgVGVyYSBEaXNwZW5zZXJcIiwgYW1vdW50OiAzNTAwMDAwIH0sXG4gICAgICB7IG5hbWU6IFwiQmlheWEgUGVybGVuZ2thcGFuIEthc2lyICYgS2FudG9yXCIsIGFtb3VudDogMTgwMDAwMCB9XG4gICAgXVxuICB9LFxuICBsYWJhUnVnaUtvbnNvbGlkYXNpOiB7XG4gICAgdGl0bGU6IFwiTEFQT1JBTiBMQUJBLVJVR0kgS09OU09MSURBU0kgSEFSSUFOXCIsXG4gICAgcGVyaW9kRGF0ZTogXCIzMSBBZ3VzdHVzIDIwMjZcIixcbiAgICBlbnRpdHlOYW1lOiBcIlBUIFNQQlUgTWl0cmEgQWtydWFsIDE5NTRcIixcbiAgICBsb2NhdGlvbjogXCJMdWJ1ayBhbHVuZ1wiLFxuICAgIHJvd3M6IFtcbiAgICAgIC8vID09PSBBLiBQRU5EQVBBVEFOIE9QRVJBU0lPTkFMID09PVxuICAgICAge1xuICAgICAgICBjb2RlOiBcIjEwMFwiLFxuICAgICAgICBuYW1lOiBcIkEuIFBlbmRhcGF0YW4gT3BlcmFzaW9uYWxcIixcbiAgICAgICAgbGV2ZWw6IDEsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMCxcbiAgICAgICAgaXNTZWN0aW9uSGVhZGVyOiB0cnVlXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIi1cIixcbiAgICAgICAgbmFtZTogXCIxLiBQZW5kYXBhdGFuIFBlbmp1YWxhbiBCQk1cIixcbiAgICAgICAgbGV2ZWw6IDIsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMCxcbiAgICAgICAgaXNTZWN0aW9uSGVhZGVyOiB0cnVlXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIi1cIixcbiAgICAgICAgbmFtZTogXCJhLiBQZW5qdWFsYW4gQkJNIFJldGFpbCBCZXJzdWJzaWRpICYgS29tcGVuc2FzaVwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgc2FsZG9LZW1hcmluOiAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAwLFxuICAgICAgICBpc1NlY3Rpb25IZWFkZXI6IHRydWVcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiMTExXCIsXG4gICAgICAgIG5hbWU6IFwiaS4gIFBlcnRhbGl0ZSBST04gOTAgKEtvbXBlbnNhc2kpXCIsXG4gICAgICAgIGxldmVsOiA0LFxuICAgICAgICBzYWxkb0tlbWFyaW46IDM4MzMyNDM1LFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAzNzE3MTAwLFxuICAgICAgICBzYWxkb0FraGlyOiA0MjA0OTUzNVxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgY29kZTogXCIxMTJcIixcbiAgICAgICAgbmFtZTogXCJpaS4gQmlvc29sYXIgQjM1IChTdWJzaWRpKVwiLFxuICAgICAgICBsZXZlbDogNCxcbiAgICAgICAgc2FsZG9LZW1hcmluOiAzMDk1MTQxODQsXG4gICAgICAgIGRlYmV0OiAxNjg0NTIwNCxcbiAgICAgICAga3JlZGl0OiAyNjA0MDQxMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMzE4NzA5MzkwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIjExM1wiLFxuICAgICAgICBuYW1lOiBcIi0uIFBlcnRhbWF4IFJPTiA5MiAmIERleCBTZXJpZXNcIixcbiAgICAgICAgbGV2ZWw6IDQsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMTc3NDkxMjAxNSxcbiAgICAgICAgZGViZXQ6IDY3ODE2NzUzLFxuICAgICAgICBrcmVkaXQ6IDI5Njc2Njc0MixcbiAgICAgICAgc2FsZG9Ba2hpcjogMjAwMzg2MjAwNFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgY29kZTogXCItXCIsXG4gICAgICAgIG5hbWU6IFwiYi4gUGVuanVhbGFuIFBlbHVtYXMgJiBQcm9kdWsgTm9uLUJCTVwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgc2FsZG9LZW1hcmluOiAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAwLFxuICAgICAgICBpc1NlY3Rpb25IZWFkZXI6IHRydWVcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiMTI0XCIsXG4gICAgICAgIG5hbWU6IFwiLS4gUGVsdW1hcyBGYXN0cm9uLCBFbmR1cm8gJiBNZXNyYW5cIixcbiAgICAgICAgbGV2ZWw6IDQsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMTExOTQ1MjcyLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiA3NTMwOTI0LFxuICAgICAgICBzYWxkb0FraGlyOiAxMTk0NzYxOTZcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiLVwiLFxuICAgICAgICBuYW1lOiBcIjIuIFBlbmRhcGF0YW4gT3BlcmFzaW9uYWwgTGFpbm55YVwiLFxuICAgICAgICBsZXZlbDogMixcbiAgICAgICAgc2FsZG9LZW1hcmluOiAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAwLFxuICAgICAgICBpc1NlY3Rpb25IZWFkZXI6IHRydWVcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiMTM2XCIsXG4gICAgICAgIG5hbWU6IFwiYS4gUGVuZGFwYXRhbiBTZXdhIFRlbmFudCAmIEJyaWdodCBTdG9yZVwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgc2FsZG9LZW1hcmluOiAyMjc1MDAwMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogOTk0MDAwLFxuICAgICAgICBzYWxkb0FraGlyOiAyMzc0NDAwMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgY29kZTogXCIxMzdcIixcbiAgICAgICAgbmFtZTogXCJiLiBQZW5kYXBhdGFuIFNlbGlzaWggVGVyYSBQb3NpdGlmIE5venpsZVwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgc2FsZG9LZW1hcmluOiAxNjQwNzQwNTA1LFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiA1NzczMDQwLFxuICAgICAgICBzYWxkb0FraGlyOiAxNjQ2NTEzNTQ1XG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIjE0M1wiLFxuICAgICAgICBuYW1lOiBcImMuIFBlbmRhcGF0YW4gSmFzYSBMYXlhbmFuIE5pdHJvZ2VuICYgS29tcHJlc29yXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBzYWxkb0tlbWFyaW46IDUwMDEzMTA5LFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiA1NTUwNDk3LFxuICAgICAgICBzYWxkb0FraGlyOiA1NTU2MzYwNlxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgY29kZTogXCItXCIsXG4gICAgICAgIG5hbWU6IFwiMy4gUGVuZGFwYXRhbiBOb24gT3BlcmFzaW9uYWxcIixcbiAgICAgICAgbGV2ZWw6IDIsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMCxcbiAgICAgICAgaXNTZWN0aW9uSGVhZGVyOiB0cnVlXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIjMxMVwiLFxuICAgICAgICBuYW1lOiBcImEuIFBlbmp1YWxhbiBEcnVtIEJla2FzICYgTGltYmFoIFBlbHVtYXNcIixcbiAgICAgICAgbGV2ZWw6IDMsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgY29kZTogXCIzMTdcIixcbiAgICAgICAgbmFtZTogXCJiLiBQZW5kYXBhdGFuIEJ1bmdhIEphc2EgR2lybyBPcGVyYXNpb25hbFwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgc2FsZG9LZW1hcmluOiAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIjMxOFwiLFxuICAgICAgICBuYW1lOiBcImMuIExhaW5ueWFcIixcbiAgICAgICAgbGV2ZWw6IDMsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMFxuICAgICAgfSxcbiAgICAgIC8vIFRPVEFMIFBFTkRBUEFUQU5cbiAgICAgIHtcbiAgICAgICAgY29kZTogXCJcIixcbiAgICAgICAgbmFtZTogXCJKVU1MQUggUEVOREFQQVRBTlwiLFxuICAgICAgICBsZXZlbDogMSxcbiAgICAgICAgc2FsZG9LZW1hcmluOiAzOTQ4MjA3NTIwLFxuICAgICAgICBkZWJldDogODQ2NjE5NTcsXG4gICAgICAgIGtyZWRpdDogMzQ2MzcyNzEzLFxuICAgICAgICBzYWxkb0FraGlyOiA0MjA5OTE4Mjc2LFxuICAgICAgICBpc1RvdGFsOiB0cnVlXG4gICAgICB9LFxuXG4gICAgICAvLyA9PT0gQi4gQkVCQU4gT1BFUkFTSU9OQUwgPT09XG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiMTUwXCIsXG4gICAgICAgIG5hbWU6IFwiQi4gQmViYW4gT3BlcmFzaW9uYWxcIixcbiAgICAgICAgbGV2ZWw6IDEsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMCxcbiAgICAgICAgaXNTZWN0aW9uSGVhZGVyOiB0cnVlXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIi1cIixcbiAgICAgICAgbmFtZTogXCIxLiBIYXJnYSBQb2tvayBQZW5qdWFsYW4gKEhQUCkgRE8gUGVydGFtaW5hXCIsXG4gICAgICAgIGxldmVsOiAyLFxuICAgICAgICBzYWxkb0tlbWFyaW46IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDAsXG4gICAgICAgIGlzU2VjdGlvbkhlYWRlcjogdHJ1ZVxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgY29kZTogXCItXCIsXG4gICAgICAgIG5hbWU6IFwiYS4gUGVuZWJ1c2FuIERPIEJCTSBSZXRhaWxcIixcbiAgICAgICAgbGV2ZWw6IDMsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMCxcbiAgICAgICAgaXNTZWN0aW9uSGVhZGVyOiB0cnVlXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIjE2MVwiLFxuICAgICAgICBuYW1lOiBcImkuICAgIERPIFBlcnRhbGl0ZSBST04gOTBcIixcbiAgICAgICAgbGV2ZWw6IDQsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogOTM2OTU1OTIsXG4gICAgICAgIGRlYmV0OiAxMjcwMDc1NixcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAxMDYzOTYzNDhcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiMTYyXCIsXG4gICAgICAgIG5hbWU6IFwiaWkuICAgRE8gQmlvc29sYXIgQjM1XCIsXG4gICAgICAgIGxldmVsOiA0LFxuICAgICAgICBzYWxkb0tlbWFyaW46IDc0MDI5MDYzNCxcbiAgICAgICAgZGViZXQ6IDU1MDA3NjgzLFxuICAgICAgICBrcmVkaXQ6IDE4MDQxMSxcbiAgICAgICAgc2FsZG9Ba2hpcjogNzk1MTE3OTA2XG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIjE2M1wiLFxuICAgICAgICBuYW1lOiBcImlpaS4gIERPIFBlcnRhbWF4IFJPTiA5MlwiLFxuICAgICAgICBsZXZlbDogNCxcbiAgICAgICAgc2FsZG9LZW1hcmluOiAxNzQ5MTg4NyxcbiAgICAgICAgZGViZXQ6IDI1NDAxNDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMjAwMzIwMjdcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiMTY4XCIsXG4gICAgICAgIG5hbWU6IFwiaXYuICAgT25na29zIEFuZ2t1dCBNb2JpbCBUYW5na2kgUGVydGFtaW5hXCIsXG4gICAgICAgIGxldmVsOiA0LFxuICAgICAgICBzYWxkb0tlbWFyaW46IDQxMTAxNTAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiA0MTEwMTUwMFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgY29kZTogXCItXCIsXG4gICAgICAgIG5hbWU6IFwiMi4gQmViYW4gS2VydWdpYW4gJiBTZWxpc2loIFRlcmFcIixcbiAgICAgICAgbGV2ZWw6IDIsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMCxcbiAgICAgICAgaXNTZWN0aW9uSGVhZGVyOiB0cnVlXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIjE3NFwiLFxuICAgICAgICBuYW1lOiBcImEuIEtlcnVnaWFuIFBlbmd1YXBhbiAmIExvc3NlcyBUYW5raSBQZW5kYW1cIixcbiAgICAgICAgbGV2ZWw6IDMsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogODkzNzk3MSxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogODkzNzk3MVxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgY29kZTogXCIxNzZcIixcbiAgICAgICAgbmFtZTogXCJiLiBTZWxpc2loIFRlcmEgTmVnYXRpZiBOb3p6bGUgRGlzcGVuc2VyXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBzYWxkb0tlbWFyaW46IDY0NzQxNTY5NCxcbiAgICAgICAgZGViZXQ6IDExMzkyMTQ3LFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDY1ODgwNzg0MVxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgY29kZTogXCIxODBcIixcbiAgICAgICAgbmFtZTogXCIzLiBCZWJhbiBQZW1hc2FyYW4gJiBQcm9tb3NpIFNQQlVcIixcbiAgICAgICAgbGV2ZWw6IDIsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogNTg2NzkwMDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDU4Njc5MDAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIi1cIixcbiAgICAgICAgbmFtZTogXCI0LiBCZWJhbiBBZG1pbmlzdHJhc2kgZGFuIFVtdW1cIixcbiAgICAgICAgbGV2ZWw6IDIsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMCxcbiAgICAgICAgaXNTZWN0aW9uSGVhZGVyOiB0cnVlXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIi1cIixcbiAgICAgICAgbmFtZTogXCJhLiBCZWJhbiBUZW5hZ2EgS2VyamEgU1BCVVwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgc2FsZG9LZW1hcmluOiAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAwLFxuICAgICAgICBpc1NlY3Rpb25IZWFkZXI6IHRydWVcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiMjAxXCIsXG4gICAgICAgIG5hbWU6IFwiaS4gICBHYWppIGRhbiBVcGFoIE9wZXJhdG9yIFNoaWZ0XCIsXG4gICAgICAgIGxldmVsOiA0LFxuICAgICAgICBzYWxkb0tlbWFyaW46IDE0NDU2NzgyMDEsXG4gICAgICAgIGRlYmV0OiAxMzk1MDAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDE0NDcwNzMyMDFcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiMjAyXCIsXG4gICAgICAgIG5hbWU6IFwiaWkuICBIb25vcmFyaXVtIFBlbmdhd2FzICYgU2VjdXJpdHlcIixcbiAgICAgICAgbGV2ZWw6IDQsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMTA4NjgwMDAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAxMDg2ODAwMDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiMjAzXCIsXG4gICAgICAgIG5hbWU6IFwiaWlpLiBUdW5qYW5nYW4gJiBCUEpTIEtldGVuYWdha2VyamFhblwiLFxuICAgICAgICBsZXZlbDogNCxcbiAgICAgICAgc2FsZG9LZW1hcmluOiAzNDU0NzQwNzAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDM0NTQ3NDA3MFxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgY29kZTogXCIyMDRcIixcbiAgICAgICAgbmFtZTogXCJiLiBCZWJhbiBQZW5kaWRpa2FuLCBQZWxhdGloYW4gJiBLMyBTUEJVXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBzYWxkb0tlbWFyaW46IDU4MzcyMDA5LFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiA1ODM3MjAwOVxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgY29kZTogXCItXCIsXG4gICAgICAgIG5hbWU6IFwiYy4gQmViYW4gU2V3YVwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgc2FsZG9LZW1hcmluOiAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAwLFxuICAgICAgICBpc1NlY3Rpb25IZWFkZXI6IHRydWVcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiMjA1XCIsXG4gICAgICAgIG5hbWU6IFwiaS4gICBTZXdhIExhaGFuIFNQQlVcIixcbiAgICAgICAgbGV2ZWw6IDQsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMTk5NjQwMDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDE5OTY0MDAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIjIwN1wiLFxuICAgICAgICBuYW1lOiBcImQuIEJlYmFuIFBlbnl1c3V0YW4gRGlzcGVuc2VyICYgS2Fub3BpIFNQQlVcIixcbiAgICAgICAgbGV2ZWw6IDMsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMTMzMDcyNzcwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAxMzMwNzI3NzBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiMjA4XCIsXG4gICAgICAgIG5hbWU6IFwiZS4gQmViYW4gQW1vcnRpc2FzaSBQZXJpemluYW4gU1BCVVwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgc2FsZG9LZW1hcmluOiA5OTk5ODcsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDk5OTk4N1xuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgY29kZTogXCIyMDlcIixcbiAgICAgICAgbmFtZTogXCJmLiBCZWJhbiBBc3VyYW5zaSBLZWJha2FyYW4gJiBTUEJVXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBzYWxkb0tlbWFyaW46IDM4MjQyMDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDM4MjQyMDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiMjEwXCIsXG4gICAgICAgIG5hbWU6IFwiZy4gQmViYW4gUGVtZWxpaGFyYWFuIERpc3BlbnNlciwgUG9tcGEgJiBUYW5raVwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgc2FsZG9LZW1hcmluOiA1ODYxMTAwMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogNTg2MTEwMDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiMjExXCIsXG4gICAgICAgIG5hbWU6IFwiaC4gQmViYW4gTGlzdHJpayBQTE4sIEFpciAmIEJhaGFuIEJha2FyIEdlbnNldFwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgc2FsZG9LZW1hcmluOiAyNTQyMjY1MDAsXG4gICAgICAgIGRlYmV0OiA1MDQwMDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMjU0NzMwNTAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIjIxNVwiLFxuICAgICAgICBuYW1lOiBcImkuIFBhamFrLXBhamFrICYgUmV0cmlidXNpIERhZXJhaFwiLFxuICAgICAgICBsZXZlbDogMyxcbiAgICAgICAgc2FsZG9LZW1hcmluOiA3NDcyMDAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiA3NDcyMDAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIjIyNlwiLFxuICAgICAgICBuYW1lOiBcImouIEJlYmFuIFBlcmxlbmdrYXBhbiBTdHJ1ayAmIENldGFrIEthc2lyXCIsXG4gICAgICAgIGxldmVsOiAzLFxuICAgICAgICBzYWxkb0tlbWFyaW46IDExNjI4OTEwMCxcbiAgICAgICAgZGViZXQ6IDE1NjAwMDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMTE3ODQ5MTAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIi1cIixcbiAgICAgICAgbmFtZTogXCI1LiBCZWJhbiBOb24gT3BlcmFzaW9uYWxcIixcbiAgICAgICAgbGV2ZWw6IDIsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMCxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogMCxcbiAgICAgICAgaXNTZWN0aW9uSGVhZGVyOiB0cnVlXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIjM1OVwiLFxuICAgICAgICBuYW1lOiBcImEuIEJlYmFuIEFkbWluaXN0cmFzaSBCYW5rICYgQnVuZ2EgUGluamFtYW5cIixcbiAgICAgICAgbGV2ZWw6IDMsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogMjkyODcwMDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDI5Mjg3MDAwXG4gICAgICB9LFxuICAgICAgLy8gVE9UQUwgQklBWUFcbiAgICAgIHtcbiAgICAgICAgY29kZTogXCJcIixcbiAgICAgICAgbmFtZTogXCJKVU1MQUggQklBWUFcIixcbiAgICAgICAgbGV2ZWw6IDEsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogNDE4OTU2MzExNSxcbiAgICAgICAgZGViZXQ6IDg1MDk5NzI2LFxuICAgICAgICBrcmVkaXQ6IDE4MDQxMSxcbiAgICAgICAgc2FsZG9Ba2hpcjogNDI3NDQ4MjQzMCxcbiAgICAgICAgaXNUb3RhbDogdHJ1ZVxuICAgICAgfSxcblxuICAgICAgLy8gPT09IExBQkEgUlVHSSAmIFBBSkFLIFNVTU1BUlkgPT09XG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiNDAwXCIsXG4gICAgICAgIG5hbWU6IFwiTGFiYSBSdWdpIE9wZXJhc2lvbmFsXCIsXG4gICAgICAgIGxldmVsOiAxLFxuICAgICAgICBzYWxkb0tlbWFyaW46IC0yNDEzNTU1OTUsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IC02NDU2NDE1NCxcbiAgICAgICAgaXNUb3RhbDogdHJ1ZVxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgY29kZTogXCI0MDFcIixcbiAgICAgICAgbmFtZTogXCJMYWJhIFJ1Z2kgTm9uIE9wZXJhc2lvbmFsXCIsXG4gICAgICAgIGxldmVsOiAxLFxuICAgICAgICBzYWxkb0tlbWFyaW46IDAsXG4gICAgICAgIGRlYmV0OiAwLFxuICAgICAgICBrcmVkaXQ6IDAsXG4gICAgICAgIHNhbGRvQWtoaXI6IDBcbiAgICAgIH0sXG4gICAgICB7XG4gICAgICAgIGNvZGU6IFwiNDAyXCIsXG4gICAgICAgIG5hbWU6IFwiTGFiYSBSdWdpIFNlYmVsdW0gVGFrc2lyYW4gUGFqYWtcIixcbiAgICAgICAgbGV2ZWw6IDEsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogLTI0MTM1NTU5NSxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogLTY0NTY0MTU0LFxuICAgICAgICBpc1RvdGFsOiB0cnVlXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIjQwM1wiLFxuICAgICAgICBuYW1lOiBcIlRha3NpcmFuIFBhamFrIFBlbmdoYXNpbGFuXCIsXG4gICAgICAgIGxldmVsOiAxLFxuICAgICAgICBzYWxkb0tlbWFyaW46IDEzNjM1MDYyLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAxMzYzNTA2MlxuICAgICAgfSxcbiAgICAgIHtcbiAgICAgICAgY29kZTogXCI0MDRcIixcbiAgICAgICAgbmFtZTogXCJQZW5kYXBhdGFuIFBhamFrIFRhbmdndWhhblwiLFxuICAgICAgICBsZXZlbDogMSxcbiAgICAgICAgc2FsZG9LZW1hcmluOiAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIjQwNVwiLFxuICAgICAgICBuYW1lOiBcIkJpYXlhIFBhamFrIFRhbmdndWhhblwiLFxuICAgICAgICBsZXZlbDogMSxcbiAgICAgICAgc2FsZG9LZW1hcmluOiAwLFxuICAgICAgICBkZWJldDogMCxcbiAgICAgICAga3JlZGl0OiAwLFxuICAgICAgICBzYWxkb0FraGlyOiAwXG4gICAgICB9LFxuICAgICAge1xuICAgICAgICBjb2RlOiBcIjQwNlwiLFxuICAgICAgICBuYW1lOiBcIkxhYmEvUnVnaSBOZXRcIixcbiAgICAgICAgbGV2ZWw6IDEsXG4gICAgICAgIHNhbGRvS2VtYXJpbjogLTI1NDk5MDY1NyxcbiAgICAgICAgZGViZXQ6IDAsXG4gICAgICAgIGtyZWRpdDogMCxcbiAgICAgICAgc2FsZG9Ba2hpcjogLTc4MTk5MjE2LFxuICAgICAgICBpc0dyYW5kVG90YWw6IHRydWVcbiAgICAgIH1cbiAgICBdXG4gIH0sXG4gIGFydXNLYXM6IHtcbiAgICBwZXJpb2Q6IFwiU2VwdGVtYmVyIDIwMjZcIixcbiAgICBvcGVyYXNpb25hbDogW1xuICAgICAgeyBuYW1lOiBcIlBlbmVyaW1hYW4gS2FzIGRhcmkgUGVsYW5nZ2FuIEJCTVwiLCBhbW91bnQ6IDU0NTIwMDAwMCB9LFxuICAgICAgeyBuYW1lOiBcIlBlbWJheWFyYW4gS2FzIGtlIFBlbWFzb2sgKFBlcnRhbWluYSlcIiwgYW1vdW50OiAtNTI0NTAwMDAwIH0sXG4gICAgICB7IG5hbWU6IFwiUGVtYmF5YXJhbiBCZWJhbiBPcGVyYXNpb25hbCAmIEdhamlcIiwgYW1vdW50OiAtMzEwMDAwMDAgfVxuICAgIF0sXG4gICAgaW52ZXN0YXNpOiBbXG4gICAgICB7IG5hbWU6IFwiUGVtYmVsaWFuIFN1a3UgQ2FkYW5nIE5venpsZSAmIFNlbGFuZ1wiLCBhbW91bnQ6IC00NTAwMDAwIH1cbiAgICBdLFxuICAgIHBlbmRhbmFhbjogW1xuICAgICAgeyBuYW1lOiBcIlByaXZlIC8gUGVuYXJpa2FuIFBlbWlsaWtcIiwgYW1vdW50OiAtMTUwMDAwMDAgfVxuICAgIF0sXG4gICAgc2FsZG9Bd2FsOiA4NDYyMDAwMFxuICB9LFxuICBzdG9rUGVuanVhbGFuOiBbXG4gICAge1xuICAgICAgY29kZTogXCJQTFRcIixcbiAgICAgIG5hbWU6IFwiUGVydGFsaXRlXCIsXG4gICAgICBzdG9rQXdhbDogMTI1MDAsXG4gICAgICBwZW1iZWxpYW46IDE2MDAwLFxuICAgICAgcGVuanVhbGFuOiA3MDUwLFxuICAgICAgcGVueWVzdWFpYW46IDAsXG4gICAgICBzdG9rQWtoaXI6IDIxNDUwLFxuICAgICAgdW5pdDogXCJMaXRlclwiLFxuICAgICAga2FwYXNpdGFzVGFua2k6IDMwMDAwLFxuICAgICAgcGVyc2VuVGVyaXNpOiA3MS41XG4gICAgfSxcbiAgICB7XG4gICAgICBjb2RlOiBcIlBUWFwiLFxuICAgICAgbmFtZTogXCJQZXJ0YW1heFwiLFxuICAgICAgc3Rva0F3YWw6IDgyMDAsXG4gICAgICBwZW1iZWxpYW46IDEwMDAwLFxuICAgICAgcGVuanVhbGFuOiA0MDAwLFxuICAgICAgcGVueWVzdWFpYW46IDAsXG4gICAgICBzdG9rQWtoaXI6IDE0MjAwLFxuICAgICAgdW5pdDogXCJMaXRlclwiLFxuICAgICAga2FwYXNpdGFzVGFua2k6IDIwMDAwLFxuICAgICAgcGVyc2VuVGVyaXNpOiA3MS4wXG4gICAgfSxcbiAgICB7XG4gICAgICBjb2RlOiBcIlRVUlwiLFxuICAgICAgbmFtZTogXCJQZXJ0YW1heCBUdXJib1wiLFxuICAgICAgc3Rva0F3YWw6IDYwMDAsXG4gICAgICBwZW1iZWxpYW46IDAsXG4gICAgICBwZW5qdWFsYW46IDEyMDAsXG4gICAgICBwZW55ZXN1YWlhbjogMCxcbiAgICAgIHN0b2tBa2hpcjogNDgwMCxcbiAgICAgIHVuaXQ6IFwiTGl0ZXJcIixcbiAgICAgIGthcGFzaXRhc1RhbmtpOiAxNTAwMCxcbiAgICAgIHBlcnNlblRlcmlzaTogMzIuMFxuICAgIH0sXG4gICAge1xuICAgICAgY29kZTogXCJCU0xcIixcbiAgICAgIG5hbWU6IFwiQmlvIFNvbGFyXCIsXG4gICAgICBzdG9rQXdhbDogMTQ4MDAsXG4gICAgICBwZW1iZWxpYW46IDE4MDAwLFxuICAgICAgcGVuanVhbGFuOiA3MDAwLFxuICAgICAgcGVueWVzdWFpYW46IDAsXG4gICAgICBzdG9rQWtoaXI6IDI1ODAwLFxuICAgICAgdW5pdDogXCJMaXRlclwiLFxuICAgICAga2FwYXNpdGFzVGFua2k6IDMwMDAwLFxuICAgICAgcGVyc2VuVGVyaXNpOiA4Ni4wXG4gICAgfSxcbiAgICB7XG4gICAgICBjb2RlOiBcIkRYTFwiLFxuICAgICAgbmFtZTogXCJEZXhsaXRlXCIsXG4gICAgICBzdG9rQXdhbDogNjIwMCxcbiAgICAgIHBlbWJlbGlhbjogODAwMCxcbiAgICAgIHBlbmp1YWxhbjogMzAwMCxcbiAgICAgIHBlbnllc3VhaWFuOiAwLFxuICAgICAgc3Rva0FraGlyOiAxMTIwMCxcbiAgICAgIHVuaXQ6IFwiTGl0ZXJcIixcbiAgICAgIGthcGFzaXRhc1RhbmtpOiAxNTAwMCxcbiAgICAgIHBlcnNlblRlcmlzaTogNzQuNlxuICAgIH1cbiAgXVxufTtcbiJdfQ==

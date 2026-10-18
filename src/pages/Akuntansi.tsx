@@ -10,6 +10,7 @@ import {
   BusinessPartner
 } from '../types';
 import { useAppContext } from '../context/AppContext';
+import { CORE_ACCOUNT_CODES, CORE_MASTER_CODES, CORE_PARTNER_IDS } from '../services/database';
 
 export interface AkuntansiPageProps {
   mockData?: {
@@ -508,7 +509,16 @@ export function AkuntansiPage({
                 {masterCodes.map((m) => {
                   const debitAcc = accounts.find(a => a.id === m.debitAccountId);
                   const creditAcc = accounts.find(a => a.id === m.creditAccountId);
+                  const isCoreMasterCode = CORE_MASTER_CODES.has(m.code) || CORE_MASTER_CODES.has(m.id);
                   const isUsed = transactions.some((t) => t.masterCodeId === m.id || t.code === m.code);
+                  const canDeleteMasterCode = !isCoreMasterCode && !isUsed;
+                  let masterCodeDeleteTooltip = 'Hapus Master Kode';
+                  if (isCoreMasterCode) {
+                    masterCodeDeleteTooltip = 'Master Kode bawaan sistem SPBU tidak dapat dihapus.';
+                  } else if (isUsed) {
+                    masterCodeDeleteTooltip = 'Master Kode tidak dapat dihapus karena sudah digunakan dalam transaksi.';
+                  }
+
                   return (
                     <tr key={m.id} style={{ opacity: m.isActive ? 1 : 0.65 }}>
                       <td>
@@ -568,6 +578,7 @@ export function AkuntansiPage({
                             size="sm"
                             onClick={() => openEditMasterCodeModal(m)}
                             style={{ padding: '3px 8px', fontSize: '12px' }}
+                            title="Edit Master Kode"
                           >
                             Edit
                           </Button>
@@ -576,19 +587,25 @@ export function AkuntansiPage({
                             size="sm"
                             onClick={() => handleToggleMasterCode(m)}
                             style={{ padding: '3px 8px', fontSize: '12px' }}
+                            title={m.isActive ? 'Nonaktifkan Master Kode' : 'Aktifkan Master Kode'}
                           >
                             {m.isActive ? 'Nonaktifkan' : 'Aktifkan'}
                           </Button>
-                          {!isUsed && (
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDeleteMasterCode(m)}
-                              style={{ padding: '3px 8px', fontSize: '12px' }}
-                            >
-                              Hapus
-                            </Button>
-                          )}
+                          <Button
+                            variant={canDeleteMasterCode ? 'danger' : 'secondary'}
+                            size="sm"
+                            disabled={!canDeleteMasterCode}
+                            onClick={canDeleteMasterCode ? () => handleDeleteMasterCode(m) : undefined}
+                            style={{
+                              padding: '3px 8px',
+                              fontSize: '12px',
+                              opacity: canDeleteMasterCode ? 1 : 0.45,
+                              cursor: canDeleteMasterCode ? 'pointer' : 'not-allowed'
+                            }}
+                            title={masterCodeDeleteTooltip}
+                          >
+                            Hapus
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -618,9 +635,32 @@ export function AkuntansiPage({
               </thead>
               <tbody>
                 {accounts.map((acc) => {
+                  const isCoreAccount = CORE_ACCOUNT_CODES.has(acc.code) || CORE_ACCOUNT_CODES.has(acc.id);
                   const isAccountReferenced =
                     journals.some((j) => j.entries.some((e) => e.accountId === acc.id || e.accountCode === acc.code)) ||
-                    masterCodes.some((mc) => mc.debitAccountId === acc.id || mc.creditAccountId === acc.id);
+                    masterCodes.some((mc) => mc.debitAccountId === acc.id || mc.creditAccountId === acc.id || mc.debitAccountId === acc.code || mc.creditAccountId === acc.code);
+                  const hasActiveBalance = acc.balance !== 0;
+                  const canDeleteAccount = !isCoreAccount && !isAccountReferenced && !hasActiveBalance;
+
+                  let accountDeleteTooltip = 'Hapus Akun';
+                  if (isCoreAccount) {
+                    accountDeleteTooltip = 'Akun baku SPBU tidak dapat dihapus.';
+                  } else if (hasActiveBalance) {
+                    accountDeleteTooltip = 'Akun tidak dapat dihapus karena masih memiliki saldo aktif.';
+                  } else if (isAccountReferenced) {
+                    accountDeleteTooltip = 'Akun tidak dapat dihapus karena memiliki riwayat jurnal atau referensi Master Kode.';
+                  }
+
+                  const isMappedToActiveMasterCode = masterCodes.some(
+                    (mc) => mc.isActive && (mc.debitAccountId === acc.id || mc.creditAccountId === acc.id || mc.debitAccountId === acc.code || mc.creditAccountId === acc.code)
+                  );
+                  const canToggleAccount = !(acc.isActive && isMappedToActiveMasterCode);
+                  const toggleAccountTooltip = !canToggleAccount
+                    ? 'Akun tidak dapat dinonaktifkan karena sedang digunakan oleh pemetaan Master Kode aktif.'
+                    : acc.isActive
+                    ? 'Nonaktifkan akun'
+                    : 'Aktifkan akun';
+
                   return (
                     <tr key={acc.id} style={{ opacity: acc.isActive ? 1 : 0.65 }}>
                       <td>
@@ -666,27 +706,40 @@ export function AkuntansiPage({
                             size="sm"
                             onClick={() => openEditAccountModal(acc)}
                             style={{ padding: '3px 8px', fontSize: '12px' }}
+                            title="Edit akun"
                           >
                             Edit
                           </Button>
                           <Button
                             variant={acc.isActive ? 'secondary' : 'primary'}
                             size="sm"
-                            onClick={() => handleToggleAccount(acc)}
-                            style={{ padding: '3px 8px', fontSize: '12px' }}
+                            disabled={!canToggleAccount}
+                            onClick={canToggleAccount ? () => handleToggleAccount(acc) : undefined}
+                            style={{
+                              padding: '3px 8px',
+                              fontSize: '12px',
+                              opacity: canToggleAccount ? 1 : 0.45,
+                              cursor: canToggleAccount ? 'pointer' : 'not-allowed'
+                            }}
+                            title={toggleAccountTooltip}
                           >
                             {acc.isActive ? 'Nonaktifkan' : 'Aktifkan'}
                           </Button>
-                          {!isAccountReferenced && (
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDeleteAccount(acc)}
-                              style={{ padding: '3px 8px', fontSize: '12px' }}
-                            >
-                              Hapus
-                            </Button>
-                          )}
+                          <Button
+                            variant={canDeleteAccount ? 'danger' : 'secondary'}
+                            size="sm"
+                            disabled={!canDeleteAccount}
+                            onClick={canDeleteAccount ? () => handleDeleteAccount(acc) : undefined}
+                            style={{
+                              padding: '3px 8px',
+                              fontSize: '12px',
+                              opacity: canDeleteAccount ? 1 : 0.45,
+                              cursor: canDeleteAccount ? 'pointer' : 'not-allowed'
+                            }}
+                            title={accountDeleteTooltip}
+                          >
+                            Hapus
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -1030,10 +1083,19 @@ export function AkuntansiPage({
                       </tr>
                     ) : (
                       filteredPartners.map((p) => {
+                        const isCorePartner = CORE_PARTNER_IDS.has(p.id) || CORE_PARTNER_IDS.has(p.code);
                         const isPartnerReferenced =
                           transactions.some((t) => (t as any).partnerId === p.id) ||
                           receivables.some((r) => r.partnerId === p.id) ||
                           payables.some((py) => py.partnerId === p.id);
+                        const canDeletePartner = !isCorePartner && !isPartnerReferenced;
+                        let partnerDeleteTooltip = 'Hapus mitra bisnis';
+                        if (isCorePartner) {
+                          partnerDeleteTooltip = 'Mitra vendor utama SPBU tidak dapat dihapus.';
+                        } else if (isPartnerReferenced) {
+                          partnerDeleteTooltip = 'Mitra tidak dapat dihapus karena memiliki riwayat transaksi, piutang, atau hutang.';
+                        }
+
                         return (
                           <tr key={p.id} style={{ opacity: p.isActive === false ? 0.65 : 1 }}>
                             <td>
@@ -1072,6 +1134,7 @@ export function AkuntansiPage({
                                   size="sm"
                                   onClick={() => openEditPartnerModal(p)}
                                   style={{ padding: '3px 8px', fontSize: '12px' }}
+                                  title="Edit mitra bisnis"
                                 >
                                   Edit
                                 </Button>
@@ -1080,19 +1143,25 @@ export function AkuntansiPage({
                                   size="sm"
                                   onClick={() => handleTogglePartner(p)}
                                   style={{ padding: '3px 8px', fontSize: '12px' }}
+                                  title={p.isActive !== false ? 'Nonaktifkan mitra bisnis' : 'Aktifkan mitra bisnis'}
                                 >
                                   {p.isActive !== false ? 'Nonaktifkan' : 'Aktifkan'}
                                 </Button>
-                                {!isPartnerReferenced && (
-                                  <Button
-                                    variant="danger"
-                                    size="sm"
-                                    onClick={() => handleDeletePartner(p)}
-                                    style={{ padding: '3px 8px', fontSize: '12px' }}
-                                  >
-                                    Hapus
-                                  </Button>
-                                )}
+                                <Button
+                                  variant={canDeletePartner ? 'danger' : 'secondary'}
+                                  size="sm"
+                                  disabled={!canDeletePartner}
+                                  onClick={canDeletePartner ? () => handleDeletePartner(p) : undefined}
+                                  style={{
+                                    padding: '3px 8px',
+                                    fontSize: '12px',
+                                    opacity: canDeletePartner ? 1 : 0.45,
+                                    cursor: canDeletePartner ? 'pointer' : 'not-allowed'
+                                  }}
+                                  title={partnerDeleteTooltip}
+                                >
+                                  Hapus
+                                </Button>
                               </div>
                             </td>
                           </tr>

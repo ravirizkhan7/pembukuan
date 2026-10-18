@@ -188,13 +188,29 @@ export class TankRepository extends BaseRepository {
   }
 
   /**
-   * Memeriksa apakah tangki masih memiliki relasi ke nozzle dispenser
+   * Tangki pendam utama sistem SPBU yang tidak boleh dihapus
+   */
+  public static readonly CORE_TANK_IDS = new Set([
+    'TNK-01', 'TNK-02', 'TNK-03', 'TNK-04', 'TNK-05'
+  ]);
+
+  /**
+   * Memeriksa apakah tangki merupakan konfigurasi tangki utama SPBU
+   */
+  public isCore(id: string): boolean {
+    return TankRepository.CORE_TANK_IDS.has(id);
+  }
+
+  /**
+   * Memeriksa apakah tangki masih memiliki relasi ke nozzle dispenser atau produk
    */
   public async isReferenced(id: string): Promise<boolean> {
     try {
       const rows = await this.executor.query<any>(
-        'SELECT COUNT(*) AS total_refs FROM nozzles WHERE tank_id = ?;',
-        [id]
+        `SELECT
+           ((SELECT COUNT(*) FROM nozzles WHERE tank_id = ?) +
+            (SELECT COUNT(*) FROM products WHERE tank_id = ?)) AS total_refs;`,
+        [id, id]
       );
       if (rows.length === 0) return false;
       return Number(rows[0].total_refs || 0) > 0;
@@ -205,7 +221,7 @@ export class TankRepository extends BaseRepository {
   }
 
   /**
-   * Menghapus tanki secara aman (menghormati constraint relasional)
+   * Menghapus tanki secara aman (menghormati data inti dan constraint relasional)
    */
   public async delete(id: string): Promise<boolean> {
     const existing = await this.findById(id);
@@ -213,10 +229,18 @@ export class TankRepository extends BaseRepository {
       return false;
     }
 
+    // 1. Lindungi tangki pendam utama sistem SPBU
+    if (this.isCore(existing.id)) {
+      throw new Error(
+        `Tangki pendam [${existing.name}] merupakan konfigurasi tangki utama SPBU dan tidak dapat dihapus. Silakan gunakan opsi Nonaktifkan.`
+      );
+    }
+
+    // 2. Lindungi tangki yang masih terhubung ke nozzle atau produk
     const isRef = await this.isReferenced(id);
     if (isRef) {
       throw new Error(
-        `Tangki [${existing.name}] tidak dapat dihapus karena masih terhubung ke nozzle dispenser. Putuskan atau pindahkan nozzle terlebih dahulu.`
+        `Tangki [${existing.name}] tidak dapat dihapus karena masih terhubung ke nozzle dispenser atau produk. Putuskan relasi terlebih dahulu.`
       );
     }
 
@@ -233,3 +257,4 @@ export class TankRepository extends BaseRepository {
 }
 
 export const tankRepository = new TankRepository();
+export const CORE_TANK_IDS = TankRepository.CORE_TANK_IDS;

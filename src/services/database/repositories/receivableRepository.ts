@@ -151,6 +151,37 @@ export class ReceivableRepository extends BaseRepository {
       return this.handleDbError(err, `Gagal memperbarui sisa piutang [${id}]`);
     }
   }
+
+  /**
+   * Membatalkan faktur piutang yang belum pernah dicicil (outstanding === amount)
+   */
+  public async cancel(id: string): Promise<Receivable> {
+    const existing = await this.findById(id);
+    if (!existing) {
+      throw new Error(`Piutang dengan ID ${id} tidak ditemukan`);
+    }
+    if (existing.outstanding < existing.amount) {
+      throw new Error('Faktur piutang yang sudah memiliki pembayaran tidak boleh dibatalkan.');
+    }
+    const timestamp = this.now();
+    try {
+      await this.executor.run(
+        `UPDATE receivables SET
+           status = 'Batal',
+           outstanding = 0,
+           updated_at = ?
+         WHERE id = ?;`,
+        [timestamp, id]
+      );
+      const updated = await this.findById(id);
+      if (!updated) {
+        throw new Error(`Piutang dengan ID ${id} tidak ditemukan setelah dibatalkan`);
+      }
+      return updated;
+    } catch (err) {
+      return this.handleDbError(err, `Gagal membatalkan piutang [${id}]`);
+    }
+  }
 }
 
 export const receivableRepository = new ReceivableRepository();

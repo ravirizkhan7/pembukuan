@@ -38,7 +38,11 @@ export class TransactionRepository extends BaseRepository {
       partnerName: row.partner_name || undefined,
       paymentMethod: (row.payment_method as PaymentMethod) || undefined,
       relatedReceivableId: row.related_receivable_id || undefined,
-      relatedPayableId: row.related_payable_id || undefined
+      relatedPayableId: row.related_payable_id || undefined,
+      isCorrected: row.is_corrected === 1,
+      correctionId: row.correction_id || undefined,
+      cancelledAt: row.cancelled_at || undefined,
+      cancelReason: row.cancel_reason || undefined
     };
   }
 
@@ -55,6 +59,7 @@ export class TransactionRepository extends BaseRepository {
               t.partner_id, bp.name AS partner_name,
               t.payment_method,
               t.related_receivable_id, t.related_payable_id,
+              t.is_corrected, t.correction_id,
               t.cancelled_at, t.cancel_reason,
               t.created_at, t.updated_at
             FROM transactions t
@@ -132,8 +137,9 @@ export class TransactionRepository extends BaseRepository {
            volume, unit_price, total, shift_id, cashier,
            status, nozzle_id, tera_id, master_code_id, partner_id,
            payment_method, related_receivable_id, related_payable_id,
+           is_corrected, correction_id,
            created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
         [
           data.id,
           data.date,
@@ -154,6 +160,8 @@ export class TransactionRepository extends BaseRepository {
           data.paymentMethod || null,
           data.relatedReceivableId || null,
           data.relatedPayableId || null,
+          data.isCorrected ? 1 : 0,
+          data.correctionId || null,
           timestamp,
           timestamp
         ]

@@ -253,6 +253,21 @@ export class MasterCodeRepository extends BaseRepository {
   }
 
   /**
+   * Template master kode baku bawaan sistem SPBU yang tidak boleh dihapus
+   */
+  public static readonly CORE_MASTER_CODES = new Set([
+    '303', '304', '305', '306', '307', '308', '309', '310', '311', '312', '313', '314', '315',
+    'MK-303', 'MK-304', 'MK-305', 'MK-306', 'MK-307', 'MK-308', 'MK-309', 'MK-310', 'MK-311', 'MK-312', 'MK-313', 'MK-314', 'MK-315'
+  ]);
+
+  /**
+   * Memeriksa apakah master kode merupakan template bawaan sistem SPBU
+   */
+  public isCore(idOrCode: string): boolean {
+    return MasterCodeRepository.CORE_MASTER_CODES.has(idOrCode);
+  }
+
+  /**
    * Memeriksa apakah master kode sudah memiliki relasi di tabel transaksi
    */
   public async isReferenced(id: string): Promise<boolean> {
@@ -274,7 +289,7 @@ export class MasterCodeRepository extends BaseRepository {
   }
 
   /**
-   * Menghapus master kode secara aman (menghormati constraint relasional)
+   * Menghapus master kode secara aman (menghormati data inti dan constraint relasional)
    */
   public async delete(id: string): Promise<boolean> {
     const existing = await this.findById(id);
@@ -282,6 +297,14 @@ export class MasterCodeRepository extends BaseRepository {
       return false;
     }
 
+    // 1. Lindungi master kode inti bawaan sistem SPBU
+    if (this.isCore(existing.code) || this.isCore(existing.id)) {
+      throw new Error(
+        `Master kode [${existing.code}] ${existing.name} merupakan template baku sistem SPBU dan tidak dapat dihapus. Silakan gunakan opsi Nonaktifkan.`
+      );
+    }
+
+    // 2. Lindungi master kode yang sudah memiliki riwayat transaksi
     const isRef = await this.isReferenced(id);
     if (isRef) {
       throw new Error(
@@ -302,3 +325,4 @@ export class MasterCodeRepository extends BaseRepository {
 }
 
 export const masterCodeRepository = new MasterCodeRepository();
+export const CORE_MASTER_CODES = MasterCodeRepository.CORE_MASTER_CODES;

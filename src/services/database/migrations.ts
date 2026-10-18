@@ -534,5 +534,79 @@ export const MIGRATIONS: MigrationDefinition[] = [
       // Tambahkan kolom city pada station_info untuk pengaturan kota tanda tangan laporan
       `ALTER TABLE station_info ADD COLUMN city TEXT;`
     ]
+  },
+  {
+    version: 6,
+    name: '006_transaction_corrections',
+    statements: [
+      // 1. Tambahkan kolom is_corrected dan correction_id pada transactions
+      `ALTER TABLE transactions ADD COLUMN is_corrected INTEGER NOT NULL DEFAULT 0;`,
+      `ALTER TABLE transactions ADD COLUMN correction_id TEXT;`,
+
+      // 2. Tabel audit trail koreksi transaksi
+      `CREATE TABLE IF NOT EXISTS transaction_corrections (
+        id TEXT PRIMARY KEY,
+        original_transaction_id TEXT NOT NULL REFERENCES transactions(id),
+        reversal_journal_id TEXT NOT NULL REFERENCES journals(id),
+        replacement_transaction_id TEXT REFERENCES transactions(id),
+        reason TEXT NOT NULL,
+        corrected_by TEXT,
+        created_at TEXT NOT NULL
+      );`,
+
+      // 3. Indeks pencarian audit trail
+      `CREATE INDEX IF NOT EXISTS idx_corrections_original_tx ON transaction_corrections(original_transaction_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_corrections_replacement_tx ON transaction_corrections(replacement_transaction_id);`,
+
+      // 4. Perbarui trigger pembatalan: Izinkan status Batal jika dan hanya jika terdapat catatan resmi di transaction_corrections
+      `DROP TRIGGER IF EXISTS trg_transactions_prevent_cancel_if_posted;`,
+      `CREATE TRIGGER IF NOT EXISTS trg_transactions_prevent_cancel_if_posted
+      BEFORE UPDATE OF status ON transactions
+      FOR EACH ROW
+      WHEN NEW.status = 'Batal'
+        AND (SELECT COUNT(*) FROM journals WHERE transaction_id = OLD.id) > 0
+        AND (SELECT COUNT(*) FROM transaction_corrections WHERE original_transaction_id = OLD.id) = 0
+      BEGIN
+        SELECT RAISE(ABORT, 'Transaksi yang sudah diposting ke jurnal akuntansi tidak dapat dibatalkan secara langsung tanpa prosedur pembalikan');
+      END;`,
+
+      // 5. Perbarui trigger jurnal & sub-ledger: Izinkan riwayat jurnal & sub-ledger transaksi historis yang telah dikoreksi (is_corrected = 1)
+      `DROP TRIGGER IF EXISTS trg_journals_require_selesai_transaction;`,
+      `CREATE TRIGGER IF NOT EXISTS trg_journals_require_selesai_transaction
+      BEFORE INSERT ON journals
+      FOR EACH ROW
+      WHEN NEW.transaction_id IS NOT NULL AND NEW.is_reversal = 0
+      BEGIN
+        SELECT CASE
+          WHEN (SELECT status FROM transactions WHERE id = NEW.transaction_id) != 'Selesai'
+           AND (SELECT is_corrected FROM transactions WHERE id = NEW.transaction_id) = 0
+            THEN RAISE(ABORT, 'Jurnal asli hanya boleh dibuat untuk transaksi yang berstatus Selesai')
+        END;
+      END;`,
+
+      `DROP TRIGGER IF EXISTS trg_receivables_require_selesai_transaction;`,
+      `CREATE TRIGGER IF NOT EXISTS trg_receivables_require_selesai_transaction
+      BEFORE INSERT ON receivables
+      FOR EACH ROW
+      BEGIN
+        SELECT CASE
+          WHEN (SELECT status FROM transactions WHERE id = NEW.transaction_id) != 'Selesai'
+           AND (SELECT is_corrected FROM transactions WHERE id = NEW.transaction_id) = 0
+            THEN RAISE(ABORT, 'Piutang baru hanya boleh dibuat untuk transaksi yang berstatus Selesai')
+        END;
+      END;`,
+
+      `DROP TRIGGER IF EXISTS trg_payables_require_selesai_transaction;`,
+      `CREATE TRIGGER IF NOT EXISTS trg_payables_require_selesai_transaction
+      BEFORE INSERT ON payables
+      FOR EACH ROW
+      BEGIN
+        SELECT CASE
+          WHEN (SELECT status FROM transactions WHERE id = NEW.transaction_id) != 'Selesai'
+           AND (SELECT is_corrected FROM transactions WHERE id = NEW.transaction_id) = 0
+            THEN RAISE(ABORT, 'Hutang baru hanya boleh dibuat untuk transaksi yang berstatus Selesai')
+        END;
+      END;`
+    ]
   }
 ];

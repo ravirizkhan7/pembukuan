@@ -136,6 +136,25 @@ export const EXPECTED_MIGRATION_OBJECTS: Record<number, MigrationExpectedObjects
     indices: [],
     triggers: [],
     columns: [{ table: 'station_info', column: 'city' }]
+  },
+  6: {
+    version: 6,
+    name: '006_transaction_corrections',
+    tables: ['transaction_corrections'],
+    indices: [
+      'idx_corrections_original_tx',
+      'idx_corrections_replacement_tx'
+    ],
+    triggers: [
+      'trg_transactions_prevent_cancel_if_posted',
+      'trg_journals_require_selesai_transaction',
+      'trg_receivables_require_selesai_transaction',
+      'trg_payables_require_selesai_transaction'
+    ],
+    columns: [
+      { table: 'transactions', column: 'is_corrected' },
+      { table: 'transactions', column: 'correction_id' }
+    ]
   }
 };
 
@@ -166,6 +185,17 @@ export async function getPhysicalSchemaObjects(executor: SqlExecutor): Promise<{
       const colRows = await executor.query<{ name: string }>('PRAGMA table_info(station_info);');
       for (const col of colRows) {
         columns.add(`station_info.${col.name}`);
+      }
+    } catch {
+      // Abaikan jika pragma table_info tidak didukung oleh mock environment
+    }
+  }
+
+  if (tables.has('transactions')) {
+    try {
+      const colRows = await executor.query<{ name: string }>('PRAGMA table_info(transactions);');
+      for (const col of colRows) {
+        columns.add(`transactions.${col.name}`);
       }
     } catch {
       // Abaikan jika pragma table_info tidak didukung oleh mock environment

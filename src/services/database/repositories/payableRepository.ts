@@ -151,6 +151,37 @@ export class PayableRepository extends BaseRepository {
       return this.handleDbError(err, `Gagal memperbarui sisa hutang [${id}]`);
     }
   }
+
+  /**
+   * Membatalkan faktur hutang yang belum pernah dicicil (outstanding === amount)
+   */
+  public async cancel(id: string): Promise<Payable> {
+    const existing = await this.findById(id);
+    if (!existing) {
+      throw new Error(`Hutang dengan ID ${id} tidak ditemukan`);
+    }
+    if (existing.outstanding < existing.amount) {
+      throw new Error('Faktur hutang yang sudah memiliki pembayaran tidak boleh dibatalkan.');
+    }
+    const timestamp = this.now();
+    try {
+      await this.executor.run(
+        `UPDATE payables SET
+           status = 'Batal',
+           outstanding = 0,
+           updated_at = ?
+         WHERE id = ?;`,
+        [timestamp, id]
+      );
+      const updated = await this.findById(id);
+      if (!updated) {
+        throw new Error(`Hutang dengan ID ${id} tidak ditemukan setelah dibatalkan`);
+      }
+      return updated;
+    } catch (err) {
+      return this.handleDbError(err, `Gagal membatalkan hutang [${id}]`);
+    }
+  }
 }
 
 export const payableRepository = new PayableRepository();

@@ -162,7 +162,7 @@ export function Topbar({
               boxShadow: '0 0 6px #10B981'
             }}
           />
-          <span>Sesi Aktif</span>
+          <span>Sesi Login Aktif</span>
         </div>
 
         <button

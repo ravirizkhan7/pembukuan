@@ -70,8 +70,8 @@ async function runTestSuite() {
 
   const currentVer = await MigrationRunner.getCurrentVersion(executor);
   console.log(`- Current DB Version: ${currentVer} (Expected: ${DATABASE_VERSION})`);
-  if (currentVer !== 5 || DATABASE_VERSION !== 5) {
-    throw new Error(`DB version mismatch: expected 5, got ${currentVer}`);
+  if (currentVer < 5 || currentVer !== DATABASE_VERSION) {
+    throw new Error(`DB version mismatch: expected >= 5 and equal to ${DATABASE_VERSION}, got ${currentVer}`);
   }
 
   // Check physical column in station_info
@@ -385,6 +385,157 @@ async function runTestSuite() {
     console.log(`  -> Correctly blocked with message: "${err.message}"`);
   }
   if (!pegThrew) throw new Error('Pegawai OPR-001 deletion should have been blocked!');
+
+  // H. Mitra Bisnis (Vendor / Pelanggan)
+  console.log('\n--- 4H: Mitra Bisnis ---');
+  const partnerRepo = new BusinessPartnerRepository(executor);
+  const dummyPartner = await partnerRepo.create({
+    id: 'VEN-TEST-99',
+    code: 'VEN-TEST-99',
+    name: 'Vendor Sparepart Uji',
+    type: 'Vendor',
+    status: 'Aktif'
+  });
+  let partnerRef = await partnerRepo.isReferenced(dummyPartner.id);
+  console.log(`- Unused Partner isReferenced: ${partnerRef}`);
+  if (partnerRef) throw new Error('Unused Partner should not be referenced');
+  await partnerRepo.delete(dummyPartner.id);
+  console.log('- Unused Partner successfully deleted.');
+
+  // Core Partner VEN-001 (Pertamina)
+  let corePartnerThrew = false;
+  try {
+    await partnerRepo.delete('VEN-001');
+  } catch (err: any) {
+    corePartnerThrew = true;
+    console.log(`  -> Blocked core partner deletion with message: "${err.message}"`);
+  }
+  if (!corePartnerThrew) throw new Error('Core Partner VEN-001 deletion should have been blocked!');
+
+  // ------------------------------------------------------------------
+  // 5. COMPREHENSIVE CORE MASTER DATA GUARDS
+  // ------------------------------------------------------------------
+  console.log('\nTEST 5: Strict Core Built-in Data Protection (Cannot be deleted even if 0 transactions)');
+
+  // 5A: Core Account 1-1202 (Persediaan BBM Pertamax)
+  let coreAcc1202Threw = false;
+  try {
+    await accountRepo.delete('1-1202');
+  } catch (err: any) {
+    coreAcc1202Threw = true;
+    console.log(`- Core Account 1-1202 protected: "${err.message}"`);
+  }
+  if (!coreAcc1202Threw) throw new Error('Core Account 1-1202 deletion must be blocked!');
+
+  // 5B: Core Account 1-1501 (Tanah & Bangunan SPBU)
+  let coreAcc1501Threw = false;
+  try {
+    await accountRepo.delete('1-1501');
+  } catch (err: any) {
+    coreAcc1501Threw = true;
+    console.log(`- Core Account 1-1501 protected: "${err.message}"`);
+  }
+  if (!coreAcc1501Threw) throw new Error('Core Account 1-1501 deletion must be blocked!');
+
+  // 5C: Core Master Code 303
+  let coreMcThrew = false;
+  try {
+    await masterCodeRepo.delete('MK-303');
+  } catch (err: any) {
+    coreMcThrew = true;
+    console.log(`- Core Master Code MK-303 protected: "${err.message}"`);
+  }
+  if (!coreMcThrew) {
+    // Try by '303'
+    try {
+      await masterCodeRepo.delete('303');
+    } catch (err: any) {
+      coreMcThrew = true;
+      console.log(`- Core Master Code 303 protected: "${err.message}"`);
+    }
+  }
+  if (!coreMcThrew) throw new Error('Core Master Code 303 deletion must be blocked!');
+
+  // 5D: Core Product PRD-01
+  let coreProdThrew = false;
+  try {
+    await productRepo.delete('PRD-01');
+  } catch (err: any) {
+    coreProdThrew = true;
+    console.log(`- Core Product PRD-01 protected: "${err.message}"`);
+  }
+  if (!coreProdThrew) throw new Error('Core Product PRD-01 deletion must be blocked!');
+
+  // 5E: Core Category PCAT-001
+  let coreCatThrew = false;
+  try {
+    await categoryRepo.delete('PCAT-001');
+  } catch (err: any) {
+    coreCatThrew = true;
+    console.log(`- Core Category PCAT-001 protected: "${err.message}"`);
+  }
+  if (!coreCatThrew) throw new Error('Core Category PCAT-001 deletion must be blocked!');
+
+  // 5F: Core Tank TNK-01
+  let coreTankThrew = false;
+  try {
+    await tankRepo.delete('TNK-01');
+  } catch (err: any) {
+    coreTankThrew = true;
+    console.log(`- Core Tank TNK-01 protected: "${err.message}"`);
+  }
+  if (!coreTankThrew) throw new Error('Core Tank TNK-01 deletion must be blocked!');
+
+  // 5G: Core Nozzle NZL-01
+  let coreNzlThrew = false;
+  try {
+    await nozzleRepo.delete('NZL-01');
+  } catch (err: any) {
+    coreNzlThrew = true;
+    console.log(`- Core Nozzle NZL-01 protected: "${err.message}"`);
+  }
+  if (!coreNzlThrew) throw new Error('Core Nozzle NZL-01 deletion must be blocked!');
+
+  // ------------------------------------------------------------------
+  // 6. OPERATIONAL MAPPING INTEGRITY & DEACTIVATION GUARDS
+  // ------------------------------------------------------------------
+  console.log('\nTEST 6: Operational Mapping & Deactivation Integrity');
+
+  // 6A: Deactivating Account mapped to active Master Code
+  const accKas = await accountRepo.findById('1-1001');
+  if (accKas) {
+    let deactAccThrew = false;
+    try {
+      await accountRepo.update(accKas.id, {
+        ...accKas,
+        isActive: false
+      });
+    } catch (err: any) {
+      deactAccThrew = true;
+      console.log(`- Deactivation of mapped account 1-1001 blocked: "${err.message}"`);
+    }
+    if (!deactAccThrew) throw new Error('Deactivating account mapped to active Master Code must be blocked!');
+  }
+
+  // 6B: Deactivating Pegawai on active Shift
+  // Ensure an active shift exists for OPR-001
+  const existingPeg = await pegawaiRepo.findById('OPR-001');
+  if (existingPeg) {
+    await executor.run(
+      `INSERT OR REPLACE INTO shifts (id, name, start_time, end_time, operator, initial_cash, total_sales, cash_handover, discrepancy, status, date, created_at, updated_at)
+       VALUES ('SFT-ACTIVE-TEST', 'Shift Pagi Uji', '06:00', '14:00', ?, 1000000, 0, 0, 0, 'Aktif', '2026-01-15', datetime('now'), datetime('now'));`,
+      [existingPeg.name]
+    );
+
+    let deactPegThrew = false;
+    try {
+      await pegawaiRepo.toggleStatus(existingPeg.id);
+    } catch (err: any) {
+      deactPegThrew = true;
+      console.log(`- Deactivation of operator on active shift blocked: "${err.message}"`);
+    }
+    if (!deactPegThrew) throw new Error('Deactivating operator on active shift must be blocked!');
+  }
 
   console.log('\n====================================================================');
   console.log('   ALL TESTS IN PRIORITAS 1 & 2 SUITE PASSED PERFECTLY!');

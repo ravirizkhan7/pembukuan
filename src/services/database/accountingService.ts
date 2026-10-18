@@ -9,6 +9,7 @@ import {
   masterCodeRepository,
   shiftRepository,
   businessPartnerRepository,
+  transactionCorrectionRepository,
   TransactionRepository,
   TeraRepository,
   JournalRepository,
@@ -17,7 +18,8 @@ import {
   AccountRepository,
   MasterCodeRepository,
   ShiftRepository,
-  BusinessPartnerRepository
+  BusinessPartnerRepository,
+  TransactionCorrectionRepository
 } from './repositories';
 import { calculateNewBalance } from '../postingEngine';
 import type { SqlExecutor } from './migrationRunner';
@@ -29,7 +31,8 @@ import type {
   Account,
   Receivable,
   Payable,
-  Shift
+  Shift,
+  TransactionCorrection
 } from '../../types';
 
 export interface AccountingPostResult {
@@ -38,6 +41,20 @@ export interface AccountingPostResult {
   transaction?: Transaction;
   tera?: Tera;
   journal?: Journal;
+  updatedAccounts?: Account[];
+  updatedReceivables?: Receivable[];
+  updatedPayables?: Payable[];
+  updatedShifts?: Shift[];
+}
+
+export interface TransactionCorrectionResult {
+  success: boolean;
+  error?: string;
+  originalTransaction?: Transaction;
+  reversalJournal?: Journal;
+  replacementTransaction?: Transaction;
+  replacementJournal?: Journal;
+  correction?: TransactionCorrection;
   updatedAccounts?: Account[];
   updatedReceivables?: Receivable[];
   updatedPayables?: Payable[];
@@ -433,6 +450,460 @@ export class AccountingService {
       success: false,
       error: `Pembalikan transaksi (reversal) belum didukung secara penuh pada fase ini. Pembatalan transaksi "${id}" yang sudah diposting ditolak secara aman untuk menjaga konsistensi jurnal, buku besar, dan rekap shift.`
     };
+  }
+
+  /**
+   * Mengoreksi transaksi administrasi yang sudah diposting secara aman, berlandaskan prinsip akuntansi double-entry.
+   * Seluruh tahapan pembalikan (reversal), pemulihan saldo COA, pemulihan sub-ledger,
+   * pencatatan audit trail, pembatalan transaksi lama, dan posting transaksi pengganti
+   * dieksekusi secara ATOMIK dalam satu batas transaksi database tunggal (BEGIN ... COMMIT).
+   */
+  public static async correctTransaction(params: {
+    originalTransactionId: string;
+    reason: string;
+    replacementData: Transaction;
+    user?: string;
+    executor?: SqlExecutor;
+  }): Promise<TransactionCorrectionResult> {
+    const { originalTransactionId, reason, replacementData, user, executor } = params;
+
+    const exec = executor || sqliteService;
+    const shiftRepo = executor ? new ShiftRepository(executor) : shiftRepository;
+    const mcRepo = executor ? new MasterCodeRepository(executor) : masterCodeRepository;
+    const accRepo = executor ? new AccountRepository(executor) : accountRepository;
+    const txRepo = executor ? new TransactionRepository(executor) : transactionRepository;
+    const jrnRepo = executor ? new JournalRepository(executor) : journalRepository;
+    const recRepo = executor ? new ReceivableRepository(executor) : receivableRepository;
+    const payRepo = executor ? new PayableRepository(executor) : payableRepository;
+    const bpRepo = executor ? new BusinessPartnerRepository(executor) : businessPartnerRepository;
+    const corrRepo = executor ? new TransactionCorrectionRepository(executor) : transactionCorrectionRepository;
+
+    try {
+      // 1. Validasi Alasan Koreksi
+      if (!reason || !reason.trim()) {
+        return {
+          success: false,
+          error: 'Alasan koreksi transaksi wajib diisi.'
+        };
+      }
+
+      // 2. Validasi Transaksi Asal
+      const originalTx = await txRepo.findById(originalTransactionId);
+      if (!originalTx) {
+        return {
+          success: false,
+          error: `Transaksi asal dengan ID "${originalTransactionId}" tidak ditemukan.`
+        };
+      }
+
+      if (originalTx.status !== 'Selesai') {
+        return {
+          success: false,
+          error: `Hanya transaksi berstatus Selesai yang dapat dikoreksi. Status saat ini: ${originalTx.status}.`
+        };
+      }
+
+      if (originalTx.isCorrected) {
+        return {
+          success: false,
+          error: 'Transaksi ini sudah pernah dikoreksi sebelumnya dan tidak dapat dikoreksi ulang.'
+        };
+      }
+
+      const existingCorr = await corrRepo.findByOriginalTransactionId(originalTx.id);
+      if (existingCorr) {
+        return {
+          success: false,
+          error: 'Transaksi ini sudah memiliki riwayat pembalikan/koreksi di sistem.'
+        };
+      }
+
+      // 3. Batasan Operasional: Dispenser & Tera Nozzle
+      if (originalTx.teraId || originalTx.nozzleId) {
+        return {
+          success: false,
+          error: 'Koreksi transaksi dengan pencatatan dispenser/tera nozzle belum didukung pada tahap ini untuk menjaga konsistensi fisik meteran pompa.'
+        };
+      }
+
+      // 4. Batasan Shift: Transaksi pada sesi shift tertutup terkunci
+      let activeShift: Shift | null = null;
+      if (originalTx.shiftId) {
+        const shiftObj = await shiftRepo.findById(originalTx.shiftId);
+        if (!shiftObj || shiftObj.status !== 'Aktif') {
+          return {
+            success: false,
+            error: 'Transaksi berasal dari sesi shift yang sudah ditutup atau tidak aktif. Transaksi pada shift tertutup terkunci dan tidak dapat dikoreksi.'
+          };
+        }
+        activeShift = shiftObj;
+      }
+
+      // 5. Validasi Jurnal Transaksi Asal
+      const originalJournal = await jrnRepo.findByTransactionId(originalTx.id);
+      if (!originalJournal || !originalJournal.entries || originalJournal.entries.length === 0) {
+        return {
+          success: false,
+          error: 'Transaksi asal tidak memiliki jurnal akuntansi yang valid.'
+        };
+      }
+
+      const origDebit = originalJournal.entries.reduce((sum, e) => sum + e.debit, 0);
+      const origCredit = originalJournal.entries.reduce((sum, e) => sum + e.credit, 0);
+      if (origDebit !== origCredit || origDebit <= 0) {
+        return {
+          success: false,
+          error: 'Jurnal transaksi asal tidak seimbang (debit != kredit) atau bernilai 0.'
+        };
+      }
+
+      const revRows = await exec.query<any>(
+        `SELECT id FROM journals WHERE reverses_journal_id = ? LIMIT 1;`,
+        [originalJournal.id]
+      );
+      if (revRows && revRows.length > 0) {
+        return {
+          success: false,
+          error: `Jurnal transaksi asal sudah pernah dibalik sebelumnya oleh jurnal ${revRows[0].id}.`
+        };
+      }
+
+      // 6. Validasi Integritas Sub-ledger Piutang & Hutang
+      if (originalTx.category === 'Pelunasan' || originalTx.relatedReceivableId || originalTx.relatedPayableId) {
+        return {
+          success: false,
+          error: 'Transaksi pelunasan piutang/hutang tidak dapat dikoreksi langsung karena telah memengaruhi saldo tagihan lain secara lanjutan.'
+        };
+      }
+
+      const origRec = await recRepo.findByTransactionId(originalTx.id);
+      if (origRec) {
+        if (origRec.status !== 'Open' || origRec.outstanding < origRec.amount) {
+          return {
+            success: false,
+            error: 'Faktur piutang dari transaksi ini sudah terkait dengan pembayaran sebagian atau pelunasan. Koreksi ditolak untuk mencegah ambiguitas saldo tagihan.'
+          };
+        }
+      }
+
+      const origPay = await payRepo.findByTransactionId(originalTx.id);
+      if (origPay) {
+        if (origPay.status !== 'Open' || origPay.outstanding < origPay.amount) {
+          return {
+            success: false,
+            error: 'Faktur hutang dari transaksi ini sudah terkait dengan pembayaran sebagian atau pelunasan. Koreksi ditolak untuk mencegah ambiguitas saldo tagihan.'
+          };
+        }
+      }
+
+      // 7. Validasi Transaksi Pengganti
+      if (!replacementData.total || replacementData.total <= 0) {
+        return {
+          success: false,
+          error: 'Nominal transaksi pengganti harus lebih besar dari 0.'
+        };
+      }
+
+      let repMasterCode = await mcRepo.findByCode(replacementData.code);
+      if (!repMasterCode && replacementData.masterCodeId) {
+        repMasterCode = await mcRepo.findById(replacementData.masterCodeId);
+      }
+      if (!repMasterCode || !repMasterCode.isActive) {
+        return {
+          success: false,
+          error: `Master Code pengganti "${replacementData.code}" tidak ditemukan atau tidak aktif dalam sistem.`
+        };
+      }
+
+      if (repMasterCode.requiresTera) {
+        return {
+          success: false,
+          error: 'Transaksi pengganti tidak boleh menggunakan kode yang mewajibkan pencatatan tera nozzle.'
+        };
+      }
+
+      if (repMasterCode.category === 'Pelunasan') {
+        return {
+          success: false,
+          error: 'Transaksi pengganti tidak boleh berkategori Pelunasan.'
+        };
+      }
+
+      const repDebitAccount = (await accRepo.findById(repMasterCode.debitAccountId)) ||
+                              (await accRepo.findByCode(repMasterCode.debitAccountId));
+      const repCreditAccount = (await accRepo.findById(repMasterCode.creditAccountId)) ||
+                               (await accRepo.findByCode(repMasterCode.creditAccountId));
+
+      if (!repDebitAccount || !repCreditAccount) {
+        return {
+          success: false,
+          error: 'Mapping akun debit atau kredit untuk transaksi pengganti tidak ditemukan di Bagan Akun (COA).'
+        };
+      }
+
+      // 8. Penyiapan Entri Jurnal Pembalik & Transaksi Pengganti
+      const nowIso = new Date().toISOString();
+      const nowStamp = Date.now().toString().slice(-6);
+      const rand = Math.floor(Math.random() * 900 + 100);
+
+      // A. Jurnal Pembalik (Double-entry Inverted)
+      const revJournalId = `JRN-REV-${nowStamp}-${rand}`;
+      const revEvidenceNo = `BKT/REV/${originalTx.code}/${originalTx.id.slice(-4)}`;
+      const reversalEntries: JournalEntry[] = originalJournal.entries.map((entry) => ({
+        accountId: entry.accountId,
+        accountCode: entry.accountCode,
+        accountName: entry.accountName,
+        debit: entry.credit,   // Dibalik: kredit lama menjadi debit pembalik
+        credit: entry.debit    // Dibalik: debit lama menjadi kredit pembalik
+      }));
+
+      const reversalJournal: Journal = {
+        id: revJournalId,
+        date: replacementData.date ? replacementData.date.slice(0, 10) : originalTx.date.slice(0, 10),
+        transactionId: originalTx.id,
+        evidenceNo: revEvidenceNo,
+        transCode: originalTx.code,
+        description: `[PEMBALIKAN] ${originalTx.name} - ${reason.trim()}`,
+        entries: reversalEntries,
+        isBalanced: true,
+        isReversal: true,
+        reversesJournalId: originalJournal.id
+      };
+
+      // B. Data Transaksi Pengganti
+      const replacementTxId = replacementData.id || `TX-${nowStamp}-${rand}`;
+      const repEvidenceNo = `BKT/${(replacementData.date || originalTx.date).slice(0, 10).replace(/[^0-9]/g, '')}/${replacementTxId.slice(-4)}`;
+
+      let repPartnerId = replacementData.partnerId;
+      if (!repPartnerId) {
+        if (repMasterCode.paymentMethod === 'Piutang' || repDebitAccount.code === '1-1101') {
+          const partners = await bpRepo.findByType('Customer');
+          if (partners.length > 0) repPartnerId = partners[0].id;
+        } else if (repMasterCode.paymentMethod === 'Hutang' || repCreditAccount.code === '2-1001') {
+          const partners = await bpRepo.findByType('Vendor');
+          if (partners.length > 0) repPartnerId = partners[0].id;
+        }
+      }
+
+      const finalReplacementTx: Transaction = {
+        ...replacementData,
+        id: replacementTxId,
+        date: replacementData.date || originalTx.date,
+        shiftId: originalTx.shiftId,
+        shift: originalTx.shift,
+        cashier: replacementData.cashier || originalTx.cashier,
+        status: 'Selesai',
+        partnerId: repPartnerId,
+        paymentMethod: repMasterCode.paymentMethod,
+        isCorrected: false,
+        correctionId: undefined
+      };
+
+      // C. Jurnal Pengganti
+      const repJournalId = `JRN-${nowStamp}-${rand}`;
+      const repEntries: JournalEntry[] = [
+        {
+          accountId: repDebitAccount.id,
+          accountCode: repDebitAccount.code,
+          accountName: repDebitAccount.name,
+          debit: replacementData.total,
+          credit: 0
+        },
+        {
+          accountId: repCreditAccount.id,
+          accountCode: repCreditAccount.code,
+          accountName: repCreditAccount.name,
+          debit: 0,
+          credit: replacementData.total
+        }
+      ];
+
+      const replacementJournal: Journal = {
+        id: repJournalId,
+        date: (replacementData.date || originalTx.date).slice(0, 10),
+        transactionId: replacementTxId,
+        evidenceNo: repEvidenceNo,
+        transCode: replacementData.code,
+        description: replacementData.name,
+        entries: repEntries,
+        isBalanced: true,
+        isReversal: false
+      };
+
+      // D. Entri Audit Trail Koreksi
+      const correctionId = `CORR-${nowStamp}-${rand}`;
+      const correctionRecord: TransactionCorrection = {
+        id: correctionId,
+        originalTransactionId: originalTx.id,
+        reversalJournalId: revJournalId,
+        replacementTransactionId: replacementTxId,
+        reason: reason.trim(),
+        correctedBy: user || 'Admin SPBU',
+        createdAt: nowIso
+      };
+
+      // 9. EKSEKUSI ATOMIK DALAM SATU BATAS TRANSAKSI DATABASE (FAIL-CLOSED)
+      const runInTx = async (action: () => Promise<void>) => {
+        if (executor) {
+          await executor.run('BEGIN TRANSACTION;');
+          try {
+            await action();
+            await executor.run('COMMIT;');
+          } catch (txErr) {
+            await executor.run('ROLLBACK;');
+            throw txErr;
+          }
+        } else {
+          await sqliteService.runTransaction(action);
+        }
+      };
+
+      await runInTx(async () => {
+        // Langkah 1: Simpan Jurnal Pembalik
+        await jrnRepo.create(reversalJournal);
+
+        // Langkah 2: Pulihkan saldo COA yang terdampak oleh jurnal asal
+        for (const entry of originalJournal.entries) {
+          const acc = await accRepo.findById(entry.accountId);
+          if (acc) {
+            // Membalik efek jurnal asal: debit asal dikreditkan, kredit asal didebitkan
+            const restoredBal = calculateNewBalance(acc.balance, acc.normalBalance, entry.credit, entry.debit);
+            await accRepo.update(acc.id, { balance: restoredBal });
+          }
+        }
+
+        // Langkah 3: Batalkan buku pembantu piutang/hutang transaksi asal jika ada
+        if (origRec) {
+          await exec.run(
+            `UPDATE receivables SET status = 'Batal', outstanding = 0, updated_at = ? WHERE id = ?;`,
+            [nowIso, origRec.id]
+          );
+        }
+        if (origPay) {
+          await exec.run(
+            `UPDATE payables SET status = 'Batal', outstanding = 0, updated_at = ? WHERE id = ?;`,
+            [nowIso, origPay.id]
+          );
+        }
+
+        // Langkah 4: Kurangi akumulasi penjualan shift jika transaksi asal Penjualan pada shift aktif
+        if (activeShift && originalTx.category === 'Penjualan') {
+          await exec.run(
+            `UPDATE shifts SET total_sales = total_sales - ?, updated_at = ? WHERE id = ?;`,
+            [originalTx.total, nowIso, activeShift.id]
+          );
+          await exec.run(
+            `UPDATE shift_sessions SET total_sales = total_sales - ?, updated_at = ? WHERE shift_id = ? AND status = 'Aktif';`,
+            [originalTx.total, nowIso, activeShift.id]
+          );
+        }
+
+        // Langkah 5: Simpan Transaksi Pengganti terlebih dahulu agar replacement_transaction_id valid di FK transaction_corrections
+        await txRepo.create(finalReplacementTx);
+
+        // Langkah 6: Simpan Audit Trail ke transaction_corrections
+        // Disimpan sebelum transaksi asal diubah ke Batal agar trigger trg_transactions_prevent_cancel_if_posted mengizinkan pembatalan
+        await corrRepo.create(correctionRecord);
+
+        // Langkah 7: Tandai transaksi asal sebagai Batal dan Terkoreksi
+        await exec.run(
+          `UPDATE transactions SET
+             status = 'Batal',
+             is_corrected = 1,
+             correction_id = ?,
+             cancelled_at = ?,
+             cancel_reason = ?,
+             updated_at = ?
+           WHERE id = ?;`,
+          [correctionId, nowIso, reason.trim(), nowIso, originalTx.id]
+        );
+
+        // Langkah 8: Simpan Jurnal Pengganti
+        await jrnRepo.create(replacementJournal);
+
+        // Langkah 9: Mutasi Saldo Akun COA untuk Transaksi Pengganti
+        const currentDebitAcc = await accRepo.findById(repDebitAccount.id);
+        if (currentDebitAcc) {
+          const newDebitBal = calculateNewBalance(currentDebitAcc.balance, currentDebitAcc.normalBalance, replacementData.total, 0);
+          await accRepo.update(currentDebitAcc.id, { balance: newDebitBal });
+        }
+        const currentCreditAcc = await accRepo.findById(repCreditAccount.id);
+        if (currentCreditAcc) {
+          const newCreditBal = calculateNewBalance(currentCreditAcc.balance, currentCreditAcc.normalBalance, 0, replacementData.total);
+          await accRepo.update(currentCreditAcc.id, { balance: newCreditBal });
+        }
+
+        // Langkah 10: Buat sub-ledger baru jika transaksi pengganti menggunakan Piutang / Hutang
+        if (repMasterCode.paymentMethod === 'Piutang' || repDebitAccount.code === '1-1101') {
+          const recId = `REC-${nowStamp}-${rand}`;
+          await recRepo.create({
+            id: recId,
+            transactionId: replacementTxId,
+            partnerId: repPartnerId || 'CUS-001',
+            partnerName: replacementData.partnerName || 'Pelanggan',
+            amount: replacementData.total,
+            outstanding: replacementData.total,
+            status: 'Open',
+            date: (replacementData.date || originalTx.date).slice(0, 10),
+            notes: `${replacementData.name} (${replacementData.code})`
+          });
+        } else if (repMasterCode.paymentMethod === 'Hutang' || repCreditAccount.code === '2-1001') {
+          const payId = `PAY-${nowStamp}-${rand}`;
+          await payRepo.create({
+            id: payId,
+            transactionId: replacementTxId,
+            partnerId: repPartnerId || 'VEN-001',
+            partnerName: replacementData.partnerName || 'Vendor',
+            amount: replacementData.total,
+            outstanding: replacementData.total,
+            status: 'Open',
+            date: (replacementData.date || originalTx.date).slice(0, 10),
+            notes: `${replacementData.name} (${replacementData.code})`
+          });
+        }
+
+        // Langkah 11: Tambahkan akumulasi penjualan shift jika transaksi pengganti Penjualan pada shift aktif
+        if (activeShift && replacementData.category === 'Penjualan') {
+          await exec.run(
+            `UPDATE shifts SET total_sales = total_sales + ?, updated_at = ? WHERE id = ?;`,
+            [replacementData.total, nowIso, activeShift.id]
+          );
+          await exec.run(
+            `UPDATE shift_sessions SET total_sales = total_sales + ?, updated_at = ? WHERE shift_id = ? AND status = 'Aktif';`,
+            [replacementData.total, nowIso, activeShift.id]
+          );
+        }
+      });
+
+      // Ambil snapshot terupdate untuk sinkronisasi state React
+      const [updatedAccounts, updatedReceivables, updatedPayables, updatedShifts] = await Promise.all([
+        accRepo.findAll(),
+        recRepo.findAll(),
+        payRepo.findAll(),
+        shiftRepo.getAllShifts()
+      ]);
+
+      const updatedOriginal = await txRepo.findById(originalTx.id);
+
+      return {
+        success: true,
+        originalTransaction: updatedOriginal || originalTx,
+        reversalJournal,
+        replacementTransaction: finalReplacementTx,
+        replacementJournal,
+        correction: correctionRecord,
+        updatedAccounts,
+        updatedReceivables,
+        updatedPayables,
+        updatedShifts
+      };
+    } catch (err: any) {
+      console.error('[AccountingService] Gagal mengeksekusi koreksi transaksi:', err);
+      return {
+        success: false,
+        error: err?.message || String(err)
+      };
+    }
   }
 }
 

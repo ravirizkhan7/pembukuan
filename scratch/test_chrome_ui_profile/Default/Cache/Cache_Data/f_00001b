@@ -1,0 +1,455 @@
+export const MIGRATIONS = [
+	{
+		version: 1,
+		name: "initial_app_metadata",
+		statements: [`CREATE TABLE IF NOT EXISTS app_metadata (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`]
+	},
+	{
+		version: 2,
+		name: "canonical_spbu_akrual_schema",
+		statements: [
+			`CREATE TABLE IF NOT EXISTS station_info (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        address TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        manager TEXT NOT NULL,
+        email TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'Online',
+        last_backup TEXT,
+        version TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+			`CREATE TABLE IF NOT EXISTS product_categories (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'Aktif' CHECK(status IN ('Aktif', 'Nonaktif')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+			`CREATE TABLE IF NOT EXISTS products (
+        id TEXT PRIMARY KEY,
+        code TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        category_id TEXT NOT NULL REFERENCES product_categories(id),
+        sell_price INTEGER NOT NULL CHECK(sell_price >= 0),
+        buy_price INTEGER NOT NULL CHECK(buy_price >= 0),
+        unit TEXT NOT NULL,
+        color TEXT,
+        status TEXT NOT NULL DEFAULT 'Aktif' CHECK(status IN ('Aktif', 'Nonaktif')),
+        tank_id TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+			`CREATE TABLE IF NOT EXISTS tanks (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        product_id TEXT NOT NULL REFERENCES products(id),
+        capacity REAL NOT NULL CHECK(capacity > 0),
+        current_stock REAL NOT NULL DEFAULT 0 CHECK(current_stock >= 0),
+        unit TEXT NOT NULL DEFAULT 'Liter',
+        last_sounding TEXT,
+        status TEXT NOT NULL DEFAULT 'Aktif' CHECK(status IN ('Aktif', 'Nonaktif', 'Aman', 'Perlu Reorder')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+			`CREATE TABLE IF NOT EXISTS nozzles (
+        id TEXT PRIMARY KEY,
+        code TEXT NOT NULL UNIQUE,
+        island TEXT NOT NULL,
+        tank_id TEXT NOT NULL REFERENCES tanks(id),
+        product_id TEXT NOT NULL REFERENCES products(id),
+        current_meter REAL NOT NULL DEFAULT 0 CHECK(current_meter >= 0),
+        status TEXT NOT NULL DEFAULT 'Aktif' CHECK(status IN ('Aktif', 'Maintenance', 'Nonaktif')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+			`CREATE TABLE IF NOT EXISTS shifts (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT NOT NULL,
+        operator TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'Menunggu' CHECK(status IN ('Aktif', 'Menunggu', 'Tutup')),
+        total_sales INTEGER NOT NULL DEFAULT 0,
+        cash_handover INTEGER NOT NULL DEFAULT 0,
+        date TEXT NOT NULL,
+        initial_cash INTEGER NOT NULL DEFAULT 0,
+        discrepancy INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+			`CREATE TABLE IF NOT EXISTS pegawai (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        role TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'Aktif' CHECK(status IN ('Aktif', 'Nonaktif')),
+        shift_id TEXT REFERENCES shifts(id),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+			`CREATE TABLE IF NOT EXISTS attendances (
+        id TEXT PRIMARY KEY,
+        employee_id TEXT NOT NULL REFERENCES pegawai(id),
+        shift_id TEXT NOT NULL REFERENCES shifts(id),
+        date TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('Hadir', 'Izin', 'Sakit', 'Alpa')),
+        notes TEXT,
+        check_in_time TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+			`CREATE TABLE IF NOT EXISTS business_partners (
+        id TEXT PRIMARY KEY,
+        code TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL CHECK(type IN ('Customer', 'Vendor')),
+        phone TEXT,
+        address TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN (0, 1)),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+			`CREATE TABLE IF NOT EXISTS accounts (
+        id TEXT PRIMARY KEY,
+        code TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL CHECK(category IN ('Aset', 'Kewajiban', 'Ekuitas', 'Pendapatan', 'Beban Pokok', 'Beban')),
+        normal_balance TEXT NOT NULL CHECK(normal_balance IN ('Debit', 'Kredit')),
+        balance INTEGER NOT NULL DEFAULT 0,
+        is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN (0, 1)),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+			`CREATE TABLE IF NOT EXISTS master_codes (
+        id TEXT PRIMARY KEY,
+        code TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL CHECK(category IN ('Penjualan', 'Pembelian', 'Biaya Operasional', 'Persediaan', 'Pelunasan')),
+        type TEXT NOT NULL,
+        requires_tera INTEGER NOT NULL DEFAULT 0 CHECK(requires_tera IN (0, 1)),
+        product_id TEXT REFERENCES products(id),
+        unit_price INTEGER CHECK(unit_price IS NULL OR unit_price >= 0),
+        debit_account_id TEXT NOT NULL REFERENCES accounts(id),
+        credit_account_id TEXT NOT NULL REFERENCES accounts(id),
+        description TEXT,
+        payment_method TEXT NOT NULL CHECK(payment_method IN ('Tunai', 'Piutang', 'Hutang', 'Transfer')),
+        is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN (0, 1)),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+			`CREATE TABLE IF NOT EXISTS tera (
+        id TEXT PRIMARY KEY,
+        date TEXT NOT NULL,
+        shift_id TEXT REFERENCES shifts(id),
+        nozzle_id TEXT NOT NULL REFERENCES nozzles(id),
+        product_id TEXT REFERENCES products(id),
+        price INTEGER NOT NULL CHECK(price >= 0),
+        tera_awal REAL NOT NULL CHECK(tera_awal >= 0),
+        tera_akhir REAL NOT NULL CHECK(tera_akhir >= tera_awal),
+        volume REAL NOT NULL CHECK(volume >= 0),
+        selisih REAL NOT NULL DEFAULT 0,
+        sales_amount INTEGER NOT NULL CHECK(sales_amount >= 0),
+        officer TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'Valid',
+        transaction_id TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+			`CREATE TABLE IF NOT EXISTS transactions (
+        id TEXT PRIMARY KEY,
+        date TEXT NOT NULL,
+        code TEXT NOT NULL,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        product_id TEXT REFERENCES products(id),
+        volume REAL DEFAULT 0,
+        unit_price INTEGER DEFAULT 0,
+        total INTEGER NOT NULL CHECK(total > 0),
+        shift_id TEXT REFERENCES shifts(id),
+        cashier TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'Selesai' CHECK(status IN ('Pending', 'Selesai', 'Batal')),
+        nozzle_id TEXT REFERENCES nozzles(id),
+        tera_id TEXT REFERENCES tera(id),
+        master_code_id TEXT REFERENCES master_codes(id),
+        partner_id TEXT REFERENCES business_partners(id),
+        payment_method TEXT CHECK(payment_method IS NULL OR payment_method IN ('Tunai', 'Piutang', 'Hutang', 'Transfer')),
+        related_receivable_id TEXT,
+        related_payable_id TEXT,
+        cancelled_at TEXT,
+        cancel_reason TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+			`CREATE TABLE IF NOT EXISTS journals (
+        id TEXT PRIMARY KEY,
+        date TEXT NOT NULL,
+        transaction_id TEXT REFERENCES transactions(id),
+        evidence_no TEXT,
+        trans_code TEXT,
+        description TEXT NOT NULL,
+        is_balanced INTEGER NOT NULL DEFAULT 1 CHECK(is_balanced IN (0, 1)),
+        is_reversal INTEGER NOT NULL DEFAULT 0 CHECK(is_reversal IN (0, 1)),
+        reverses_journal_id TEXT REFERENCES journals(id),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+			`CREATE TABLE IF NOT EXISTS journal_entries (
+        id TEXT PRIMARY KEY,
+        journal_id TEXT NOT NULL REFERENCES journals(id) ON DELETE CASCADE,
+        account_id TEXT NOT NULL REFERENCES accounts(id),
+        debit INTEGER NOT NULL DEFAULT 0 CHECK(debit >= 0),
+        credit INTEGER NOT NULL DEFAULT 0 CHECK(credit >= 0),
+        created_at TEXT NOT NULL,
+        CONSTRAINT chk_journal_entry_single_side CHECK(
+          (debit > 0 AND credit = 0) OR (credit > 0 AND debit = 0)
+        )
+      );`,
+			`CREATE TABLE IF NOT EXISTS receivables (
+        id TEXT PRIMARY KEY,
+        transaction_id TEXT NOT NULL REFERENCES transactions(id),
+        partner_id TEXT NOT NULL REFERENCES business_partners(id),
+        amount INTEGER NOT NULL CHECK(amount > 0),
+        outstanding INTEGER NOT NULL CHECK(outstanding >= 0),
+        status TEXT NOT NULL CHECK(status IN ('Open', 'Partial', 'Paid', 'Batal')),
+        date TEXT NOT NULL,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        CONSTRAINT chk_receivable_status_outstanding CHECK (
+          CASE
+            WHEN status = 'Batal' THEN (outstanding = 0)
+            WHEN status = 'Paid' THEN (outstanding = 0)
+            WHEN status = 'Open' THEN (outstanding = amount)
+            WHEN status = 'Partial' THEN (outstanding > 0 AND outstanding < amount)
+            ELSE 0
+          END = 1
+        )
+      );`,
+			`CREATE TABLE IF NOT EXISTS payables (
+        id TEXT PRIMARY KEY,
+        transaction_id TEXT NOT NULL REFERENCES transactions(id),
+        partner_id TEXT NOT NULL REFERENCES business_partners(id),
+        amount INTEGER NOT NULL CHECK(amount > 0),
+        outstanding INTEGER NOT NULL CHECK(outstanding >= 0),
+        status TEXT NOT NULL CHECK(status IN ('Open', 'Partial', 'Paid', 'Batal')),
+        date TEXT NOT NULL,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        CONSTRAINT chk_payable_status_outstanding CHECK (
+          CASE
+            WHEN status = 'Batal' THEN (outstanding = 0)
+            WHEN status = 'Paid' THEN (outstanding = 0)
+            WHEN status = 'Open' THEN (outstanding = amount)
+            WHEN status = 'Partial' THEN (outstanding > 0 AND outstanding < amount)
+            ELSE 0
+          END = 1
+        )
+      );`,
+			`CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_tanks_product ON tanks(product_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_nozzles_tank ON nozzles(tank_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_nozzles_product ON nozzles(product_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_shifts_status ON shifts(status);`,
+			`CREATE INDEX IF NOT EXISTS idx_pegawai_shift ON pegawai(shift_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_attendances_employee ON attendances(employee_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_attendances_shift ON attendances(shift_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_master_codes_category ON master_codes(category);`,
+			`CREATE INDEX IF NOT EXISTS idx_master_codes_debit_acc ON master_codes(debit_account_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_master_codes_credit_acc ON master_codes(credit_account_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_tera_nozzle ON tera(nozzle_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_tera_shift ON tera(shift_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);`,
+			`CREATE INDEX IF NOT EXISTS idx_transactions_shift ON transactions(shift_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_transactions_master_code ON transactions(master_code_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_transactions_partner ON transactions(partner_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_journals_transaction ON journals(transaction_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_journal_entries_journal ON journal_entries(journal_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_journal_entries_account ON journal_entries(account_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_receivables_transaction ON receivables(transaction_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_receivables_partner ON receivables(partner_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_payables_transaction ON payables(transaction_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_payables_partner ON payables(partner_id);`,
+			`CREATE UNIQUE INDEX IF NOT EXISTS uq_journal_reversal_target ON journals(reverses_journal_id) WHERE reverses_journal_id IS NOT NULL;`,
+			`CREATE TRIGGER IF NOT EXISTS trg_shifts_single_active_insert
+      BEFORE INSERT ON shifts
+      FOR EACH ROW
+      WHEN NEW.status = 'Aktif'
+      BEGIN
+        SELECT CASE
+          WHEN (SELECT COUNT(*) FROM shifts WHERE status = 'Aktif') > 0
+          THEN RAISE(ABORT, 'Hanya boleh ada satu shift yang berstatus Aktif pada satu waktu')
+        END;
+      END;`,
+			`CREATE TRIGGER IF NOT EXISTS trg_shifts_single_active_update
+      BEFORE UPDATE OF status ON shifts
+      FOR EACH ROW
+      WHEN NEW.status = 'Aktif' AND OLD.status != 'Aktif'
+      BEGIN
+        SELECT CASE
+          WHEN (SELECT COUNT(*) FROM shifts WHERE status = 'Aktif' AND id != OLD.id) > 0
+          THEN RAISE(ABORT, 'Hanya boleh ada satu shift yang berstatus Aktif pada satu waktu')
+        END;
+      END;`,
+			`CREATE TRIGGER IF NOT EXISTS trg_transactions_enforce_immutability_when_selesai
+      BEFORE UPDATE ON transactions
+      FOR EACH ROW
+      WHEN OLD.status = 'Selesai'
+      BEGIN
+        SELECT CASE
+          WHEN NEW.status = 'Pending'
+            THEN RAISE(ABORT, 'Transaksi yang sudah Selesai tidak boleh dikembalikan ke status Pending')
+          WHEN NEW.status NOT IN ('Selesai', 'Batal')
+            THEN RAISE(ABORT, 'Transaksi Selesai hanya dapat bertransisi ke status Batal melalui prosedur pembatalan')
+          WHEN NEW.status = 'Selesai' AND (NEW.updated_at IS NOT OLD.updated_at)
+            THEN RAISE(ABORT, 'Transaksi Selesai bersifat immutable dan updated_at tidak boleh diubah')
+          WHEN NEW.status = 'Batal' AND (NEW.cancelled_at IS NULL OR NEW.cancel_reason IS NULL OR trim(NEW.cancel_reason) = '')
+            THEN RAISE(ABORT, 'Pembatalan transaksi wajib menyertakan cancelled_at dan cancel_reason yang sah')
+        END;
+
+        SELECT CASE
+          WHEN (NEW.code IS NOT OLD.code)
+            OR (NEW.name IS NOT OLD.name)
+            OR (NEW.category IS NOT OLD.category)
+            OR (NEW.product_id IS NOT OLD.product_id)
+            OR (NEW.volume IS NOT OLD.volume)
+            OR (NEW.unit_price IS NOT OLD.unit_price)
+            OR (NEW.total IS NOT OLD.total)
+            OR (NEW.shift_id IS NOT OLD.shift_id)
+            OR (NEW.cashier IS NOT OLD.cashier)
+            OR (NEW.nozzle_id IS NOT OLD.nozzle_id)
+            OR (NEW.tera_id IS NOT OLD.tera_id)
+            OR (NEW.master_code_id IS NOT OLD.master_code_id)
+            OR (NEW.partner_id IS NOT OLD.partner_id)
+            OR (NEW.payment_method IS NOT OLD.payment_method)
+            OR (NEW.date IS NOT OLD.date)
+            OR (NEW.created_at IS NOT OLD.created_at)
+            OR (NEW.id IS NOT OLD.id)
+          THEN RAISE(ABORT, 'Data bisnis transaksi Selesai bersifat immutable dan tidak boleh diubah')
+        END;
+      END;`,
+			`CREATE TRIGGER IF NOT EXISTS trg_transactions_prevent_mutation_when_cancelled
+      BEFORE UPDATE ON transactions
+      FOR EACH ROW
+      WHEN OLD.status = 'Batal'
+      BEGIN
+        SELECT RAISE(ABORT, 'Transaksi yang sudah berstatus Batal tidak dapat diubah');
+      END;`,
+			`CREATE TRIGGER IF NOT EXISTS trg_transactions_prevent_delete
+      BEFORE DELETE ON transactions
+      FOR EACH ROW
+      WHEN OLD.status IN ('Selesai', 'Batal')
+      BEGIN
+        SELECT RAISE(ABORT, 'Transaksi Selesai atau Batal tidak boleh dihapus untuk integritas audit trail');
+      END;`,
+			`CREATE TRIGGER IF NOT EXISTS trg_journals_require_selesai_transaction
+      BEFORE INSERT ON journals
+      FOR EACH ROW
+      WHEN NEW.transaction_id IS NOT NULL AND NEW.is_reversal = 0
+      BEGIN
+        SELECT CASE
+          WHEN (SELECT status FROM transactions WHERE id = NEW.transaction_id) != 'Selesai'
+            THEN RAISE(ABORT, 'Jurnal asli hanya boleh dibuat untuk transaksi yang berstatus Selesai')
+        END;
+      END;`,
+			`CREATE TRIGGER IF NOT EXISTS trg_receivables_require_selesai_transaction
+      BEFORE INSERT ON receivables
+      FOR EACH ROW
+      BEGIN
+        SELECT CASE
+          WHEN (SELECT status FROM transactions WHERE id = NEW.transaction_id) != 'Selesai'
+            THEN RAISE(ABORT, 'Piutang baru hanya boleh dibuat untuk transaksi yang berstatus Selesai')
+        END;
+      END;`,
+			`CREATE TRIGGER IF NOT EXISTS trg_payables_require_selesai_transaction
+      BEFORE INSERT ON payables
+      FOR EACH ROW
+      BEGIN
+        SELECT CASE
+          WHEN (SELECT status FROM transactions WHERE id = NEW.transaction_id) != 'Selesai'
+            THEN RAISE(ABORT, 'Hutang baru hanya boleh dibuat untuk transaksi yang berstatus Selesai')
+        END;
+      END;`,
+			`CREATE TRIGGER IF NOT EXISTS trg_receivables_prevent_cancel_if_paid
+      BEFORE UPDATE OF status ON receivables
+      FOR EACH ROW
+      WHEN NEW.status = 'Batal' AND (OLD.status IN ('Partial', 'Paid') OR OLD.outstanding < OLD.amount)
+      BEGIN
+        SELECT RAISE(ABORT, 'Faktur piutang yang sudah memiliki pembayaran tidak boleh dibatalkan langsung. Batalkan transaksi pelunasan terlebih dahulu');
+      END;`,
+			`CREATE TRIGGER IF NOT EXISTS trg_payables_prevent_cancel_if_paid
+      BEFORE UPDATE OF status ON payables
+      FOR EACH ROW
+      WHEN NEW.status = 'Batal' AND (OLD.status IN ('Partial', 'Paid') OR OLD.outstanding < OLD.amount)
+      BEGIN
+        SELECT RAISE(ABORT, 'Faktur hutang yang sudah memiliki pembayaran tidak boleh dibatalkan langsung. Batalkan transaksi pelunasan terlebih dahulu');
+      END;`,
+			`CREATE TRIGGER IF NOT EXISTS trg_receivables_prevent_mutation_when_batal
+      BEFORE UPDATE ON receivables
+      FOR EACH ROW
+      WHEN OLD.status = 'Batal'
+      BEGIN
+        SELECT RAISE(ABORT, 'Faktur piutang yang sudah Batal bersifat immutable dan tidak dapat diubah');
+      END;`,
+			`CREATE TRIGGER IF NOT EXISTS trg_payables_prevent_mutation_when_batal
+      BEFORE UPDATE ON payables
+      FOR EACH ROW
+      WHEN OLD.status = 'Batal'
+      BEGIN
+        SELECT RAISE(ABORT, 'Faktur hutang yang sudah Batal bersifat immutable dan tidak dapat diubah');
+      END;`
+		]
+	},
+	{
+		version: 3,
+		name: "003_shift_sessions_and_attendance_history",
+		statements: [
+			`CREATE TABLE IF NOT EXISTS shift_sessions (
+        id TEXT PRIMARY KEY,
+        shift_id TEXT NOT NULL REFERENCES shifts(id),
+        name TEXT NOT NULL,
+        date TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT NOT NULL,
+        operator TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('Aktif', 'Tutup')),
+        initial_cash INTEGER NOT NULL DEFAULT 0,
+        total_sales INTEGER NOT NULL DEFAULT 0,
+        cash_handover INTEGER NOT NULL DEFAULT 0,
+        discrepancy INTEGER NOT NULL DEFAULT 0,
+        closed_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );`,
+			`CREATE INDEX IF NOT EXISTS idx_shift_sessions_shift_id ON shift_sessions(shift_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_shift_sessions_date ON shift_sessions(date);`,
+			`CREATE UNIQUE INDEX IF NOT EXISTS idx_single_active_shift_session ON shift_sessions(status) WHERE status = 'Aktif';`,
+			`CREATE UNIQUE INDEX IF NOT EXISTS idx_attendances_employee_date ON attendances(employee_id, date);`
+		]
+	},
+	{
+		version: 4,
+		name: "004_enforce_safe_cancellation",
+		statements: [`CREATE TRIGGER IF NOT EXISTS trg_transactions_prevent_cancel_if_posted
+      BEFORE UPDATE OF status ON transactions
+      FOR EACH ROW
+      WHEN NEW.status = 'Batal' AND (SELECT COUNT(*) FROM journals WHERE transaction_id = OLD.id) > 0
+      BEGIN
+        SELECT RAISE(ABORT, 'Transaksi yang sudah diposting ke jurnal akuntansi tidak dapat dibatalkan secara langsung tanpa prosedur pembalikan');
+      END;`]
+	},
+	{
+		version: 5,
+		name: "005_add_city_to_station_info",
+		statements: [`ALTER TABLE station_info ADD COLUMN city TEXT;`]
+	}
+];
+
+//# sourceMappingURL=data:application/json;base64,eyJtYXBwaW5ncyI6IkFBa0JBLE9BQU8sTUFBTSxhQUFvQztDQUMvQztFQUNFLFNBQVM7RUFDVCxNQUFNO0VBQ04sWUFBWSxDQUNWOzs7OztTQU1GO0NBQ0Y7Q0FDQTtFQUNFLFNBQVM7RUFDVCxNQUFNO0VBQ04sWUFBWTtHQUVWOzs7Ozs7Ozs7Ozs7O0dBZUE7Ozs7Ozs7R0FTQTs7Ozs7Ozs7Ozs7Ozs7R0FnQkE7Ozs7Ozs7Ozs7OztHQWNBOzs7Ozs7Ozs7OztHQWFBOzs7Ozs7Ozs7Ozs7Ozs7R0FpQkE7Ozs7Ozs7OztHQVdBOzs7Ozs7Ozs7OztHQWFBOzs7Ozs7Ozs7OztHQWFBOzs7Ozs7Ozs7OztHQWFBOzs7Ozs7Ozs7Ozs7Ozs7OztHQW1CQTs7Ozs7Ozs7Ozs7Ozs7Ozs7O0dBb0JBOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0dBMkJBOzs7Ozs7Ozs7Ozs7O0dBZUE7Ozs7Ozs7Ozs7O0dBYUE7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7OztHQXVCQTs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0dBdUJBO0dBQ0E7R0FDQTtHQUNBO0dBQ0E7R0FDQTtHQUNBO0dBQ0E7R0FDQTtHQUNBO0dBQ0E7R0FDQTtHQUNBO0dBQ0E7R0FDQTtHQUNBO0dBQ0E7R0FDQTtHQUNBO0dBQ0E7R0FDQTtHQUNBO0dBQ0E7R0FDQTtHQUNBO0dBSUE7Ozs7Ozs7Ozs7R0FXQTs7Ozs7Ozs7OztHQVlBOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0dBc0NBOzs7Ozs7O0dBUUE7Ozs7Ozs7R0FTQTs7Ozs7Ozs7OztHQVdBOzs7Ozs7Ozs7R0FVQTs7Ozs7Ozs7O0dBV0E7Ozs7Ozs7R0FRQTs7Ozs7OztHQVFBOzs7Ozs7O0dBUUE7Ozs7Ozs7RUFPRjtDQUNGO0NBQ0E7RUFDRSxTQUFTO0VBQ1QsTUFBTTtFQUNOLFlBQVk7R0FFVjs7Ozs7Ozs7Ozs7Ozs7Ozs7R0FtQkE7R0FDQTtHQUdBO0dBR0E7RUFDRjtDQUNGO0NBQ0E7RUFDRSxTQUFTO0VBQ1QsTUFBTTtFQUNOLFlBQVksQ0FFVjs7Ozs7O1dBT0Y7Q0FDRjtDQUNBO0VBQ0UsU0FBUztFQUNULE1BQU07RUFDTixZQUFZLENBRVYsZ0RBQ0Y7Q0FDRjtBQUNGIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIm1pZ3JhdGlvbnMudHMiXSwidmVyc2lvbiI6Mywic291cmNlc0NvbnRlbnQiOlsiLyoqXG4gKiBERUZJTklTSSBNSUdSQVNJIERBVEFCQVNFIFNRTElURSAoQUtSVUFMIFNQQlUpXG4gKiBcbiAqIFZlcnNpIDE6IEJhc2VsaW5lIHRhYmVsIGFwcF9tZXRhZGF0YSAoUE9DIFBoYXNlIDEpXG4gKiBWZXJzaSAyOiBTa2VtYSBMZW5na2FwIEFrcnVhbCBTUEJVIHNlc3VhaSBlbnRpdGFzICYgcmVsYXNpIG1vZGVsIGFwbGlrYXNpIChQaGFzZSA0KVxuICogXG4gKiBCYXRhc2FuIFNjb3BlOlxuICogLSBUaWRhayBhZGEgdGFiZWwgUVJJUywgRURDLCBzZXR0bGVtZW50LCBwcm92aWRlciBwZW1iYXlhcmFuLCBNRFIsIGF0YXUgcGF5bWVudF9zZXR0bGVtZW50cy5cbiAqIC0gTWV0b2RlIHBlbWJheWFyYW4gaGFueWE6ICdUdW5haScsICdQaXV0YW5nJywgJ0h1dGFuZycsICdUcmFuc2ZlcicuXG4gKiAtIFJlbGFzaSBtYXN0ZXJfY29kZXMgbWVuZHVrdW5nIGRlYml0QWNjb3VudElkIGRhbiBjcmVkaXRBY2NvdW50SWQgZGluYW1pcy5cbiAqL1xuXG5leHBvcnQgaW50ZXJmYWNlIE1pZ3JhdGlvbkRlZmluaXRpb24ge1xuICB2ZXJzaW9uOiBudW1iZXI7XG4gIG5hbWU6IHN0cmluZztcbiAgc3RhdGVtZW50czogc3RyaW5nW107XG59XG5cbmV4cG9ydCBjb25zdCBNSUdSQVRJT05TOiBNaWdyYXRpb25EZWZpbml0aW9uW10gPSBbXG4gIHtcbiAgICB2ZXJzaW9uOiAxLFxuICAgIG5hbWU6ICdpbml0aWFsX2FwcF9tZXRhZGF0YScsXG4gICAgc3RhdGVtZW50czogW1xuICAgICAgYENSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIGFwcF9tZXRhZGF0YSAoXG4gICAgICAgIGtleSBURVhUIFBSSU1BUlkgS0VZLFxuICAgICAgICB2YWx1ZSBURVhUIE5PVCBOVUxMLFxuICAgICAgICBjcmVhdGVkX2F0IFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIHVwZGF0ZWRfYXQgVEVYVCBOT1QgTlVMTFxuICAgICAgKTtgXG4gICAgXVxuICB9LFxuICB7XG4gICAgdmVyc2lvbjogMixcbiAgICBuYW1lOiAnY2Fub25pY2FsX3NwYnVfYWtydWFsX3NjaGVtYScsXG4gICAgc3RhdGVtZW50czogW1xuICAgICAgLy8gMS4gUHJvZmlsICYgTWV0YWRhdGEgU1BCVVxuICAgICAgYENSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIHN0YXRpb25faW5mbyAoXG4gICAgICAgIGlkIFRFWFQgUFJJTUFSWSBLRVksXG4gICAgICAgIG5hbWUgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgYWRkcmVzcyBURVhUIE5PVCBOVUxMLFxuICAgICAgICBwaG9uZSBURVhUIE5PVCBOVUxMLFxuICAgICAgICBtYW5hZ2VyIFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIGVtYWlsIFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIHN0YXR1cyBURVhUIE5PVCBOVUxMIERFRkFVTFQgJ09ubGluZScsXG4gICAgICAgIGxhc3RfYmFja3VwIFRFWFQsXG4gICAgICAgIHZlcnNpb24gVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgY3JlYXRlZF9hdCBURVhUIE5PVCBOVUxMLFxuICAgICAgICB1cGRhdGVkX2F0IFRFWFQgTk9UIE5VTExcbiAgICAgICk7YCxcblxuICAgICAgLy8gMi4gS2F0ZWdvcmkgUHJvZHVrXG4gICAgICBgQ1JFQVRFIFRBQkxFIElGIE5PVCBFWElTVFMgcHJvZHVjdF9jYXRlZ29yaWVzIChcbiAgICAgICAgaWQgVEVYVCBQUklNQVJZIEtFWSxcbiAgICAgICAgbmFtZSBURVhUIE5PVCBOVUxMLFxuICAgICAgICBzdGF0dXMgVEVYVCBOT1QgTlVMTCBERUZBVUxUICdBa3RpZicgQ0hFQ0soc3RhdHVzIElOICgnQWt0aWYnLCAnTm9uYWt0aWYnKSksXG4gICAgICAgIGNyZWF0ZWRfYXQgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgdXBkYXRlZF9hdCBURVhUIE5PVCBOVUxMXG4gICAgICApO2AsXG5cbiAgICAgIC8vIDMuIFByb2R1ayAoQkJNICYgTm9uLUJCTSlcbiAgICAgIGBDUkVBVEUgVEFCTEUgSUYgTk9UIEVYSVNUUyBwcm9kdWN0cyAoXG4gICAgICAgIGlkIFRFWFQgUFJJTUFSWSBLRVksXG4gICAgICAgIGNvZGUgVEVYVCBOT1QgTlVMTCBVTklRVUUsXG4gICAgICAgIG5hbWUgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgY2F0ZWdvcnlfaWQgVEVYVCBOT1QgTlVMTCBSRUZFUkVOQ0VTIHByb2R1Y3RfY2F0ZWdvcmllcyhpZCksXG4gICAgICAgIHNlbGxfcHJpY2UgSU5URUdFUiBOT1QgTlVMTCBDSEVDSyhzZWxsX3ByaWNlID49IDApLFxuICAgICAgICBidXlfcHJpY2UgSU5URUdFUiBOT1QgTlVMTCBDSEVDSyhidXlfcHJpY2UgPj0gMCksXG4gICAgICAgIHVuaXQgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgY29sb3IgVEVYVCxcbiAgICAgICAgc3RhdHVzIFRFWFQgTk9UIE5VTEwgREVGQVVMVCAnQWt0aWYnIENIRUNLKHN0YXR1cyBJTiAoJ0FrdGlmJywgJ05vbmFrdGlmJykpLFxuICAgICAgICB0YW5rX2lkIFRFWFQsXG4gICAgICAgIGNyZWF0ZWRfYXQgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgdXBkYXRlZF9hdCBURVhUIE5PVCBOVUxMXG4gICAgICApO2AsXG5cbiAgICAgIC8vIDQuIFRhbmtpIFBlbmRhbVxuICAgICAgYENSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIHRhbmtzIChcbiAgICAgICAgaWQgVEVYVCBQUklNQVJZIEtFWSxcbiAgICAgICAgbmFtZSBURVhUIE5PVCBOVUxMLFxuICAgICAgICBwcm9kdWN0X2lkIFRFWFQgTk9UIE5VTEwgUkVGRVJFTkNFUyBwcm9kdWN0cyhpZCksXG4gICAgICAgIGNhcGFjaXR5IFJFQUwgTk9UIE5VTEwgQ0hFQ0soY2FwYWNpdHkgPiAwKSxcbiAgICAgICAgY3VycmVudF9zdG9jayBSRUFMIE5PVCBOVUxMIERFRkFVTFQgMCBDSEVDSyhjdXJyZW50X3N0b2NrID49IDApLFxuICAgICAgICB1bml0IFRFWFQgTk9UIE5VTEwgREVGQVVMVCAnTGl0ZXInLFxuICAgICAgICBsYXN0X3NvdW5kaW5nIFRFWFQsXG4gICAgICAgIHN0YXR1cyBURVhUIE5PVCBOVUxMIERFRkFVTFQgJ0FrdGlmJyBDSEVDSyhzdGF0dXMgSU4gKCdBa3RpZicsICdOb25ha3RpZicsICdBbWFuJywgJ1Blcmx1IFJlb3JkZXInKSksXG4gICAgICAgIGNyZWF0ZWRfYXQgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgdXBkYXRlZF9hdCBURVhUIE5PVCBOVUxMXG4gICAgICApO2AsXG5cbiAgICAgIC8vIDUuIE5venpsZSBEaXNwZW5zZXJcbiAgICAgIGBDUkVBVEUgVEFCTEUgSUYgTk9UIEVYSVNUUyBub3p6bGVzIChcbiAgICAgICAgaWQgVEVYVCBQUklNQVJZIEtFWSxcbiAgICAgICAgY29kZSBURVhUIE5PVCBOVUxMIFVOSVFVRSxcbiAgICAgICAgaXNsYW5kIFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIHRhbmtfaWQgVEVYVCBOT1QgTlVMTCBSRUZFUkVOQ0VTIHRhbmtzKGlkKSxcbiAgICAgICAgcHJvZHVjdF9pZCBURVhUIE5PVCBOVUxMIFJFRkVSRU5DRVMgcHJvZHVjdHMoaWQpLFxuICAgICAgICBjdXJyZW50X21ldGVyIFJFQUwgTk9UIE5VTEwgREVGQVVMVCAwIENIRUNLKGN1cnJlbnRfbWV0ZXIgPj0gMCksXG4gICAgICAgIHN0YXR1cyBURVhUIE5PVCBOVUxMIERFRkFVTFQgJ0FrdGlmJyBDSEVDSyhzdGF0dXMgSU4gKCdBa3RpZicsICdNYWludGVuYW5jZScsICdOb25ha3RpZicpKSxcbiAgICAgICAgY3JlYXRlZF9hdCBURVhUIE5PVCBOVUxMLFxuICAgICAgICB1cGRhdGVkX2F0IFRFWFQgTk9UIE5VTExcbiAgICAgICk7YCxcblxuICAgICAgLy8gNi4gU2VzaSBTaGlmdCBLZXJqYVxuICAgICAgYENSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIHNoaWZ0cyAoXG4gICAgICAgIGlkIFRFWFQgUFJJTUFSWSBLRVksXG4gICAgICAgIG5hbWUgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgc3RhcnRfdGltZSBURVhUIE5PVCBOVUxMLFxuICAgICAgICBlbmRfdGltZSBURVhUIE5PVCBOVUxMLFxuICAgICAgICBvcGVyYXRvciBURVhUIE5PVCBOVUxMLFxuICAgICAgICBzdGF0dXMgVEVYVCBOT1QgTlVMTCBERUZBVUxUICdNZW51bmdndScgQ0hFQ0soc3RhdHVzIElOICgnQWt0aWYnLCAnTWVudW5nZ3UnLCAnVHV0dXAnKSksXG4gICAgICAgIHRvdGFsX3NhbGVzIElOVEVHRVIgTk9UIE5VTEwgREVGQVVMVCAwLFxuICAgICAgICBjYXNoX2hhbmRvdmVyIElOVEVHRVIgTk9UIE5VTEwgREVGQVVMVCAwLFxuICAgICAgICBkYXRlIFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIGluaXRpYWxfY2FzaCBJTlRFR0VSIE5PVCBOVUxMIERFRkFVTFQgMCxcbiAgICAgICAgZGlzY3JlcGFuY3kgSU5URUdFUiBOT1QgTlVMTCBERUZBVUxUIDAsXG4gICAgICAgIGNyZWF0ZWRfYXQgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgdXBkYXRlZF9hdCBURVhUIE5PVCBOVUxMXG4gICAgICApO2AsXG5cbiAgICAgIC8vIDcuIFBlZ2F3YWkgLyBPcGVyYXRvclxuICAgICAgYENSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIHBlZ2F3YWkgKFxuICAgICAgICBpZCBURVhUIFBSSU1BUlkgS0VZLFxuICAgICAgICBuYW1lIFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIHJvbGUgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgc3RhdHVzIFRFWFQgTk9UIE5VTEwgREVGQVVMVCAnQWt0aWYnIENIRUNLKHN0YXR1cyBJTiAoJ0FrdGlmJywgJ05vbmFrdGlmJykpLFxuICAgICAgICBzaGlmdF9pZCBURVhUIFJFRkVSRU5DRVMgc2hpZnRzKGlkKSxcbiAgICAgICAgY3JlYXRlZF9hdCBURVhUIE5PVCBOVUxMLFxuICAgICAgICB1cGRhdGVkX2F0IFRFWFQgTk9UIE5VTExcbiAgICAgICk7YCxcblxuICAgICAgLy8gOC4gQWJzZW5zaSBLZWhhZGlyYW4gUGVnYXdhaVxuICAgICAgYENSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIGF0dGVuZGFuY2VzIChcbiAgICAgICAgaWQgVEVYVCBQUklNQVJZIEtFWSxcbiAgICAgICAgZW1wbG95ZWVfaWQgVEVYVCBOT1QgTlVMTCBSRUZFUkVOQ0VTIHBlZ2F3YWkoaWQpLFxuICAgICAgICBzaGlmdF9pZCBURVhUIE5PVCBOVUxMIFJFRkVSRU5DRVMgc2hpZnRzKGlkKSxcbiAgICAgICAgZGF0ZSBURVhUIE5PVCBOVUxMLFxuICAgICAgICBzdGF0dXMgVEVYVCBOT1QgTlVMTCBDSEVDSyhzdGF0dXMgSU4gKCdIYWRpcicsICdJemluJywgJ1Nha2l0JywgJ0FscGEnKSksXG4gICAgICAgIG5vdGVzIFRFWFQsXG4gICAgICAgIGNoZWNrX2luX3RpbWUgVEVYVCxcbiAgICAgICAgY3JlYXRlZF9hdCBURVhUIE5PVCBOVUxMLFxuICAgICAgICB1cGRhdGVkX2F0IFRFWFQgTk9UIE5VTExcbiAgICAgICk7YCxcblxuICAgICAgLy8gOS4gTWl0cmEgQmlzbmlzIChQZWxhbmdnYW4gLyBWZW5kb3IpXG4gICAgICBgQ1JFQVRFIFRBQkxFIElGIE5PVCBFWElTVFMgYnVzaW5lc3NfcGFydG5lcnMgKFxuICAgICAgICBpZCBURVhUIFBSSU1BUlkgS0VZLFxuICAgICAgICBjb2RlIFRFWFQgTk9UIE5VTEwgVU5JUVVFLFxuICAgICAgICBuYW1lIFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIHR5cGUgVEVYVCBOT1QgTlVMTCBDSEVDSyh0eXBlIElOICgnQ3VzdG9tZXInLCAnVmVuZG9yJykpLFxuICAgICAgICBwaG9uZSBURVhULFxuICAgICAgICBhZGRyZXNzIFRFWFQsXG4gICAgICAgIGlzX2FjdGl2ZSBJTlRFR0VSIE5PVCBOVUxMIERFRkFVTFQgMSBDSEVDSyhpc19hY3RpdmUgSU4gKDAsIDEpKSxcbiAgICAgICAgY3JlYXRlZF9hdCBURVhUIE5PVCBOVUxMLFxuICAgICAgICB1cGRhdGVkX2F0IFRFWFQgTk9UIE5VTExcbiAgICAgICk7YCxcblxuICAgICAgLy8gMTAuIEJhZ2FuIEFrdW4gKENPQSlcbiAgICAgIGBDUkVBVEUgVEFCTEUgSUYgTk9UIEVYSVNUUyBhY2NvdW50cyAoXG4gICAgICAgIGlkIFRFWFQgUFJJTUFSWSBLRVksXG4gICAgICAgIGNvZGUgVEVYVCBOT1QgTlVMTCBVTklRVUUsXG4gICAgICAgIG5hbWUgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgY2F0ZWdvcnkgVEVYVCBOT1QgTlVMTCBDSEVDSyhjYXRlZ29yeSBJTiAoJ0FzZXQnLCAnS2V3YWppYmFuJywgJ0VrdWl0YXMnLCAnUGVuZGFwYXRhbicsICdCZWJhbiBQb2tvaycsICdCZWJhbicpKSxcbiAgICAgICAgbm9ybWFsX2JhbGFuY2UgVEVYVCBOT1QgTlVMTCBDSEVDSyhub3JtYWxfYmFsYW5jZSBJTiAoJ0RlYml0JywgJ0tyZWRpdCcpKSxcbiAgICAgICAgYmFsYW5jZSBJTlRFR0VSIE5PVCBOVUxMIERFRkFVTFQgMCxcbiAgICAgICAgaXNfYWN0aXZlIElOVEVHRVIgTk9UIE5VTEwgREVGQVVMVCAxIENIRUNLKGlzX2FjdGl2ZSBJTiAoMCwgMSkpLFxuICAgICAgICBjcmVhdGVkX2F0IFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIHVwZGF0ZWRfYXQgVEVYVCBOT1QgTlVMTFxuICAgICAgKTtgLFxuXG4gICAgICAvLyAxMS4gTWFzdGVyIEtvZGUgVHJhbnNha3NpXG4gICAgICBgQ1JFQVRFIFRBQkxFIElGIE5PVCBFWElTVFMgbWFzdGVyX2NvZGVzIChcbiAgICAgICAgaWQgVEVYVCBQUklNQVJZIEtFWSxcbiAgICAgICAgY29kZSBURVhUIE5PVCBOVUxMIFVOSVFVRSxcbiAgICAgICAgbmFtZSBURVhUIE5PVCBOVUxMLFxuICAgICAgICBjYXRlZ29yeSBURVhUIE5PVCBOVUxMIENIRUNLKGNhdGVnb3J5IElOICgnUGVuanVhbGFuJywgJ1BlbWJlbGlhbicsICdCaWF5YSBPcGVyYXNpb25hbCcsICdQZXJzZWRpYWFuJywgJ1BlbHVuYXNhbicpKSxcbiAgICAgICAgdHlwZSBURVhUIE5PVCBOVUxMLFxuICAgICAgICByZXF1aXJlc190ZXJhIElOVEVHRVIgTk9UIE5VTEwgREVGQVVMVCAwIENIRUNLKHJlcXVpcmVzX3RlcmEgSU4gKDAsIDEpKSxcbiAgICAgICAgcHJvZHVjdF9pZCBURVhUIFJFRkVSRU5DRVMgcHJvZHVjdHMoaWQpLFxuICAgICAgICB1bml0X3ByaWNlIElOVEVHRVIgQ0hFQ0sodW5pdF9wcmljZSBJUyBOVUxMIE9SIHVuaXRfcHJpY2UgPj0gMCksXG4gICAgICAgIGRlYml0X2FjY291bnRfaWQgVEVYVCBOT1QgTlVMTCBSRUZFUkVOQ0VTIGFjY291bnRzKGlkKSxcbiAgICAgICAgY3JlZGl0X2FjY291bnRfaWQgVEVYVCBOT1QgTlVMTCBSRUZFUkVOQ0VTIGFjY291bnRzKGlkKSxcbiAgICAgICAgZGVzY3JpcHRpb24gVEVYVCxcbiAgICAgICAgcGF5bWVudF9tZXRob2QgVEVYVCBOT1QgTlVMTCBDSEVDSyhwYXltZW50X21ldGhvZCBJTiAoJ1R1bmFpJywgJ1BpdXRhbmcnLCAnSHV0YW5nJywgJ1RyYW5zZmVyJykpLFxuICAgICAgICBpc19hY3RpdmUgSU5URUdFUiBOT1QgTlVMTCBERUZBVUxUIDEgQ0hFQ0soaXNfYWN0aXZlIElOICgwLCAxKSksXG4gICAgICAgIGNyZWF0ZWRfYXQgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgdXBkYXRlZF9hdCBURVhUIE5PVCBOVUxMXG4gICAgICApO2AsXG5cbiAgICAgIC8vIDEyLiBUZXJhIERpc3BlbnNlclxuICAgICAgYENSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIHRlcmEgKFxuICAgICAgICBpZCBURVhUIFBSSU1BUlkgS0VZLFxuICAgICAgICBkYXRlIFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIHNoaWZ0X2lkIFRFWFQgUkVGRVJFTkNFUyBzaGlmdHMoaWQpLFxuICAgICAgICBub3p6bGVfaWQgVEVYVCBOT1QgTlVMTCBSRUZFUkVOQ0VTIG5venpsZXMoaWQpLFxuICAgICAgICBwcm9kdWN0X2lkIFRFWFQgUkVGRVJFTkNFUyBwcm9kdWN0cyhpZCksXG4gICAgICAgIHByaWNlIElOVEVHRVIgTk9UIE5VTEwgQ0hFQ0socHJpY2UgPj0gMCksXG4gICAgICAgIHRlcmFfYXdhbCBSRUFMIE5PVCBOVUxMIENIRUNLKHRlcmFfYXdhbCA+PSAwKSxcbiAgICAgICAgdGVyYV9ha2hpciBSRUFMIE5PVCBOVUxMIENIRUNLKHRlcmFfYWtoaXIgPj0gdGVyYV9hd2FsKSxcbiAgICAgICAgdm9sdW1lIFJFQUwgTk9UIE5VTEwgQ0hFQ0sodm9sdW1lID49IDApLFxuICAgICAgICBzZWxpc2loIFJFQUwgTk9UIE5VTEwgREVGQVVMVCAwLFxuICAgICAgICBzYWxlc19hbW91bnQgSU5URUdFUiBOT1QgTlVMTCBDSEVDSyhzYWxlc19hbW91bnQgPj0gMCksXG4gICAgICAgIG9mZmljZXIgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgc3RhdHVzIFRFWFQgTk9UIE5VTEwgREVGQVVMVCAnVmFsaWQnLFxuICAgICAgICB0cmFuc2FjdGlvbl9pZCBURVhULFxuICAgICAgICBjcmVhdGVkX2F0IFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIHVwZGF0ZWRfYXQgVEVYVCBOT1QgTlVMTFxuICAgICAgKTtgLFxuXG4gICAgICAvLyAxMy4gVHJhbnNha3NpIE9wZXJhc2lvbmFsXG4gICAgICBgQ1JFQVRFIFRBQkxFIElGIE5PVCBFWElTVFMgdHJhbnNhY3Rpb25zIChcbiAgICAgICAgaWQgVEVYVCBQUklNQVJZIEtFWSxcbiAgICAgICAgZGF0ZSBURVhUIE5PVCBOVUxMLFxuICAgICAgICBjb2RlIFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIG5hbWUgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgY2F0ZWdvcnkgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgcHJvZHVjdF9pZCBURVhUIFJFRkVSRU5DRVMgcHJvZHVjdHMoaWQpLFxuICAgICAgICB2b2x1bWUgUkVBTCBERUZBVUxUIDAsXG4gICAgICAgIHVuaXRfcHJpY2UgSU5URUdFUiBERUZBVUxUIDAsXG4gICAgICAgIHRvdGFsIElOVEVHRVIgTk9UIE5VTEwgQ0hFQ0sodG90YWwgPiAwKSxcbiAgICAgICAgc2hpZnRfaWQgVEVYVCBSRUZFUkVOQ0VTIHNoaWZ0cyhpZCksXG4gICAgICAgIGNhc2hpZXIgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgc3RhdHVzIFRFWFQgTk9UIE5VTEwgREVGQVVMVCAnU2VsZXNhaScgQ0hFQ0soc3RhdHVzIElOICgnUGVuZGluZycsICdTZWxlc2FpJywgJ0JhdGFsJykpLFxuICAgICAgICBub3p6bGVfaWQgVEVYVCBSRUZFUkVOQ0VTIG5venpsZXMoaWQpLFxuICAgICAgICB0ZXJhX2lkIFRFWFQgUkVGRVJFTkNFUyB0ZXJhKGlkKSxcbiAgICAgICAgbWFzdGVyX2NvZGVfaWQgVEVYVCBSRUZFUkVOQ0VTIG1hc3Rlcl9jb2RlcyhpZCksXG4gICAgICAgIHBhcnRuZXJfaWQgVEVYVCBSRUZFUkVOQ0VTIGJ1c2luZXNzX3BhcnRuZXJzKGlkKSxcbiAgICAgICAgcGF5bWVudF9tZXRob2QgVEVYVCBDSEVDSyhwYXltZW50X21ldGhvZCBJUyBOVUxMIE9SIHBheW1lbnRfbWV0aG9kIElOICgnVHVuYWknLCAnUGl1dGFuZycsICdIdXRhbmcnLCAnVHJhbnNmZXInKSksXG4gICAgICAgIHJlbGF0ZWRfcmVjZWl2YWJsZV9pZCBURVhULFxuICAgICAgICByZWxhdGVkX3BheWFibGVfaWQgVEVYVCxcbiAgICAgICAgY2FuY2VsbGVkX2F0IFRFWFQsXG4gICAgICAgIGNhbmNlbF9yZWFzb24gVEVYVCxcbiAgICAgICAgY3JlYXRlZF9hdCBURVhUIE5PVCBOVUxMLFxuICAgICAgICB1cGRhdGVkX2F0IFRFWFQgTk9UIE5VTExcbiAgICAgICk7YCxcblxuICAgICAgLy8gMTQuIEp1cm5hbCBVbXVtIEhlYWRlclxuICAgICAgYENSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIGpvdXJuYWxzIChcbiAgICAgICAgaWQgVEVYVCBQUklNQVJZIEtFWSxcbiAgICAgICAgZGF0ZSBURVhUIE5PVCBOVUxMLFxuICAgICAgICB0cmFuc2FjdGlvbl9pZCBURVhUIFJFRkVSRU5DRVMgdHJhbnNhY3Rpb25zKGlkKSxcbiAgICAgICAgZXZpZGVuY2Vfbm8gVEVYVCxcbiAgICAgICAgdHJhbnNfY29kZSBURVhULFxuICAgICAgICBkZXNjcmlwdGlvbiBURVhUIE5PVCBOVUxMLFxuICAgICAgICBpc19iYWxhbmNlZCBJTlRFR0VSIE5PVCBOVUxMIERFRkFVTFQgMSBDSEVDSyhpc19iYWxhbmNlZCBJTiAoMCwgMSkpLFxuICAgICAgICBpc19yZXZlcnNhbCBJTlRFR0VSIE5PVCBOVUxMIERFRkFVTFQgMCBDSEVDSyhpc19yZXZlcnNhbCBJTiAoMCwgMSkpLFxuICAgICAgICByZXZlcnNlc19qb3VybmFsX2lkIFRFWFQgUkVGRVJFTkNFUyBqb3VybmFscyhpZCksXG4gICAgICAgIGNyZWF0ZWRfYXQgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgdXBkYXRlZF9hdCBURVhUIE5PVCBOVUxMXG4gICAgICApO2AsXG5cbiAgICAgIC8vIDE1LiBCYXJpcyBKdXJuYWwgVW11bSAoRG91YmxlIEVudHJ5KVxuICAgICAgYENSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIGpvdXJuYWxfZW50cmllcyAoXG4gICAgICAgIGlkIFRFWFQgUFJJTUFSWSBLRVksXG4gICAgICAgIGpvdXJuYWxfaWQgVEVYVCBOT1QgTlVMTCBSRUZFUkVOQ0VTIGpvdXJuYWxzKGlkKSBPTiBERUxFVEUgQ0FTQ0FERSxcbiAgICAgICAgYWNjb3VudF9pZCBURVhUIE5PVCBOVUxMIFJFRkVSRU5DRVMgYWNjb3VudHMoaWQpLFxuICAgICAgICBkZWJpdCBJTlRFR0VSIE5PVCBOVUxMIERFRkFVTFQgMCBDSEVDSyhkZWJpdCA+PSAwKSxcbiAgICAgICAgY3JlZGl0IElOVEVHRVIgTk9UIE5VTEwgREVGQVVMVCAwIENIRUNLKGNyZWRpdCA+PSAwKSxcbiAgICAgICAgY3JlYXRlZF9hdCBURVhUIE5PVCBOVUxMLFxuICAgICAgICBDT05TVFJBSU5UIGNoa19qb3VybmFsX2VudHJ5X3NpbmdsZV9zaWRlIENIRUNLKFxuICAgICAgICAgIChkZWJpdCA+IDAgQU5EIGNyZWRpdCA9IDApIE9SIChjcmVkaXQgPiAwIEFORCBkZWJpdCA9IDApXG4gICAgICAgIClcbiAgICAgICk7YCxcblxuICAgICAgLy8gMTYuIEJ1a3UgUGVtYmFudHUgUGl1dGFuZyBVc2FoYVxuICAgICAgYENSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIHJlY2VpdmFibGVzIChcbiAgICAgICAgaWQgVEVYVCBQUklNQVJZIEtFWSxcbiAgICAgICAgdHJhbnNhY3Rpb25faWQgVEVYVCBOT1QgTlVMTCBSRUZFUkVOQ0VTIHRyYW5zYWN0aW9ucyhpZCksXG4gICAgICAgIHBhcnRuZXJfaWQgVEVYVCBOT1QgTlVMTCBSRUZFUkVOQ0VTIGJ1c2luZXNzX3BhcnRuZXJzKGlkKSxcbiAgICAgICAgYW1vdW50IElOVEVHRVIgTk9UIE5VTEwgQ0hFQ0soYW1vdW50ID4gMCksXG4gICAgICAgIG91dHN0YW5kaW5nIElOVEVHRVIgTk9UIE5VTEwgQ0hFQ0sob3V0c3RhbmRpbmcgPj0gMCksXG4gICAgICAgIHN0YXR1cyBURVhUIE5PVCBOVUxMIENIRUNLKHN0YXR1cyBJTiAoJ09wZW4nLCAnUGFydGlhbCcsICdQYWlkJywgJ0JhdGFsJykpLFxuICAgICAgICBkYXRlIFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIG5vdGVzIFRFWFQsXG4gICAgICAgIGNyZWF0ZWRfYXQgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgdXBkYXRlZF9hdCBURVhUIE5PVCBOVUxMLFxuICAgICAgICBDT05TVFJBSU5UIGNoa19yZWNlaXZhYmxlX3N0YXR1c19vdXRzdGFuZGluZyBDSEVDSyAoXG4gICAgICAgICAgQ0FTRVxuICAgICAgICAgICAgV0hFTiBzdGF0dXMgPSAnQmF0YWwnIFRIRU4gKG91dHN0YW5kaW5nID0gMClcbiAgICAgICAgICAgIFdIRU4gc3RhdHVzID0gJ1BhaWQnIFRIRU4gKG91dHN0YW5kaW5nID0gMClcbiAgICAgICAgICAgIFdIRU4gc3RhdHVzID0gJ09wZW4nIFRIRU4gKG91dHN0YW5kaW5nID0gYW1vdW50KVxuICAgICAgICAgICAgV0hFTiBzdGF0dXMgPSAnUGFydGlhbCcgVEhFTiAob3V0c3RhbmRpbmcgPiAwIEFORCBvdXRzdGFuZGluZyA8IGFtb3VudClcbiAgICAgICAgICAgIEVMU0UgMFxuICAgICAgICAgIEVORCA9IDFcbiAgICAgICAgKVxuICAgICAgKTtgLFxuXG4gICAgICAvLyAxNy4gQnVrdSBQZW1iYW50dSBIdXRhbmcgVXNhaGFcbiAgICAgIGBDUkVBVEUgVEFCTEUgSUYgTk9UIEVYSVNUUyBwYXlhYmxlcyAoXG4gICAgICAgIGlkIFRFWFQgUFJJTUFSWSBLRVksXG4gICAgICAgIHRyYW5zYWN0aW9uX2lkIFRFWFQgTk9UIE5VTEwgUkVGRVJFTkNFUyB0cmFuc2FjdGlvbnMoaWQpLFxuICAgICAgICBwYXJ0bmVyX2lkIFRFWFQgTk9UIE5VTEwgUkVGRVJFTkNFUyBidXNpbmVzc19wYXJ0bmVycyhpZCksXG4gICAgICAgIGFtb3VudCBJTlRFR0VSIE5PVCBOVUxMIENIRUNLKGFtb3VudCA+IDApLFxuICAgICAgICBvdXRzdGFuZGluZyBJTlRFR0VSIE5PVCBOVUxMIENIRUNLKG91dHN0YW5kaW5nID49IDApLFxuICAgICAgICBzdGF0dXMgVEVYVCBOT1QgTlVMTCBDSEVDSyhzdGF0dXMgSU4gKCdPcGVuJywgJ1BhcnRpYWwnLCAnUGFpZCcsICdCYXRhbCcpKSxcbiAgICAgICAgZGF0ZSBURVhUIE5PVCBOVUxMLFxuICAgICAgICBub3RlcyBURVhULFxuICAgICAgICBjcmVhdGVkX2F0IFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIHVwZGF0ZWRfYXQgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgQ09OU1RSQUlOVCBjaGtfcGF5YWJsZV9zdGF0dXNfb3V0c3RhbmRpbmcgQ0hFQ0sgKFxuICAgICAgICAgIENBU0VcbiAgICAgICAgICAgIFdIRU4gc3RhdHVzID0gJ0JhdGFsJyBUSEVOIChvdXRzdGFuZGluZyA9IDApXG4gICAgICAgICAgICBXSEVOIHN0YXR1cyA9ICdQYWlkJyBUSEVOIChvdXRzdGFuZGluZyA9IDApXG4gICAgICAgICAgICBXSEVOIHN0YXR1cyA9ICdPcGVuJyBUSEVOIChvdXRzdGFuZGluZyA9IGFtb3VudClcbiAgICAgICAgICAgIFdIRU4gc3RhdHVzID0gJ1BhcnRpYWwnIFRIRU4gKG91dHN0YW5kaW5nID4gMCBBTkQgb3V0c3RhbmRpbmcgPCBhbW91bnQpXG4gICAgICAgICAgICBFTFNFIDBcbiAgICAgICAgICBFTkQgPSAxXG4gICAgICAgIClcbiAgICAgICk7YCxcblxuICAgICAgLy8gSW5kZWtzIFBlbmNhcmlhbiAmIEludGVncml0YXMgUmVsYXNpb25hbFxuICAgICAgYENSRUFURSBJTkRFWCBJRiBOT1QgRVhJU1RTIGlkeF9wcm9kdWN0c19jYXRlZ29yeSBPTiBwcm9kdWN0cyhjYXRlZ29yeV9pZCk7YCxcbiAgICAgIGBDUkVBVEUgSU5ERVggSUYgTk9UIEVYSVNUUyBpZHhfdGFua3NfcHJvZHVjdCBPTiB0YW5rcyhwcm9kdWN0X2lkKTtgLFxuICAgICAgYENSRUFURSBJTkRFWCBJRiBOT1QgRVhJU1RTIGlkeF9ub3p6bGVzX3RhbmsgT04gbm96emxlcyh0YW5rX2lkKTtgLFxuICAgICAgYENSRUFURSBJTkRFWCBJRiBOT1QgRVhJU1RTIGlkeF9ub3p6bGVzX3Byb2R1Y3QgT04gbm96emxlcyhwcm9kdWN0X2lkKTtgLFxuICAgICAgYENSRUFURSBJTkRFWCBJRiBOT1QgRVhJU1RTIGlkeF9zaGlmdHNfc3RhdHVzIE9OIHNoaWZ0cyhzdGF0dXMpO2AsXG4gICAgICBgQ1JFQVRFIElOREVYIElGIE5PVCBFWElTVFMgaWR4X3BlZ2F3YWlfc2hpZnQgT04gcGVnYXdhaShzaGlmdF9pZCk7YCxcbiAgICAgIGBDUkVBVEUgSU5ERVggSUYgTk9UIEVYSVNUUyBpZHhfYXR0ZW5kYW5jZXNfZW1wbG95ZWUgT04gYXR0ZW5kYW5jZXMoZW1wbG95ZWVfaWQpO2AsXG4gICAgICBgQ1JFQVRFIElOREVYIElGIE5PVCBFWElTVFMgaWR4X2F0dGVuZGFuY2VzX3NoaWZ0IE9OIGF0dGVuZGFuY2VzKHNoaWZ0X2lkKTtgLFxuICAgICAgYENSRUFURSBJTkRFWCBJRiBOT1QgRVhJU1RTIGlkeF9tYXN0ZXJfY29kZXNfY2F0ZWdvcnkgT04gbWFzdGVyX2NvZGVzKGNhdGVnb3J5KTtgLFxuICAgICAgYENSRUFURSBJTkRFWCBJRiBOT1QgRVhJU1RTIGlkeF9tYXN0ZXJfY29kZXNfZGViaXRfYWNjIE9OIG1hc3Rlcl9jb2RlcyhkZWJpdF9hY2NvdW50X2lkKTtgLFxuICAgICAgYENSRUFURSBJTkRFWCBJRiBOT1QgRVhJU1RTIGlkeF9tYXN0ZXJfY29kZXNfY3JlZGl0X2FjYyBPTiBtYXN0ZXJfY29kZXMoY3JlZGl0X2FjY291bnRfaWQpO2AsXG4gICAgICBgQ1JFQVRFIElOREVYIElGIE5PVCBFWElTVFMgaWR4X3RlcmFfbm96emxlIE9OIHRlcmEobm96emxlX2lkKTtgLFxuICAgICAgYENSRUFURSBJTkRFWCBJRiBOT1QgRVhJU1RTIGlkeF90ZXJhX3NoaWZ0IE9OIHRlcmEoc2hpZnRfaWQpO2AsXG4gICAgICBgQ1JFQVRFIElOREVYIElGIE5PVCBFWElTVFMgaWR4X3RyYW5zYWN0aW9uc19kYXRlIE9OIHRyYW5zYWN0aW9ucyhkYXRlKTtgLFxuICAgICAgYENSRUFURSBJTkRFWCBJRiBOT1QgRVhJU1RTIGlkeF90cmFuc2FjdGlvbnNfc2hpZnQgT04gdHJhbnNhY3Rpb25zKHNoaWZ0X2lkKTtgLFxuICAgICAgYENSRUFURSBJTkRFWCBJRiBOT1QgRVhJU1RTIGlkeF90cmFuc2FjdGlvbnNfbWFzdGVyX2NvZGUgT04gdHJhbnNhY3Rpb25zKG1hc3Rlcl9jb2RlX2lkKTtgLFxuICAgICAgYENSRUFURSBJTkRFWCBJRiBOT1QgRVhJU1RTIGlkeF90cmFuc2FjdGlvbnNfcGFydG5lciBPTiB0cmFuc2FjdGlvbnMocGFydG5lcl9pZCk7YCxcbiAgICAgIGBDUkVBVEUgSU5ERVggSUYgTk9UIEVYSVNUUyBpZHhfam91cm5hbHNfdHJhbnNhY3Rpb24gT04gam91cm5hbHModHJhbnNhY3Rpb25faWQpO2AsXG4gICAgICBgQ1JFQVRFIElOREVYIElGIE5PVCBFWElTVFMgaWR4X2pvdXJuYWxfZW50cmllc19qb3VybmFsIE9OIGpvdXJuYWxfZW50cmllcyhqb3VybmFsX2lkKTtgLFxuICAgICAgYENSRUFURSBJTkRFWCBJRiBOT1QgRVhJU1RTIGlkeF9qb3VybmFsX2VudHJpZXNfYWNjb3VudCBPTiBqb3VybmFsX2VudHJpZXMoYWNjb3VudF9pZCk7YCxcbiAgICAgIGBDUkVBVEUgSU5ERVggSUYgTk9UIEVYSVNUUyBpZHhfcmVjZWl2YWJsZXNfdHJhbnNhY3Rpb24gT04gcmVjZWl2YWJsZXModHJhbnNhY3Rpb25faWQpO2AsXG4gICAgICBgQ1JFQVRFIElOREVYIElGIE5PVCBFWElTVFMgaWR4X3JlY2VpdmFibGVzX3BhcnRuZXIgT04gcmVjZWl2YWJsZXMocGFydG5lcl9pZCk7YCxcbiAgICAgIGBDUkVBVEUgSU5ERVggSUYgTk9UIEVYSVNUUyBpZHhfcGF5YWJsZXNfdHJhbnNhY3Rpb24gT04gcGF5YWJsZXModHJhbnNhY3Rpb25faWQpO2AsXG4gICAgICBgQ1JFQVRFIElOREVYIElGIE5PVCBFWElTVFMgaWR4X3BheWFibGVzX3BhcnRuZXIgT04gcGF5YWJsZXMocGFydG5lcl9pZCk7YCxcbiAgICAgIGBDUkVBVEUgVU5JUVVFIElOREVYIElGIE5PVCBFWElTVFMgdXFfam91cm5hbF9yZXZlcnNhbF90YXJnZXQgT04gam91cm5hbHMocmV2ZXJzZXNfam91cm5hbF9pZCkgV0hFUkUgcmV2ZXJzZXNfam91cm5hbF9pZCBJUyBOT1QgTlVMTDtgLFxuXG4gICAgICAvLyBUcmlnZ2VycyBJbnRlZ3JpdGFzIEJpc25pc1xuICAgICAgLy8gVDE6IEhhbnlhIHNhdHUgc2hpZnQgYWt0aWYgZ2xvYmFsXG4gICAgICBgQ1JFQVRFIFRSSUdHRVIgSUYgTk9UIEVYSVNUUyB0cmdfc2hpZnRzX3NpbmdsZV9hY3RpdmVfaW5zZXJ0XG4gICAgICBCRUZPUkUgSU5TRVJUIE9OIHNoaWZ0c1xuICAgICAgRk9SIEVBQ0ggUk9XXG4gICAgICBXSEVOIE5FVy5zdGF0dXMgPSAnQWt0aWYnXG4gICAgICBCRUdJTlxuICAgICAgICBTRUxFQ1QgQ0FTRVxuICAgICAgICAgIFdIRU4gKFNFTEVDVCBDT1VOVCgqKSBGUk9NIHNoaWZ0cyBXSEVSRSBzdGF0dXMgPSAnQWt0aWYnKSA+IDBcbiAgICAgICAgICBUSEVOIFJBSVNFKEFCT1JULCAnSGFueWEgYm9sZWggYWRhIHNhdHUgc2hpZnQgeWFuZyBiZXJzdGF0dXMgQWt0aWYgcGFkYSBzYXR1IHdha3R1JylcbiAgICAgICAgRU5EO1xuICAgICAgRU5EO2AsXG5cbiAgICAgIGBDUkVBVEUgVFJJR0dFUiBJRiBOT1QgRVhJU1RTIHRyZ19zaGlmdHNfc2luZ2xlX2FjdGl2ZV91cGRhdGVcbiAgICAgIEJFRk9SRSBVUERBVEUgT0Ygc3RhdHVzIE9OIHNoaWZ0c1xuICAgICAgRk9SIEVBQ0ggUk9XXG4gICAgICBXSEVOIE5FVy5zdGF0dXMgPSAnQWt0aWYnIEFORCBPTEQuc3RhdHVzICE9ICdBa3RpZidcbiAgICAgIEJFR0lOXG4gICAgICAgIFNFTEVDVCBDQVNFXG4gICAgICAgICAgV0hFTiAoU0VMRUNUIENPVU5UKCopIEZST00gc2hpZnRzIFdIRVJFIHN0YXR1cyA9ICdBa3RpZicgQU5EIGlkICE9IE9MRC5pZCkgPiAwXG4gICAgICAgICAgVEhFTiBSQUlTRShBQk9SVCwgJ0hhbnlhIGJvbGVoIGFkYSBzYXR1IHNoaWZ0IHlhbmcgYmVyc3RhdHVzIEFrdGlmIHBhZGEgc2F0dSB3YWt0dScpXG4gICAgICAgIEVORDtcbiAgICAgIEVORDtgLFxuXG4gICAgICAvLyBUMjogSW1tdXRhYmlsaXR5IHRyYW5zYWtzaSBTZWxlc2FpICYgcGVtYmF0YWxhbiBzYWhcbiAgICAgIGBDUkVBVEUgVFJJR0dFUiBJRiBOT1QgRVhJU1RTIHRyZ190cmFuc2FjdGlvbnNfZW5mb3JjZV9pbW11dGFiaWxpdHlfd2hlbl9zZWxlc2FpXG4gICAgICBCRUZPUkUgVVBEQVRFIE9OIHRyYW5zYWN0aW9uc1xuICAgICAgRk9SIEVBQ0ggUk9XXG4gICAgICBXSEVOIE9MRC5zdGF0dXMgPSAnU2VsZXNhaSdcbiAgICAgIEJFR0lOXG4gICAgICAgIFNFTEVDVCBDQVNFXG4gICAgICAgICAgV0hFTiBORVcuc3RhdHVzID0gJ1BlbmRpbmcnXG4gICAgICAgICAgICBUSEVOIFJBSVNFKEFCT1JULCAnVHJhbnNha3NpIHlhbmcgc3VkYWggU2VsZXNhaSB0aWRhayBib2xlaCBkaWtlbWJhbGlrYW4ga2Ugc3RhdHVzIFBlbmRpbmcnKVxuICAgICAgICAgIFdIRU4gTkVXLnN0YXR1cyBOT1QgSU4gKCdTZWxlc2FpJywgJ0JhdGFsJylcbiAgICAgICAgICAgIFRIRU4gUkFJU0UoQUJPUlQsICdUcmFuc2Frc2kgU2VsZXNhaSBoYW55YSBkYXBhdCBiZXJ0cmFuc2lzaSBrZSBzdGF0dXMgQmF0YWwgbWVsYWx1aSBwcm9zZWR1ciBwZW1iYXRhbGFuJylcbiAgICAgICAgICBXSEVOIE5FVy5zdGF0dXMgPSAnU2VsZXNhaScgQU5EIChORVcudXBkYXRlZF9hdCBJUyBOT1QgT0xELnVwZGF0ZWRfYXQpXG4gICAgICAgICAgICBUSEVOIFJBSVNFKEFCT1JULCAnVHJhbnNha3NpIFNlbGVzYWkgYmVyc2lmYXQgaW1tdXRhYmxlIGRhbiB1cGRhdGVkX2F0IHRpZGFrIGJvbGVoIGRpdWJhaCcpXG4gICAgICAgICAgV0hFTiBORVcuc3RhdHVzID0gJ0JhdGFsJyBBTkQgKE5FVy5jYW5jZWxsZWRfYXQgSVMgTlVMTCBPUiBORVcuY2FuY2VsX3JlYXNvbiBJUyBOVUxMIE9SIHRyaW0oTkVXLmNhbmNlbF9yZWFzb24pID0gJycpXG4gICAgICAgICAgICBUSEVOIFJBSVNFKEFCT1JULCAnUGVtYmF0YWxhbiB0cmFuc2Frc2kgd2FqaWIgbWVueWVydGFrYW4gY2FuY2VsbGVkX2F0IGRhbiBjYW5jZWxfcmVhc29uIHlhbmcgc2FoJylcbiAgICAgICAgRU5EO1xuXG4gICAgICAgIFNFTEVDVCBDQVNFXG4gICAgICAgICAgV0hFTiAoTkVXLmNvZGUgSVMgTk9UIE9MRC5jb2RlKVxuICAgICAgICAgICAgT1IgKE5FVy5uYW1lIElTIE5PVCBPTEQubmFtZSlcbiAgICAgICAgICAgIE9SIChORVcuY2F0ZWdvcnkgSVMgTk9UIE9MRC5jYXRlZ29yeSlcbiAgICAgICAgICAgIE9SIChORVcucHJvZHVjdF9pZCBJUyBOT1QgT0xELnByb2R1Y3RfaWQpXG4gICAgICAgICAgICBPUiAoTkVXLnZvbHVtZSBJUyBOT1QgT0xELnZvbHVtZSlcbiAgICAgICAgICAgIE9SIChORVcudW5pdF9wcmljZSBJUyBOT1QgT0xELnVuaXRfcHJpY2UpXG4gICAgICAgICAgICBPUiAoTkVXLnRvdGFsIElTIE5PVCBPTEQudG90YWwpXG4gICAgICAgICAgICBPUiAoTkVXLnNoaWZ0X2lkIElTIE5PVCBPTEQuc2hpZnRfaWQpXG4gICAgICAgICAgICBPUiAoTkVXLmNhc2hpZXIgSVMgTk9UIE9MRC5jYXNoaWVyKVxuICAgICAgICAgICAgT1IgKE5FVy5ub3p6bGVfaWQgSVMgTk9UIE9MRC5ub3p6bGVfaWQpXG4gICAgICAgICAgICBPUiAoTkVXLnRlcmFfaWQgSVMgTk9UIE9MRC50ZXJhX2lkKVxuICAgICAgICAgICAgT1IgKE5FVy5tYXN0ZXJfY29kZV9pZCBJUyBOT1QgT0xELm1hc3Rlcl9jb2RlX2lkKVxuICAgICAgICAgICAgT1IgKE5FVy5wYXJ0bmVyX2lkIElTIE5PVCBPTEQucGFydG5lcl9pZClcbiAgICAgICAgICAgIE9SIChORVcucGF5bWVudF9tZXRob2QgSVMgTk9UIE9MRC5wYXltZW50X21ldGhvZClcbiAgICAgICAgICAgIE9SIChORVcuZGF0ZSBJUyBOT1QgT0xELmRhdGUpXG4gICAgICAgICAgICBPUiAoTkVXLmNyZWF0ZWRfYXQgSVMgTk9UIE9MRC5jcmVhdGVkX2F0KVxuICAgICAgICAgICAgT1IgKE5FVy5pZCBJUyBOT1QgT0xELmlkKVxuICAgICAgICAgIFRIRU4gUkFJU0UoQUJPUlQsICdEYXRhIGJpc25pcyB0cmFuc2Frc2kgU2VsZXNhaSBiZXJzaWZhdCBpbW11dGFibGUgZGFuIHRpZGFrIGJvbGVoIGRpdWJhaCcpXG4gICAgICAgIEVORDtcbiAgICAgIEVORDtgLFxuXG4gICAgICBgQ1JFQVRFIFRSSUdHRVIgSUYgTk9UIEVYSVNUUyB0cmdfdHJhbnNhY3Rpb25zX3ByZXZlbnRfbXV0YXRpb25fd2hlbl9jYW5jZWxsZWRcbiAgICAgIEJFRk9SRSBVUERBVEUgT04gdHJhbnNhY3Rpb25zXG4gICAgICBGT1IgRUFDSCBST1dcbiAgICAgIFdIRU4gT0xELnN0YXR1cyA9ICdCYXRhbCdcbiAgICAgIEJFR0lOXG4gICAgICAgIFNFTEVDVCBSQUlTRShBQk9SVCwgJ1RyYW5zYWtzaSB5YW5nIHN1ZGFoIGJlcnN0YXR1cyBCYXRhbCB0aWRhayBkYXBhdCBkaXViYWgnKTtcbiAgICAgIEVORDtgLFxuXG4gICAgICBgQ1JFQVRFIFRSSUdHRVIgSUYgTk9UIEVYSVNUUyB0cmdfdHJhbnNhY3Rpb25zX3ByZXZlbnRfZGVsZXRlXG4gICAgICBCRUZPUkUgREVMRVRFIE9OIHRyYW5zYWN0aW9uc1xuICAgICAgRk9SIEVBQ0ggUk9XXG4gICAgICBXSEVOIE9MRC5zdGF0dXMgSU4gKCdTZWxlc2FpJywgJ0JhdGFsJylcbiAgICAgIEJFR0lOXG4gICAgICAgIFNFTEVDVCBSQUlTRShBQk9SVCwgJ1RyYW5zYWtzaSBTZWxlc2FpIGF0YXUgQmF0YWwgdGlkYWsgYm9sZWggZGloYXB1cyB1bnR1ayBpbnRlZ3JpdGFzIGF1ZGl0IHRyYWlsJyk7XG4gICAgICBFTkQ7YCxcblxuICAgICAgLy8gVDM6IFZhbGlkYXNpIHN1bWJlciBqdXJuYWwgJiBidWt1IHBlbWJhbnR1IHdhamliIG1lcnVqdWsgdHJhbnNha3NpIFNlbGVzYWlcbiAgICAgIGBDUkVBVEUgVFJJR0dFUiBJRiBOT1QgRVhJU1RTIHRyZ19qb3VybmFsc19yZXF1aXJlX3NlbGVzYWlfdHJhbnNhY3Rpb25cbiAgICAgIEJFRk9SRSBJTlNFUlQgT04gam91cm5hbHNcbiAgICAgIEZPUiBFQUNIIFJPV1xuICAgICAgV0hFTiBORVcudHJhbnNhY3Rpb25faWQgSVMgTk9UIE5VTEwgQU5EIE5FVy5pc19yZXZlcnNhbCA9IDBcbiAgICAgIEJFR0lOXG4gICAgICAgIFNFTEVDVCBDQVNFXG4gICAgICAgICAgV0hFTiAoU0VMRUNUIHN0YXR1cyBGUk9NIHRyYW5zYWN0aW9ucyBXSEVSRSBpZCA9IE5FVy50cmFuc2FjdGlvbl9pZCkgIT0gJ1NlbGVzYWknXG4gICAgICAgICAgICBUSEVOIFJBSVNFKEFCT1JULCAnSnVybmFsIGFzbGkgaGFueWEgYm9sZWggZGlidWF0IHVudHVrIHRyYW5zYWtzaSB5YW5nIGJlcnN0YXR1cyBTZWxlc2FpJylcbiAgICAgICAgRU5EO1xuICAgICAgRU5EO2AsXG5cbiAgICAgIGBDUkVBVEUgVFJJR0dFUiBJRiBOT1QgRVhJU1RTIHRyZ19yZWNlaXZhYmxlc19yZXF1aXJlX3NlbGVzYWlfdHJhbnNhY3Rpb25cbiAgICAgIEJFRk9SRSBJTlNFUlQgT04gcmVjZWl2YWJsZXNcbiAgICAgIEZPUiBFQUNIIFJPV1xuICAgICAgQkVHSU5cbiAgICAgICAgU0VMRUNUIENBU0VcbiAgICAgICAgICBXSEVOIChTRUxFQ1Qgc3RhdHVzIEZST00gdHJhbnNhY3Rpb25zIFdIRVJFIGlkID0gTkVXLnRyYW5zYWN0aW9uX2lkKSAhPSAnU2VsZXNhaSdcbiAgICAgICAgICAgIFRIRU4gUkFJU0UoQUJPUlQsICdQaXV0YW5nIGJhcnUgaGFueWEgYm9sZWggZGlidWF0IHVudHVrIHRyYW5zYWtzaSB5YW5nIGJlcnN0YXR1cyBTZWxlc2FpJylcbiAgICAgICAgRU5EO1xuICAgICAgRU5EO2AsXG5cbiAgICAgIGBDUkVBVEUgVFJJR0dFUiBJRiBOT1QgRVhJU1RTIHRyZ19wYXlhYmxlc19yZXF1aXJlX3NlbGVzYWlfdHJhbnNhY3Rpb25cbiAgICAgIEJFRk9SRSBJTlNFUlQgT04gcGF5YWJsZXNcbiAgICAgIEZPUiBFQUNIIFJPV1xuICAgICAgQkVHSU5cbiAgICAgICAgU0VMRUNUIENBU0VcbiAgICAgICAgICBXSEVOIChTRUxFQ1Qgc3RhdHVzIEZST00gdHJhbnNhY3Rpb25zIFdIRVJFIGlkID0gTkVXLnRyYW5zYWN0aW9uX2lkKSAhPSAnU2VsZXNhaSdcbiAgICAgICAgICAgIFRIRU4gUkFJU0UoQUJPUlQsICdIdXRhbmcgYmFydSBoYW55YSBib2xlaCBkaWJ1YXQgdW50dWsgdHJhbnNha3NpIHlhbmcgYmVyc3RhdHVzIFNlbGVzYWknKVxuICAgICAgICBFTkQ7XG4gICAgICBFTkQ7YCxcblxuICAgICAgLy8gVDQ6IEZhaWwtY2xvc2VkIHBlbWJhdGFsYW4gcGl1dGFuZy9odXRhbmdcbiAgICAgIGBDUkVBVEUgVFJJR0dFUiBJRiBOT1QgRVhJU1RTIHRyZ19yZWNlaXZhYmxlc19wcmV2ZW50X2NhbmNlbF9pZl9wYWlkXG4gICAgICBCRUZPUkUgVVBEQVRFIE9GIHN0YXR1cyBPTiByZWNlaXZhYmxlc1xuICAgICAgRk9SIEVBQ0ggUk9XXG4gICAgICBXSEVOIE5FVy5zdGF0dXMgPSAnQmF0YWwnIEFORCAoT0xELnN0YXR1cyBJTiAoJ1BhcnRpYWwnLCAnUGFpZCcpIE9SIE9MRC5vdXRzdGFuZGluZyA8IE9MRC5hbW91bnQpXG4gICAgICBCRUdJTlxuICAgICAgICBTRUxFQ1QgUkFJU0UoQUJPUlQsICdGYWt0dXIgcGl1dGFuZyB5YW5nIHN1ZGFoIG1lbWlsaWtpIHBlbWJheWFyYW4gdGlkYWsgYm9sZWggZGliYXRhbGthbiBsYW5nc3VuZy4gQmF0YWxrYW4gdHJhbnNha3NpIHBlbHVuYXNhbiB0ZXJsZWJpaCBkYWh1bHUnKTtcbiAgICAgIEVORDtgLFxuXG4gICAgICBgQ1JFQVRFIFRSSUdHRVIgSUYgTk9UIEVYSVNUUyB0cmdfcGF5YWJsZXNfcHJldmVudF9jYW5jZWxfaWZfcGFpZFxuICAgICAgQkVGT1JFIFVQREFURSBPRiBzdGF0dXMgT04gcGF5YWJsZXNcbiAgICAgIEZPUiBFQUNIIFJPV1xuICAgICAgV0hFTiBORVcuc3RhdHVzID0gJ0JhdGFsJyBBTkQgKE9MRC5zdGF0dXMgSU4gKCdQYXJ0aWFsJywgJ1BhaWQnKSBPUiBPTEQub3V0c3RhbmRpbmcgPCBPTEQuYW1vdW50KVxuICAgICAgQkVHSU5cbiAgICAgICAgU0VMRUNUIFJBSVNFKEFCT1JULCAnRmFrdHVyIGh1dGFuZyB5YW5nIHN1ZGFoIG1lbWlsaWtpIHBlbWJheWFyYW4gdGlkYWsgYm9sZWggZGliYXRhbGthbiBsYW5nc3VuZy4gQmF0YWxrYW4gdHJhbnNha3NpIHBlbHVuYXNhbiB0ZXJsZWJpaCBkYWh1bHUnKTtcbiAgICAgIEVORDtgLFxuXG4gICAgICBgQ1JFQVRFIFRSSUdHRVIgSUYgTk9UIEVYSVNUUyB0cmdfcmVjZWl2YWJsZXNfcHJldmVudF9tdXRhdGlvbl93aGVuX2JhdGFsXG4gICAgICBCRUZPUkUgVVBEQVRFIE9OIHJlY2VpdmFibGVzXG4gICAgICBGT1IgRUFDSCBST1dcbiAgICAgIFdIRU4gT0xELnN0YXR1cyA9ICdCYXRhbCdcbiAgICAgIEJFR0lOXG4gICAgICAgIFNFTEVDVCBSQUlTRShBQk9SVCwgJ0Zha3R1ciBwaXV0YW5nIHlhbmcgc3VkYWggQmF0YWwgYmVyc2lmYXQgaW1tdXRhYmxlIGRhbiB0aWRhayBkYXBhdCBkaXViYWgnKTtcbiAgICAgIEVORDtgLFxuXG4gICAgICBgQ1JFQVRFIFRSSUdHRVIgSUYgTk9UIEVYSVNUUyB0cmdfcGF5YWJsZXNfcHJldmVudF9tdXRhdGlvbl93aGVuX2JhdGFsXG4gICAgICBCRUZPUkUgVVBEQVRFIE9OIHBheWFibGVzXG4gICAgICBGT1IgRUFDSCBST1dcbiAgICAgIFdIRU4gT0xELnN0YXR1cyA9ICdCYXRhbCdcbiAgICAgIEJFR0lOXG4gICAgICAgIFNFTEVDVCBSQUlTRShBQk9SVCwgJ0Zha3R1ciBodXRhbmcgeWFuZyBzdWRhaCBCYXRhbCBiZXJzaWZhdCBpbW11dGFibGUgZGFuIHRpZGFrIGRhcGF0IGRpdWJhaCcpO1xuICAgICAgRU5EO2BcbiAgICBdXG4gIH0sXG4gIHtcbiAgICB2ZXJzaW9uOiAzLFxuICAgIG5hbWU6ICcwMDNfc2hpZnRfc2Vzc2lvbnNfYW5kX2F0dGVuZGFuY2VfaGlzdG9yeScsXG4gICAgc3RhdGVtZW50czogW1xuICAgICAgLy8gMS4gVGFiZWwgcml3YXlhdCBzZXNpIHNoaWZ0IGFrdHVhbFxuICAgICAgYENSRUFURSBUQUJMRSBJRiBOT1QgRVhJU1RTIHNoaWZ0X3Nlc3Npb25zIChcbiAgICAgICAgaWQgVEVYVCBQUklNQVJZIEtFWSxcbiAgICAgICAgc2hpZnRfaWQgVEVYVCBOT1QgTlVMTCBSRUZFUkVOQ0VTIHNoaWZ0cyhpZCksXG4gICAgICAgIG5hbWUgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgZGF0ZSBURVhUIE5PVCBOVUxMLFxuICAgICAgICBzdGFydF90aW1lIFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIGVuZF90aW1lIFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIG9wZXJhdG9yIFRFWFQgTk9UIE5VTEwsXG4gICAgICAgIHN0YXR1cyBURVhUIE5PVCBOVUxMIENIRUNLKHN0YXR1cyBJTiAoJ0FrdGlmJywgJ1R1dHVwJykpLFxuICAgICAgICBpbml0aWFsX2Nhc2ggSU5URUdFUiBOT1QgTlVMTCBERUZBVUxUIDAsXG4gICAgICAgIHRvdGFsX3NhbGVzIElOVEVHRVIgTk9UIE5VTEwgREVGQVVMVCAwLFxuICAgICAgICBjYXNoX2hhbmRvdmVyIElOVEVHRVIgTk9UIE5VTEwgREVGQVVMVCAwLFxuICAgICAgICBkaXNjcmVwYW5jeSBJTlRFR0VSIE5PVCBOVUxMIERFRkFVTFQgMCxcbiAgICAgICAgY2xvc2VkX2F0IFRFWFQsXG4gICAgICAgIGNyZWF0ZWRfYXQgVEVYVCBOT1QgTlVMTCxcbiAgICAgICAgdXBkYXRlZF9hdCBURVhUIE5PVCBOVUxMXG4gICAgICApO2AsXG5cbiAgICAgIC8vIDIuIEluZGV4IHBlbmNhcmlhbiBzZXNpIHNoaWZ0XG4gICAgICBgQ1JFQVRFIElOREVYIElGIE5PVCBFWElTVFMgaWR4X3NoaWZ0X3Nlc3Npb25zX3NoaWZ0X2lkIE9OIHNoaWZ0X3Nlc3Npb25zKHNoaWZ0X2lkKTtgLFxuICAgICAgYENSRUFURSBJTkRFWCBJRiBOT1QgRVhJU1RTIGlkeF9zaGlmdF9zZXNzaW9uc19kYXRlIE9OIHNoaWZ0X3Nlc3Npb25zKGRhdGUpO2AsXG5cbiAgICAgIC8vIDMuIEdhcmFuc2kgRW5naW5lIExldmVsOiBNYWtzaW1hbCBoYW55YSBTQVRVIHNlc2kgc2hpZnQgYWt0aWYgc2VjYXJhIGdsb2JhbCBwYWRhIHNhdHUgd2FrdHVcbiAgICAgIGBDUkVBVEUgVU5JUVVFIElOREVYIElGIE5PVCBFWElTVFMgaWR4X3NpbmdsZV9hY3RpdmVfc2hpZnRfc2Vzc2lvbiBPTiBzaGlmdF9zZXNzaW9ucyhzdGF0dXMpIFdIRVJFIHN0YXR1cyA9ICdBa3RpZic7YCxcblxuICAgICAgLy8gNC4gR2FyYW5zaSBFbmdpbmUgTGV2ZWw6IFNhdHUgcGVnYXdhaSBoYW55YSBib2xlaCBtZW1pbGlraSBzYXR1IHJlY29yZCBhYnNlbnNpIHBlciB0YW5nZ2FsIGthbGVuZGVyXG4gICAgICBgQ1JFQVRFIFVOSVFVRSBJTkRFWCBJRiBOT1QgRVhJU1RTIGlkeF9hdHRlbmRhbmNlc19lbXBsb3llZV9kYXRlIE9OIGF0dGVuZGFuY2VzKGVtcGxveWVlX2lkLCBkYXRlKTtgXG4gICAgXVxuICB9LFxuICB7XG4gICAgdmVyc2lvbjogNCxcbiAgICBuYW1lOiAnMDA0X2VuZm9yY2Vfc2FmZV9jYW5jZWxsYXRpb24nLFxuICAgIHN0YXRlbWVudHM6IFtcbiAgICAgIC8vIFRyaWdnZXIgcGVybGluZHVuZ2FuIGludGVncml0YXM6IFRvbGFrIHBlbWJhdGFsYW4gdHJhbnNha3NpIHlhbmcgc3VkYWggZGlwb3N0aW5nIGtlIGp1cm5hbCBha3VudGFuc2lcbiAgICAgIGBDUkVBVEUgVFJJR0dFUiBJRiBOT1QgRVhJU1RTIHRyZ190cmFuc2FjdGlvbnNfcHJldmVudF9jYW5jZWxfaWZfcG9zdGVkXG4gICAgICBCRUZPUkUgVVBEQVRFIE9GIHN0YXR1cyBPTiB0cmFuc2FjdGlvbnNcbiAgICAgIEZPUiBFQUNIIFJPV1xuICAgICAgV0hFTiBORVcuc3RhdHVzID0gJ0JhdGFsJyBBTkQgKFNFTEVDVCBDT1VOVCgqKSBGUk9NIGpvdXJuYWxzIFdIRVJFIHRyYW5zYWN0aW9uX2lkID0gT0xELmlkKSA+IDBcbiAgICAgIEJFR0lOXG4gICAgICAgIFNFTEVDVCBSQUlTRShBQk9SVCwgJ1RyYW5zYWtzaSB5YW5nIHN1ZGFoIGRpcG9zdGluZyBrZSBqdXJuYWwgYWt1bnRhbnNpIHRpZGFrIGRhcGF0IGRpYmF0YWxrYW4gc2VjYXJhIGxhbmdzdW5nIHRhbnBhIHByb3NlZHVyIHBlbWJhbGlrYW4nKTtcbiAgICAgIEVORDtgXG4gICAgXVxuICB9LFxuICB7XG4gICAgdmVyc2lvbjogNSxcbiAgICBuYW1lOiAnMDA1X2FkZF9jaXR5X3RvX3N0YXRpb25faW5mbycsXG4gICAgc3RhdGVtZW50czogW1xuICAgICAgLy8gVGFtYmFoa2FuIGtvbG9tIGNpdHkgcGFkYSBzdGF0aW9uX2luZm8gdW50dWsgcGVuZ2F0dXJhbiBrb3RhIHRhbmRhIHRhbmdhbiBsYXBvcmFuXG4gICAgICBgQUxURVIgVEFCTEUgc3RhdGlvbl9pbmZvIEFERCBDT0xVTU4gY2l0eSBURVhUO2BcbiAgICBdXG4gIH1cbl07XG4iXX0=

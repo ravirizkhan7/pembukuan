@@ -230,7 +230,22 @@ export class ProductRepository extends BaseRepository {
   }
 
   /**
-   * Menghapus produk secara aman (menghormati constraint relasional)
+   * Produk BBM standar SPBU yang tidak boleh dihapus dari sistem
+   */
+  public static readonly CORE_PRODUCT_IDS = new Set([
+    'PRD-01', 'PRD-02', 'PRD-03', 'PRD-04', 'PRD-05',
+    'PLT', 'PTX', 'TUR', 'BSL', 'DXL'
+  ]);
+
+  /**
+   * Memeriksa apakah produk merupakan produk BBM standar SPBU
+   */
+  public isCore(idOrCode: string): boolean {
+    return ProductRepository.CORE_PRODUCT_IDS.has(idOrCode);
+  }
+
+  /**
+   * Menghapus produk secara aman (menghormati data inti dan constraint relasional)
    */
   public async delete(id: string): Promise<boolean> {
     const existing = await this.findById(id);
@@ -238,6 +253,14 @@ export class ProductRepository extends BaseRepository {
       return false;
     }
 
+    // 1. Lindungi produk BBM standar/inti sistem SPBU
+    if (this.isCore(existing.id) || this.isCore(existing.code)) {
+      throw new Error(
+        `Produk BBM [${existing.code}] ${existing.name} merupakan produk standar SPBU dan tidak dapat dihapus. Silakan gunakan opsi Nonaktifkan.`
+      );
+    }
+
+    // 2. Lindungi produk yang masih direferensikan tangki, nozzle, tera, transaksi, atau master kode
     const isRef = await this.isReferenced(id);
     if (isRef) {
       throw new Error(
@@ -258,3 +281,4 @@ export class ProductRepository extends BaseRepository {
 }
 
 export const productRepository = new ProductRepository();
+export const CORE_PRODUCT_IDS = ProductRepository.CORE_PRODUCT_IDS;
